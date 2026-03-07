@@ -193,7 +193,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 <div id="auth-screen">
   <div class="logo">LIFT</div>
   <div class="logo-sub">Workout Tracker</div>
-  <button id="signin-btn" onclick="signIn()">Sign in with Google</button>
+  <button id="signin-btn" onclick="testClick()">Sign in with Google</button>
 </div>
 <div id="loading-screen" style="display:none;">
   <div class="loading-dots"><span></span><span></span><span></span></div>
@@ -281,6 +281,9 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 <div id="ex-detail"><div id="exd-header"><button class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div id="exd-name"></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
 <div id="toast"></div>
 <script>
+function testClick() {
+  alert('Button works! google=' + (typeof google) + ' signIn=' + (typeof signIn));
+}
 // CONFIG
 var CLIENT_ID = '459205389789-8s4a9lrbpk7d9e7cbivg4sfsi56k0e2r.apps.googleusercontent.com';
 var SHEET_ID  = '1-KElLUfG8oQgRq4ObNQSaiGReKb57BJ1f8VQK6SgnqI';
