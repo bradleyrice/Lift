@@ -900,6 +900,7 @@ var currentExLogName = null;
 
 function getLastSessionWeight(exName) {
   // Find the most recent session date for this exercise and return max weight used
+  // Includes today so weight pre-fills correctly on first log of the day
   var source = shRows.length > 0 ? shRows : [];
   var byDate = {};
   source.filter(function(r) {
@@ -909,6 +910,16 @@ function getLastSessionWeight(exName) {
     if (!byDate[d]) byDate[d] = [];
     byDate[d].push(parseFloat(r[7])||0);
   });
+  // Also include current session sets in memory
+  if (session && session.sets && session.sets[exName]) {
+    var today = new Date().toLocaleDateString('en-GB');
+    session.sets[exName].forEach(function(s) {
+      if (s.weight) {
+        if (!byDate[today]) byDate[today] = [];
+        byDate[today].push(parseFloat(s.weight)||0);
+      }
+    });
+  }
   var dates = Object.keys(byDate).sort(function(a,b) {
     var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
     return p(b).localeCompare(p(a));
@@ -920,11 +931,17 @@ function getLastSessionWeight(exName) {
 
 function getExHistory(exName) {
   // Get last 3 sessions for this exercise from shRows/ehRows cache
-  // Use shRows if loaded, otherwise fall back to empty
+  // Exclude rows belonging to the current live session
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
+    });
+  }
   var source = shRows.length > 0 ? shRows : [];
   var byDate = {};
   source.filter(function(r) {
-    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__';
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !currentIds.has(r[0]);
   }).forEach(function(r) {
     var d = r[9]; if (!d) return;
     if (!byDate[d]) byDate[d] = [];
@@ -934,9 +951,6 @@ function getExHistory(exName) {
     var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
     return p(b).localeCompare(p(a));
   });
-  // Exclude today
-  var today = new Date().toLocaleDateString('en-GB');
-  dates = dates.filter(function(d) { return d !== today; });
   return dates.slice(0,3).map(function(d) {
     return {date:d, sets:byDate[d].sort(function(a,b){return a.set-b.set;})};
   });
