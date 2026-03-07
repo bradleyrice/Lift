@@ -194,6 +194,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div class="logo">LIFT</div>
   <div class="logo-sub">Workout Tracker</div>
   <button id="signin-btn" onclick="signIn()">Sign in with Google</button>
+  <div style="margin:8px 0;font-family:var(--mono);font-size:11px;color:#444;letter-spacing:2px;">OR</div>
+  <button onclick="useOffline()" style="background:transparent;border:1px solid #333;color:#555;font-family:var(--mono);font-size:12px;letter-spacing:2px;padding:12px 24px;border-radius:6px;cursor:pointer;">Use Offline</button>
+  <div style="margin-top:16px;font-family:var(--mono);font-size:10px;color:#444;letter-spacing:1px;max-width:280px;text-align:center;line-height:1.6;">
+    ⚠️ Offline mode stores data on this device only. Data may be lost if you clear Safari storage or reinstall the app.
+  </div>
 </div>
 <div id="loading-screen" style="display:none;">
   <div class="loading-dots"><span></span><span></span><span></span></div>
@@ -292,6 +297,29 @@ var DEFAULT_WORKOUTS = [
   {id:'w4',name:'Day 4 \u2014 Hamstrings, Glutes & Abductors',exercises:['Standing Hip Extension Squat Machine','Seated Leg Curl','Iso Lateral Kneeling Leg Curl','Back Extension','Hip Abductor','Hip Adductor']}
 ];
 
+// LOCAL STORAGE LAYER
+var LS_WORKOUTS = 'lift_workouts';
+var LS_EXERCISES = 'lift_exercises';
+var LS_RESULTS = 'lift_results';
+var LS_SYNC_QUEUE = 'lift_sync_queue';
+var LS_MODE = 'lift_mode'; // 'google' or 'offline'
+var LS_LAST_SYNC = 'lift_last_sync';
+
+function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
+
+function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
+function addToSyncQueue(op) { var q = getSyncQueue(); q.push(op); lsSet(LS_SYNC_QUEUE, q); }
+function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); }
+
+// MODE
+var offlineMode = false;
+function useOffline() {
+  offlineMode = true;
+  lsSet(LS_MODE, 'offline');
+  initApp();
+}
+
 // STATE
 var accessToken = null;
 var tokenClient = null;
@@ -332,7 +360,7 @@ function showScreen(id) {
 }
 function setLoadingMsg(m) { document.getElementById('loading-msg').textContent = m; }
 function showError(msg) { document.getElementById('error-msg').textContent = msg; showScreen('error-screen'); }
-function retryInit() { showScreen('loading-screen'); initApp(); }
+function retryInit() { showScreen('loading-screen'); offlineMode = (lsGet(LS_MODE) === 'offline'); initApp(); }
 
 // AUTH
 function signIn() {
@@ -346,10 +374,19 @@ function signIn() {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
-      callback: function(resp) {
+      callback: async function(resp) {
         if (resp && resp.access_token && resp.access_token.length > 10) {
           accessToken = resp.access_token;
           tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
+          offlineMode = false;
+          // If we had local offline data, merge it into Sheets first
+          var hadOfflineData = lsGet(LS_MODE) === 'offline' && (lsGet(LS_RESULTS) || []).length > 0;
+          lsSet(LS_MODE, 'google');
+          if (hadOfflineData) {
+            showScreen('loading-screen');
+            setLoadingMsg('Merging local data to Sheets...');
+            try { await mergeLocalToSheets(); } catch(e) { console.warn('Merge failed:', e); }
+          }
           initApp();
         } else {
           showError('Sign in failed. Please try again.');
@@ -364,8 +401,9 @@ function signIn() {
 
 function signOut() {
   if (accessToken) { try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
-  accessToken = null; session = null;
+  accessToken = null; session = null; offlineMode = false;
   clearInterval(sessionTimerInterval);
+  lsSet(LS_MODE, null);
   showScreen('auth-screen');
 }
 
@@ -441,27 +479,60 @@ async function deleteSheetRow(tab, rowNum) {
 async function initApp() {
   showScreen('loading-screen');
   try {
+    if (offlineMode) {
+      setLoadingMsg('Loading local data...');
+      await loadFromLocal();
+      showScreen('app');
+      return;
+    }
     setLoadingMsg('Connecting...');
     if (!accessToken || accessToken.length < 10) {
       showError('No valid token. Please sign out and sign in again.');
       return;
     }
-    setLoadingMsg('Checking spreadsheet...');
-    // Sheets already exist - just verify we can read them
-    var testRead = await readSheet('Workouts');
-    console.log('Workouts sheet rows:', testRead.length);
     setLoadingMsg('Loading workouts...');
     await loadWorkoutsAndExercises();
     setLoadingMsg('Loading history...');
     shRows = await readSheet('Results');
     ehRows = shRows;
+    // Seed local storage from Sheets
+    lsSet(LS_RESULTS, shRows);
     await loadPBs();
     renderWorkoutPicker();
     renderWorkoutsScreen();
+    // Flush any queued offline writes
+    setTimeout(flushSyncQueue, 1000);
     showScreen('app');
   } catch(e) {
     showError('Error: ' + e.message);
   }
+}
+
+async function loadFromLocal() {
+  // Load workouts from local or seed defaults
+  var localWorkouts = lsGet(LS_WORKOUTS);
+  var localExercises = lsGet(LS_EXERCISES);
+  if (!localWorkouts || localWorkouts.length === 0) {
+    setLoadingMsg('Setting up your routine...');
+    seedLocalDefaults();
+    localWorkouts = lsGet(LS_WORKOUTS);
+    localExercises = lsGet(LS_EXERCISES);
+  }
+  workouts = localWorkouts;
+  allExercises = localExercises || [];
+  shRows = lsGet(LS_RESULTS) || [];
+  ehRows = shRows;
+  await loadPBs();
+  renderWorkoutPicker();
+  renderWorkoutsScreen();
+}
+
+function seedLocalDefaults() {
+  var exSet = {};
+  DEFAULT_WORKOUTS.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
+  lsSet(LS_WORKOUTS, DEFAULT_WORKOUTS.map(function(w) { return {id:w.id, name:w.name, exercises:w.exercises}; }));
+  lsSet(LS_EXERCISES, Object.keys(exSet));
+  lsSet(LS_RESULTS, []);
 }
 
 async function loadWorkoutsAndExercises() {
@@ -477,6 +548,9 @@ async function loadWorkoutsAndExercises() {
   }
   workouts = wData.map(function(r) { return {id:r[0], name:r[1], exercises:(r[2]||'').split('|').filter(Boolean)}; });
   allExercises = eRows.filter(function(r) { return r[0] && r[0] !== 'ExerciseID'; }).map(function(r) { return r[1]; }).filter(Boolean);
+  // Save to local storage
+  lsSet(LS_WORKOUTS, workouts);
+  lsSet(LS_EXERCISES, allExercises);
 }
 
 async function seedDefaults() {
@@ -488,12 +562,117 @@ async function seedDefaults() {
 }
 
 async function loadPBs() {
-  var rows = await readSheet('Results');
   pbCache = {};
-  rows.filter(function(r) { return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) {
+  shRows.filter(function(r) { return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) {
     var ex = r[5], w = parseFloat(r[7]);
     if (ex && !isNaN(w) && (!pbCache[ex] || w > pbCache[ex])) pbCache[ex] = w;
   });
+}
+
+// LOCAL RESULT HELPERS
+function saveResultLocally(row) {
+  // row = [ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
+  var results = lsGet(LS_RESULTS) || [];
+  var existingIdx = results.findIndex(function(r) { return r[0] === row[0]; });
+  if (existingIdx >= 0) results[existingIdx] = row;
+  else results.push(row);
+  lsSet(LS_RESULTS, results);
+  shRows = results; ehRows = results;
+}
+
+function deleteResultLocally(resultId) {
+  var results = lsGet(LS_RESULTS) || [];
+  var idx = results.findIndex(function(r) { return r[0] === resultId; });
+  if (idx >= 0) { results[idx][0] = '__DELETED__'; lsSet(LS_RESULTS, results); }
+  shRows = results; ehRows = results;
+}
+
+async function syncResultToSheets(row, set) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'append', row:row, setId: set._localId});
+    return;
+  }
+  try {
+    setSyncStatus('syncing');
+    set.sheetRow = await appendRows('Results', [row]);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow = row.slice(), capturedSet = set;
+    queueFailedSync(async function() { capturedSet.sheetRow = await appendRows('Results', [capturedRow]); });
+  }
+}
+
+async function updateResultInSheets(row, set) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'update', row:row, localId:set._localId});
+    return;
+  }
+  try {
+    setSyncStatus('syncing');
+    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, row);
+    else set.sheetRow = await appendRows('Results', [row]);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow = row.slice(), capturedSet = set;
+    queueFailedSync(async function() {
+      if (capturedSet.sheetRow) await updateSheetRow('Results', capturedSet.sheetRow, capturedRow);
+      else capturedSet.sheetRow = await appendRows('Results', [capturedRow]);
+    });
+  }
+}
+
+async function deleteResultInSheets(set) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+    return;
+  }
+  if (!set.sheetRow) return;
+  try {
+    setSyncStatus('syncing');
+    await deleteSheetRow('Results', set.sheetRow);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow2 = set.sheetRow;
+    queueFailedSync(async function() { await deleteSheetRow('Results', capturedRow2); });
+  }
+}
+
+// Flush queued offline writes when back online
+async function flushSyncQueue() {
+  if (offlineMode || !accessToken) return;
+  var queue = getSyncQueue();
+  if (!queue.length) return;
+  clearSyncQueue();
+  var failed = [];
+  for (var i = 0; i < queue.length; i++) {
+    var op = queue[i];
+    try {
+      if (op.type === 'append') await appendRows('Results', [op.row]);
+      else if (op.type === 'update') await appendRows('Results', [op.row]);
+      else if (op.type === 'delete' && op.sheetRow) await deleteSheetRow('Results', op.sheetRow);
+    } catch(e) { failed.push(op); }
+  }
+  if (failed.length) { lsSet(LS_SYNC_QUEUE, failed); setSyncStatus('error'); }
+  else { setSyncStatus('saved'); lsSet(LS_LAST_SYNC, Date.now()); }
+}
+
+// Merge local data into Sheets (when offline user signs in)
+async function mergeLocalToSheets() {
+  var localResults = lsGet(LS_RESULTS) || [];
+  var sheetResults = await readSheet('Results');
+  var sheetIds = new Set(sheetResults.map(function(r) { return r[0]; }));
+  var toUpload = localResults.filter(function(r) {
+    return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !sheetIds.has(r[0]);
+  });
+  if (toUpload.length > 0) {
+    setLoadingMsg('Merging ' + toUpload.length + ' local sets to Sheets...');
+    for (var i = 0; i < toUpload.length; i++) {
+      await appendRows('Results', [toUpload[i]]);
+    }
+  }
 }
 
 // NAV
@@ -687,19 +866,12 @@ function addLogSetFromDetail() {
   var inputs = document.querySelectorAll('#eld-sets-list .set-input');
   if (inputs.length) inputs[inputs.length-1].focus();
   rtQuickStart();
-  // Sheet write is async but happens after focus
-  setSyncStatus('syncing');
+  // Save locally first, then sync to Sheets
   var today = new Date().toLocaleDateString('en-GB');
-  var syncRow = ['r'+Date.now(), newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
-  appendRows('Results', [syncRow]).then(function(rowNum) {
-    newSet.sheetRow = rowNum;
-    setSyncStatus('saved');
-  }).catch(function(e) {
-    setSyncStatus('error');
-    queueFailedSync(async function() {
-      newSet.sheetRow = await appendRows('Results', [syncRow]);
-    });
-  });
+  newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
+  saveResultLocally(syncRow);
+  syncResultToSheets(syncRow, newSet);
 }
 
 async function addLogSet(exId) {
@@ -712,17 +884,11 @@ async function addLogSet(exId) {
   var newIdx = sets.length - 1;
   var list = document.getElementById('setlist-' + exId);
   if (list) list.insertAdjacentHTML('beforeend', logSetHTML(exName, newIdx, newSet));
-  setSyncStatus('syncing');
-  try {
-    var today = new Date().toLocaleDateString('en-GB');
-    var row = ['r'+Date.now(), newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, newIdx+1, lastWeight, '', today];
-    newSet.sheetRow = await appendRows('Results', [row]);
-    setSyncStatus('saved');
-  } catch(e) {
-    setSyncStatus('error');
-    var capturedRow = row.slice();
-    queueFailedSync(async function() { newSet.sheetRow = await appendRows('Results', [capturedRow]); });
-  }
+  var today = new Date().toLocaleDateString('en-GB');
+  newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var row = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, newIdx+1, lastWeight, '', today];
+  saveResultLocally(row);
+  syncResultToSheets(row, newSet);
   rtQuickStart();
 }
 
@@ -734,21 +900,11 @@ async function updateLogSet(exId, setIdx, field, value) {
   var set = sets[setIdx];
   set[field] = value;
   if (!set.timestamp) set.timestamp = new Date().toISOString();
-  setSyncStatus('syncing');
-  try {
-    var today = new Date().toLocaleDateString('en-GB');
-    var row = ['r'+Date.now(), set.timestamp, session.workoutId, session.workoutName, sid(exName), exName, setIdx+1, set.weight||'', set.reps||'', today];
-    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, row);
-    else set.sheetRow = await appendRows('Results', [row]);
-    setSyncStatus('saved');
-  } catch(e) {
-    setSyncStatus('error');
-    var capturedRow = row.slice(), capturedSet = set;
-    queueFailedSync(async function() {
-      if (capturedSet.sheetRow) await updateSheetRow('Results', capturedSet.sheetRow, capturedRow);
-      else capturedSet.sheetRow = await appendRows('Results', [capturedRow]);
-    });
-  }
+  var today = new Date().toLocaleDateString('en-GB');
+  if (!set._localId) set._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var row = [set._localId, set.timestamp, session.workoutId, session.workoutName, sid(exName), exName, setIdx+1, set.weight||'', set.reps||'', today];
+  saveResultLocally(row);
+  updateResultInSheets(row, set);
   var timeEl = document.querySelector('#setrow-' + exId + '-' + setIdx + ' .set-time');
   if (timeEl && set.timestamp) { timeEl.textContent = new Date(set.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); timeEl.classList.add('logged'); }
   if (field === 'weight') { var w = parseFloat(value); if (!isNaN(w) && (!pbCache[exName] || w > pbCache[exName])) { pbCache[exName] = w; } }
@@ -761,17 +917,8 @@ async function removeLogSet(exId, setIdx) {
   var sets = session.sets[exName];
   if (!sets || sets.length <= 1) return;
   var set = sets[setIdx];
-  if (set.sheetRow) {
-    setSyncStatus('syncing');
-    try {
-      await deleteSheetRow('Results', set.sheetRow);
-      setSyncStatus('saved');
-    } catch(e) {
-      setSyncStatus('error');
-      var capturedRow2 = set.sheetRow;
-      queueFailedSync(async function() { await deleteSheetRow('Results', capturedRow2); });
-    }
-  }
+  if (set._localId) deleteResultLocally(set._localId);
+  deleteResultInSheets(set);
   sets.splice(setIdx, 1); if (currentExLogName) { renderEldSets(); } else { renderLogExercises(); }
 }
 
@@ -824,7 +971,18 @@ async function finishSession() {
 // SESSION HISTORY
 async function loadSessionHistory() {
   document.getElementById('sh-list').innerHTML = '<div class="spinner">Loading...</div>';
-  shRows = await readSheet('Results');
+  // Use local cache, refresh from Sheets if online
+  if (!offlineMode && accessToken) {
+    try {
+      shRows = await readSheet('Results');
+      ehRows = shRows;
+      lsSet(LS_RESULTS, shRows);
+    } catch(e) {
+      shRows = lsGet(LS_RESULTS) || shRows;
+    }
+  } else {
+    shRows = lsGet(LS_RESULTS) || shRows;
+  }
   renderSessionFilters(); renderSessionList();
 }
 function renderSessionFilters() {
@@ -1002,7 +1160,8 @@ async function addExToWorkout(wi) {
     if (allExercises.indexOf(exName) < 0) {
       allExercises.push(exName);
       setSyncStatus('syncing');
-      await appendRows('Exercises', [['ex'+Date.now(), exName]]);
+      allExercises.push(exName); lsSet(LS_EXERCISES, allExercises);
+      if (!offlineMode && accessToken) await appendRows('Exercises', [['ex'+Date.now(), exName]]);
       setSyncStatus('saved');
     }
   }
@@ -1033,21 +1192,28 @@ async function removeExFromWorkout(wi, ei) {
   renderWorkoutsScreen(); renderWorkoutPicker();
 }
 async function saveWorkoutToSheet(wi) {
+  lsSet(LS_WORKOUTS, workouts);
+  if (offlineMode || !accessToken) return;
   setSyncStatus('syncing');
-  var w = workouts[wi];
-  var rows = await readSheet('Workouts');
-  var rowIdx = rows.findIndex(function(r) { return r[0] === w.id; });
-  if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, [w.id, w.name, w.exercises.join('|')]);
-  setSyncStatus('saved');
+  try {
+    var w = workouts[wi];
+    var rows = await readSheet('Workouts');
+    var rowIdx = rows.findIndex(function(r) { return r[0] === w.id; });
+    if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, [w.id, w.name, w.exercises.join('|')]);
+    setSyncStatus('saved');
+  } catch(e) { setSyncStatus('error'); }
 }
 async function addWorkout() {
   var name = prompt('Workout name:');
   if (!name || !name.trim()) return;
   var id = 'w' + Date.now();
   workouts.push({id:id, name:name.trim(), exercises:[]});
-  setSyncStatus('syncing');
-  await appendRows('Workouts', [[id, name.trim(), '']]);
-  setSyncStatus('saved');
+  lsSet(LS_WORKOUTS, workouts);
+  if (!offlineMode && accessToken) {
+    setSyncStatus('syncing');
+    try { await appendRows('Workouts', [[id, name.trim(), '']]); setSyncStatus('saved'); }
+    catch(e) { setSyncStatus('error'); }
+  }
   renderWorkoutsScreen(); renderWorkoutPicker();
 }
 
@@ -1098,6 +1264,11 @@ var syncErrorToastShown = false;
 function setSyncStatus(state, errMsg) {
   var dot = document.getElementById('sync-dot'), lbl = document.getElementById('sync-label');
   if (!dot || !lbl) return;
+  if (offlineMode) {
+    dot.className = ''; dot.style.background = '#444';
+    lbl.textContent = 'offline mode'; lbl.onclick = null; lbl.style.cursor = 'default';
+    return;
+  }
   dot.className = state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '';
   dot.style.background = state === 'error' ? '#ff4747' : state === 'syncing' ? '#888' : '#2a4a00';
   lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error — tap to retry' : 'synced';
@@ -1106,7 +1277,6 @@ function setSyncStatus(state, errMsg) {
     syncErrorToastShown = true;
     showToast('\u26a0\ufe0f Sync failed — data not saved to Sheets');
   }
-  // Make sync label tappable to retry when in error state
   lbl.onclick = state === 'error' ? function() { retryFailedSyncs(); } : null;
   lbl.style.cursor = state === 'error' ? 'pointer' : 'default';
 }
