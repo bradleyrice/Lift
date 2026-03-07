@@ -289,7 +289,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 // CONFIG
 var CLIENT_ID = '459205389789-8s4a9lrbpk7d9e7cbivg4sfsi56k0e2r.apps.googleusercontent.com';
 var SHEET_ID  = '1-KElLUfG8oQgRq4ObNQSaiGReKb57BJ1f8VQK6SgnqI';
-var SCOPES    = 'https://www.googleapis.com/auth/spreadsheets';
+var SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email';
 var DEFAULT_WORKOUTS = [
   {id:'w1',name:'Day 1 \u2014 Chest, Shoulders & Biceps',exercises:['Iso Lateral Bench Press','Incline Iso Lateral Bench Press','Pectoral Machine','Iso Lateral Machine Shoulder Press','Machine Side Lateral Raise','Machine Bicep Curl','Barbell Curl']},
   {id:'w2',name:'Day 2 \u2014 Quads, Calves & Adductors',exercises:['Sissy Squat','Leg Extension','Straight Leg Kick','Seated Straight Leg Calf Raise','Seated Calf Raise','Hip Adductor']},
@@ -324,6 +324,8 @@ function useOffline() {
 var accessToken = null;
 var tokenClient = null;
 var tokenExpiry = 0;
+var currentUser = null; // { email, name }
+var LS_USER = 'lift_user';
 
 function ensureFreshToken() {
   return new Promise(function(resolve, reject) {
@@ -379,6 +381,14 @@ function signIn() {
           accessToken = resp.access_token;
           tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
           offlineMode = false;
+          // Fetch user email
+          try {
+            var uResp = await xhrRequest('GET', 'https://www.googleapis.com/oauth2/v2/userinfo', null);
+            currentUser = { email: uResp.email, name: uResp.name || uResp.email };
+            lsSet(LS_USER, currentUser);
+          } catch(e) {
+            currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
+          }
           // If we had local offline data, merge it into Sheets first
           var hadOfflineData = lsGet(LS_MODE) === 'offline' && (lsGet(LS_RESULTS) || []).length > 0;
           lsSet(LS_MODE, 'google');
@@ -451,6 +461,49 @@ function readSheet(tab) {
   });
 }
 
+// Read rows for current user only (col 0 = UserID)
+async function readUserRows(tab) {
+  var rows = await readSheet(tab);
+  if (!rows.length) return [];
+  var header = rows[0];
+  // Detect if UserID column exists (first col of header row)
+  var hasUserCol = header[0] === 'UserID';
+  if (!hasUserCol) {
+    // Need to migrate - add UserID column to all data rows
+    await migrateSheetAddUser(tab, rows);
+    rows = await readSheet(tab);
+  }
+  // Filter by current user
+  var email = currentUser ? currentUser.email : null;
+  return rows.filter(function(r) {
+    return r[0] && r[0] !== 'UserID' && r[0] !== '__DELETED__' && (!email || r[0] === email);
+  });
+}
+
+async function migrateSheetAddUser(tab, rows) {
+  if (!currentUser) return;
+  var email = currentUser.email;
+  // Write header row first
+  var headerMap = {
+    'Workouts': ['UserID','WorkoutID','Name','ExerciseOrder'],
+    'Exercises': ['UserID','ExerciseID','Name'],
+    'Results': ['UserID','ResultID','Timestamp','WorkoutID','WorkoutName','ExerciseID','ExerciseName','Set','Weight','Reps','SessionDate']
+  };
+  var header = headerMap[tab];
+  if (header) await writeRow(tab, 1, header);
+  // Migrate existing data rows - prepend email
+  var dataRows = rows.filter(function(r) {
+    var id = r[0];
+    return id && id !== 'WorkoutID' && id !== 'ExerciseID' && id !== 'ResultID' && id !== '__DELETED__';
+  });
+  for (var i = 0; i < dataRows.length; i++) {
+    var origRow = dataRows[i];
+    // Find this row's actual sheet position
+    var sheetRowNum = rows.indexOf(origRow) + 1;
+    await writeRow(tab, sheetRowNum, [email].concat(origRow));
+  }
+}
+
 function writeRow(tab, rowNum, values) {
   var cols = String.fromCharCode(64 + Math.min(values.length, 26));
   var url = BASE_URL + '/values/' + enc(tab) + '!A' + rowNum + ':' + cols + rowNum + '?valueInputOption=RAW';
@@ -471,7 +524,7 @@ function updateSheetRow(tab, rowNum, values) {
 }
 
 async function deleteSheetRow(tab, rowNum) {
-  var blanks = ['__DELETED__','','','','','','','','',''];
+  var blanks = ['__DELETED__','','','','','','','','','',''];
   await writeRow(tab, rowNum, blanks);
 }
 
@@ -493,9 +546,11 @@ async function initApp() {
     setLoadingMsg('Loading workouts...');
     await loadWorkoutsAndExercises();
     setLoadingMsg('Loading history...');
-    shRows = await readSheet('Results');
+    var rawResults = await readUserRows('Results');
+    // rawResults cols: [UserID, ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
+    // Convert to legacy format (drop UserID) for internal use
+    shRows = rawResults.map(function(r) { return r.slice(1); });
     ehRows = shRows;
-    // Seed local storage from Sheets
     lsSet(LS_RESULTS, shRows);
     await loadPBs();
     renderWorkoutPicker();
@@ -536,29 +591,28 @@ function seedLocalDefaults() {
 }
 
 async function loadWorkoutsAndExercises() {
-  var wRows = await readSheet('Workouts');
-  var eRows = await readSheet('Exercises');
-  var wData = wRows.filter(function(r) { return r[0] && r[0] !== 'WorkoutID'; });
-  if (wData.length === 0) {
+  var wRows = await readUserRows('Workouts');
+  var eRows = await readUserRows('Exercises');
+  // wRows cols: [UserID, WorkoutID, Name, ExerciseOrder]
+  if (wRows.length === 0) {
     setLoadingMsg('Setting up your routine...');
     await seedDefaults();
-    wRows = await readSheet('Workouts');
-    eRows = await readSheet('Exercises');
-    wData = wRows.filter(function(r) { return r[0] && r[0] !== 'WorkoutID'; });
+    wRows = await readUserRows('Workouts');
+    eRows = await readUserRows('Exercises');
   }
-  workouts = wData.map(function(r) { return {id:r[0], name:r[1], exercises:(r[2]||'').split('|').filter(Boolean)}; });
-  allExercises = eRows.filter(function(r) { return r[0] && r[0] !== 'ExerciseID'; }).map(function(r) { return r[1]; }).filter(Boolean);
-  // Save to local storage
+  workouts = wRows.map(function(r) { return {id:r[1], name:r[2], exercises:(r[3]||'').split('|').filter(Boolean)}; });
+  allExercises = eRows.map(function(r) { return r[2]; }).filter(Boolean);
   lsSet(LS_WORKOUTS, workouts);
   lsSet(LS_EXERCISES, allExercises);
 }
 
 async function seedDefaults() {
+  var email = currentUser ? currentUser.email : 'unknown';
   var exSet = {};
   DEFAULT_WORKOUTS.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
-  var exRows = Object.keys(exSet).map(function(e, i) { return ['ex' + (i+1), e]; });
+  var exRows = Object.keys(exSet).map(function(e, i) { return [email, 'ex' + (i+1), e]; });
   await appendRows('Exercises', exRows);
-  await appendRows('Workouts', DEFAULT_WORKOUTS.map(function(w) { return [w.id, w.name, w.exercises.join('|')]; }));
+  await appendRows('Workouts', DEFAULT_WORKOUTS.map(function(w) { return [email, w.id, w.name, w.exercises.join('|')]; }));
 }
 
 async function loadPBs() {
@@ -588,34 +642,38 @@ function deleteResultLocally(resultId) {
 }
 
 async function syncResultToSheets(row, set) {
+  var email = currentUser ? currentUser.email : 'unknown';
+  var sheetRow = [email].concat(row);
   if (offlineMode || !accessToken) {
-    addToSyncQueue({type:'append', row:row, setId: set._localId});
+    addToSyncQueue({type:'append', row:sheetRow, setId: set._localId});
     return;
   }
   try {
     setSyncStatus('syncing');
-    set.sheetRow = await appendRows('Results', [row]);
+    set.sheetRow = await appendRows('Results', [sheetRow]);
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
-    var capturedRow = row.slice(), capturedSet = set;
+    var capturedRow = sheetRow.slice(), capturedSet = set;
     queueFailedSync(async function() { capturedSet.sheetRow = await appendRows('Results', [capturedRow]); });
   }
 }
 
 async function updateResultInSheets(row, set) {
+  var email = currentUser ? currentUser.email : 'unknown';
+  var sheetRow = [email].concat(row);
   if (offlineMode || !accessToken) {
-    addToSyncQueue({type:'update', row:row, localId:set._localId});
+    addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
     return;
   }
   try {
     setSyncStatus('syncing');
-    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, row);
-    else set.sheetRow = await appendRows('Results', [row]);
+    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, sheetRow);
+    else set.sheetRow = await appendRows('Results', [sheetRow]);
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
-    var capturedRow = row.slice(), capturedSet = set;
+    var capturedRow = sheetRow.slice(), capturedSet = set;
     queueFailedSync(async function() {
       if (capturedSet.sheetRow) await updateSheetRow('Results', capturedSet.sheetRow, capturedRow);
       else capturedSet.sheetRow = await appendRows('Results', [capturedRow]);
@@ -974,7 +1032,8 @@ async function loadSessionHistory() {
   // Use local cache, refresh from Sheets if online
   if (!offlineMode && accessToken) {
     try {
-      shRows = await readSheet('Results');
+      var rawResults = await readUserRows('Results');
+      shRows = rawResults.map(function(r) { return r.slice(1); });
       ehRows = shRows;
       lsSet(LS_RESULTS, shRows);
     } catch(e) {
@@ -1124,7 +1183,8 @@ function renderWorkoutsScreen() {
   workouts.forEach(function(w, wi) {
     var item = document.createElement('div'); item.className = 'workout-item';
     item.innerHTML = '<div class="workout-item-header" onclick="toggleWorkoutExpand(' + wi + ')">' +
-      '<div><div class="workout-item-name">' + w.name + '</div><div class="workout-item-meta">' + w.exercises.length + ' exercises</div></div>' +
+      '<div style="flex:1"><div class="workout-item-name">' + w.name + '</div><div class="workout-item-meta">' + w.exercises.length + ' exercises</div></div>' +
+      '<button onclick="event.stopPropagation();deleteWorkout(' + wi + ')" style="background:transparent;border:none;color:#555;font-size:16px;cursor:pointer;padding:4px 8px;margin-right:4px;" title="Delete workout">&#128465;</button>' +
       '<span class="workout-expand" id="wexp-' + wi + '">&#9660;</span></div>' +
       '<div class="workout-body" id="wbody-' + wi + '">' +
       w.exercises.map(function(ex, ei) {
@@ -1142,9 +1202,22 @@ function renderWorkoutsScreen() {
       '<div class="workout-add-ex"><select class="ex-sel" id="ex-sel-' + wi + '">' +
       allExercises.map(function(e) { return '<option>' + e + '</option>'; }).join('') +
       '<option value="__new__">+ New exercise...</option></select>' +
-      '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div></div>';
+      '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div>' +
+      '</div>';
     wrap.appendChild(item);
   });
+  // Exercise management section
+  var exSection = document.createElement('div');
+  exSection.style.cssText = 'margin-top:24px;padding:16px;background:#111;border-radius:8px;';
+  exSection.innerHTML = '<div style="font-family:var(--display);font-size:11px;letter-spacing:3px;color:#666;margin-bottom:12px;">ALL EXERCISES</div>' +
+    allExercises.map(function(ex) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a1a1a;">' +
+        '<span style="font-family:var(--mono);font-size:13px;color:#aaa;">' + ex + '</span>' +
+        '<button onclick="deleteGlobalExercise(\'' + ex.replace(/'/g,"\'") + '\')" style="background:transparent;border:none;color:#555;font-size:16px;cursor:pointer;padding:4px 8px;">&#128465;</button>' +
+        '</div>';
+    }).join('') +
+    '<button onclick="addGlobalExercise()" style="margin-top:12px;width:100%;background:transparent;border:1px dashed #333;color:#666;font-family:var(--mono);font-size:12px;letter-spacing:2px;padding:10px;border-radius:4px;cursor:pointer;">+ New Exercise</button>';
+  wrap.appendChild(exSection);
 }
 function toggleWorkoutExpand(wi) {
   document.getElementById('wbody-' + wi).classList.toggle('open');
@@ -1161,7 +1234,10 @@ async function addExToWorkout(wi) {
       allExercises.push(exName);
       setSyncStatus('syncing');
       allExercises.push(exName); lsSet(LS_EXERCISES, allExercises);
-      if (!offlineMode && accessToken) await appendRows('Exercises', [['ex'+Date.now(), exName]]);
+      if (!offlineMode && accessToken) {
+        var email = currentUser ? currentUser.email : 'unknown';
+        await appendRows('Exercises', [[email, 'ex'+Date.now(), exName]]);
+      }
       setSyncStatus('saved');
     }
   }
@@ -1196,23 +1272,79 @@ async function saveWorkoutToSheet(wi) {
   if (offlineMode || !accessToken) return;
   setSyncStatus('syncing');
   try {
+    var email = currentUser ? currentUser.email : 'unknown';
     var w = workouts[wi];
     var rows = await readSheet('Workouts');
-    var rowIdx = rows.findIndex(function(r) { return r[0] === w.id; });
-    if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, [w.id, w.name, w.exercises.join('|')]);
+    // col 1 is WorkoutID in new schema
+    var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
+    if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, [email, w.id, w.name, w.exercises.join('|')]);
     setSyncStatus('saved');
   } catch(e) { setSyncStatus('error'); }
 }
 async function addWorkout() {
   var name = prompt('Workout name:');
   if (!name || !name.trim()) return;
+  var email = currentUser ? currentUser.email : 'unknown';
   var id = 'w' + Date.now();
   workouts.push({id:id, name:name.trim(), exercises:[]});
   lsSet(LS_WORKOUTS, workouts);
   if (!offlineMode && accessToken) {
     setSyncStatus('syncing');
-    try { await appendRows('Workouts', [[id, name.trim(), '']]); setSyncStatus('saved'); }
+    try { await appendRows('Workouts', [[email, id, name.trim(), '']]); setSyncStatus('saved'); }
     catch(e) { setSyncStatus('error'); }
+  }
+  renderWorkoutsScreen(); renderWorkoutPicker();
+}
+
+async function deleteWorkout(wi) {
+  var w = workouts[wi];
+  if (!confirm('Delete workout "' + w.name + '"? This only removes the workout template, not your logged results.')) return;
+  workouts.splice(wi, 1);
+  lsSet(LS_WORKOUTS, workouts);
+  if (!offlineMode && accessToken) {
+    setSyncStatus('syncing');
+    try {
+      var rows = await readSheet('Workouts');
+      var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
+      if (rowIdx > 0) await deleteSheetRow('Workouts', rowIdx + 1);
+      setSyncStatus('saved');
+    } catch(e) { setSyncStatus('error'); }
+  }
+  renderWorkoutsScreen(); renderWorkoutPicker();
+}
+
+async function addGlobalExercise() {
+  var name = prompt('New exercise name:');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  if (allExercises.indexOf(name) >= 0) { showToast('Exercise already exists'); return; }
+  allExercises.push(name);
+  lsSet(LS_EXERCISES, allExercises);
+  if (!offlineMode && accessToken) {
+    var email = currentUser ? currentUser.email : 'unknown';
+    try { await appendRows('Exercises', [[email, 'ex'+Date.now(), name]]); } catch(e) {}
+  }
+  showToast('Exercise "' + name + '" added');
+}
+
+async function deleteGlobalExercise(name) {
+  if (!confirm('Delete exercise "' + name + '"? It will be removed from all workouts. Results are kept.')) return;
+  allExercises = allExercises.filter(function(e) { return e !== name; });
+  workouts.forEach(function(w) { w.exercises = w.exercises.filter(function(e) { return e !== name; }); });
+  lsSet(LS_EXERCISES, allExercises);
+  lsSet(LS_WORKOUTS, workouts);
+  if (!offlineMode && accessToken) {
+    setSyncStatus('syncing');
+    try {
+      var email = currentUser ? currentUser.email : 'unknown';
+      // Remove from Exercises sheet
+      var eRows = await readSheet('Exercises');
+      var eIdx = eRows.findIndex(function(r) { return r[2] === name && r[0] === email; });
+      if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
+      // Update all affected workouts
+      for (var i = 0; i < workouts.length; i++) { await saveWorkoutToSheet(i); }
+      setSyncStatus('saved');
+    } catch(e) { setSyncStatus('error'); }
   }
   renderWorkoutsScreen(); renderWorkoutPicker();
 }
