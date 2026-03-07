@@ -470,14 +470,12 @@ async function readUserRows(tab) {
   var rows = await readSheet(tab);
   if (!rows.length) return [];
   var header = rows[0];
-  // Detect if UserID column exists (first col of header row)
   var hasUserCol = header[0] === 'UserID';
+  // If no UserID column, sheet hasn't been manually migrated yet
   if (!hasUserCol) {
-    // Need to migrate - add UserID column to all data rows
-    await migrateSheetAddUser(tab, rows);
-    rows = await readSheet(tab);
+    showError('Please add a UserID column to your "' + tab + '" sheet in Google Sheets. See setup instructions.');
+    throw new Error('Sheet not migrated: ' + tab);
   }
-  // Filter by current user
   var email = currentUser ? currentUser.email : null;
   return rows.filter(function(r) {
     return r[0] && r[0] !== 'UserID' && r[0] !== '__DELETED__' && (!email || r[0] === email);
