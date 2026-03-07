@@ -307,21 +307,38 @@ var LS_RESULTS = 'lift_results';
 var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
+var LS_VERSION = 'lift_version';
+var CURRENT_VERSION = '4'; // bump to force cache clear
+
+// Clear stale cache on version mismatch
+(function() {
+  try {
+    if (localStorage.getItem(LS_VERSION) !== CURRENT_VERSION) {
+      localStorage.removeItem(LS_RESULTS);
+      localStorage.setItem(LS_VERSION, CURRENT_VERSION);
+    }
+  } catch(e) {}
+})();
 
 function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
 function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
 
 function getLocalResults() {
   var rows = lsGet(LS_RESULTS) || [];
-  return rows.filter(function(r) {
-    if (!r || !r[0]) return false;
-    if (r[0] === 'ResultID' || r[0] === 'UserID' || r[0] === '__DELETED__') return false;
-    // If row has email in col 0 (UserID accidentally saved), strip and remap
+  var result = [];
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r || !r[0]) continue;
+    if (r[0] === 'ResultID' || r[0] === 'UserID') continue;
+    if (r[0] === '__DELETED__') continue;
+    // If UserID was accidentally saved in col 0 (email address), strip it
     if (typeof r[0] === 'string' && r[0].indexOf('@') >= 0) {
-      return false;
+      result.push(r.slice(1)); // drop the email prefix
+      continue;
     }
-    return true;
-  });
+    result.push(r);
+  }
+  return result;
 }
 
 function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
@@ -1100,7 +1117,11 @@ function loadSessionHistory() {
   // Background refresh from Sheets if online
   if (!offlineMode && accessToken) {
     readUserRows('Results').then(function(rawResults) {
-      shRows = rawResults.map(function(r) { return r.slice(1); });
+      var sheetsRows = rawResults.map(function(r) { return r.slice(1); });
+      var localRows = getLocalResults();
+      var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+      var sheetsOnly = sheetsRows.filter(function(r) { return r[0] && !localIds.has(r[0]); });
+      shRows = localRows.concat(sheetsOnly);
       ehRows = shRows;
       lsSet(LS_RESULTS, shRows);
       renderSessionFilters(); renderSessionList();
