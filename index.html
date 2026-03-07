@@ -432,10 +432,14 @@ function xhrRequest(method, url, body, isRetry) {
       if (xhr.status >= 200 && xhr.status < 300) {
         try { resolve(JSON.parse(xhr.responseText)); } catch(e) { resolve({}); }
       } else if (xhr.status === 401 && !isRetry) {
-        // Token expired — refresh and retry once
         ensureFreshToken().then(function() {
           return xhrRequest(method, url, body, true);
         }).then(resolve).catch(reject);
+      } else if (xhr.status === 429 && !isRetry) {
+        // Rate limited — wait 2s and retry once
+        setTimeout(function() {
+          xhrRequest(method, url, body, true).then(resolve).catch(reject);
+        }, 2000);
       } else {
         reject(new Error('HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,150)));
       }
@@ -480,28 +484,47 @@ async function readUserRows(tab) {
   });
 }
 
+var LS_MIGRATED = 'lift_migrated_v2';
+
 async function migrateSheetAddUser(tab, rows) {
   if (!currentUser) return;
+  // Only migrate once per tab
+  var migratedTabs = lsGet(LS_MIGRATED) || {};
+  if (migratedTabs[tab]) return;
+
   var email = currentUser.email;
-  // Write header row first
   var headerMap = {
     'Workouts': ['UserID','WorkoutID','Name','ExerciseOrder'],
     'Exercises': ['UserID','ExerciseID','Name'],
     'Results': ['UserID','ResultID','Timestamp','WorkoutID','WorkoutName','ExerciseID','ExerciseName','Set','Weight','Reps','SessionDate']
   };
   var header = headerMap[tab];
-  if (header) await writeRow(tab, 1, header);
-  // Migrate existing data rows - prepend email
+
+  // Filter rows that need migrating (no email prefix yet)
   var dataRows = rows.filter(function(r) {
     var id = r[0];
-    return id && id !== 'WorkoutID' && id !== 'ExerciseID' && id !== 'ResultID' && id !== '__DELETED__';
+    return id && id !== 'WorkoutID' && id !== 'ExerciseID' && id !== 'ResultID' && id !== '__DELETED__' && id !== email;
   });
+
+  setLoadingMsg('Migrating ' + tab + ' (' + dataRows.length + ' rows)...');
+
+  // Write header first
+  if (header) {
+    await writeRow(tab, 1, header);
+    await new Promise(function(r) { setTimeout(r, 300); });
+  }
+
+  // Write rows with delay to avoid rate limit
   for (var i = 0; i < dataRows.length; i++) {
     var origRow = dataRows[i];
-    // Find this row's actual sheet position
     var sheetRowNum = rows.indexOf(origRow) + 1;
     await writeRow(tab, sheetRowNum, [email].concat(origRow));
+    if (i % 5 === 4) await new Promise(function(r) { setTimeout(r, 1000); }); // pause every 5 writes
   }
+
+  // Mark as done
+  migratedTabs[tab] = true;
+  lsSet(LS_MIGRATED, migratedTabs);
 }
 
 function writeRow(tab, rowNum, values) {
