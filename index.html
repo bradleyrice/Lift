@@ -835,10 +835,10 @@ function renderSessionList() {
     var card = document.createElement('div'); card.className = 'session-card';
     // onclick handled per-element above
     var sDate = s.date, sWid = s.wid;
-    card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail('' + s.date + '','' + s.wid + '','' + s.wname.replace(/'/g,"\'") + '')"><div class="session-date">' + s.date + '</div><div class="session-workout">' + s.wname + '</div></div>' +
-      '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail('' + s.date + '','' + s.wid + '','' + s.wname.replace(/'/g,"\'") + '')">' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
-      '<button class="session-delete-btn" onclick="deleteSession('' + s.date + '','' + s.wid + '')">&#128465;</button></div>' +
-      '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail('' + s.date + '','' + s.wid + '','' + s.wname.replace(/'/g,"\'") + '')">' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
+    card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"><div class="session-date">' + s.date + '</div><div class="session-workout">' + s.wname + '</div></div>' +
+      '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
+      '<button class="session-delete-btn" onclick="deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">f5d1</button></div>' +
+      '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"> ' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
     wrap.appendChild(card);
   });
 }
