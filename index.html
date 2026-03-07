@@ -1055,53 +1055,28 @@ function showToast(msg) {
   setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
-// Wait for GSI then enable sign-in
-// PWA: register service worker - must never block sign-in
+// PWA: register service worker
 try {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW reg failed:', e); });
+    navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW:', e); });
   }
-} catch(e) { console.log('SW error:', e); }
+} catch(e) {}
 
-document.getElementById('signin-btn').disabled = true;
-document.getElementById('signin-btn').style.opacity = '0.5';
-
-// Request notification permission
+// Notification helpers
 function requestNotifPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
 }
-
 function sendNotification(title, body) {
   if ('Notification' in window && Notification.permission === 'granted') {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({type:'notify', title:title, body:body});
     } else {
-      new Notification(title, {body:body, icon:'icon-192.png', badge:'icon-192.png', silent:false});
+      new Notification(title, {body:body, icon:'icon-192.png'});
     }
   }
 }
-
-function enableSignIn() {
-  var btn = document.getElementById('signin-btn');
-  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
-}
-(function waitGSI(n) {
-  try {
-    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-      enableSignIn();
-    } else if (n < 150) {
-      setTimeout(function() { waitGSI(n+1); }, 100);
-    } else {
-      // GSI failed to load - still enable button so user sees an error on tap
-      document.getElementById('signin-btn').textContent = 'Reload & try again';
-      enableSignIn();
-    }
-  } catch(e) {
-    enableSignIn(); // Always unblock the button on any error
-  }
-})(0);
 
 // Failsafe: always enable button after 5 seconds no matter what
 setTimeout(enableSignIn, 5000);
