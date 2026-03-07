@@ -1056,12 +1056,15 @@ function showToast(msg) {
 }
 
 // Wait for GSI then enable sign-in
+// PWA: register service worker - must never block sign-in
+try {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW reg failed:', e); });
+  }
+} catch(e) { console.log('SW error:', e); }
+
 document.getElementById('signin-btn').disabled = true;
 document.getElementById('signin-btn').style.opacity = '0.5';
-// PWA: register service worker for notifications
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW reg failed:', e); });
-}
 
 // Request notification permission
 function requestNotifPermission() {
@@ -1080,18 +1083,28 @@ function sendNotification(title, body) {
   }
 }
 
+function enableSignIn() {
+  var btn = document.getElementById('signin-btn');
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+}
 (function waitGSI(n) {
-  if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-    document.getElementById('signin-btn').disabled = false;
-    document.getElementById('signin-btn').style.opacity = '1';
-  } else if (n < 100) {
-    setTimeout(function() { waitGSI(n+1); }, 100);
-  } else {
-    document.getElementById('signin-btn').textContent = 'Reload & try again';
-    document.getElementById('signin-btn').disabled = false;
-    document.getElementById('signin-btn').style.opacity = '1';
+  try {
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+      enableSignIn();
+    } else if (n < 150) {
+      setTimeout(function() { waitGSI(n+1); }, 100);
+    } else {
+      // GSI failed to load - still enable button so user sees an error on tap
+      document.getElementById('signin-btn').textContent = 'Reload & try again';
+      enableSignIn();
+    }
+  } catch(e) {
+    enableSignIn(); // Always unblock the button on any error
   }
 })(0);
+
+// Failsafe: always enable button after 5 seconds no matter what
+setTimeout(enableSignIn, 5000);
 </script>
 <script src="https://accounts.google.com/gsi/client"></script>
 </body>
