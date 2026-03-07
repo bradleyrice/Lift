@@ -1,0 +1,5 @@
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.google.com https://accounts.google.com https://fonts.gstatic.com https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com; frame-src https://accounts.google.com;"
+    Access-Control-Allow-Origin = "*"
