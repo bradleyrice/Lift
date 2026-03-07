@@ -294,6 +294,25 @@ var DEFAULT_WORKOUTS = [
 
 // STATE
 var accessToken = null;
+var tokenClient = null;
+var tokenExpiry = 0;
+
+function ensureFreshToken() {
+  return new Promise(function(resolve, reject) {
+    if (accessToken && Date.now() < tokenExpiry - 60000) { resolve(); return; }
+    if (!tokenClient) { reject(new Error('No token client')); return; }
+    tokenClient.callback = function(resp) {
+      if (resp && resp.access_token) {
+        accessToken = resp.access_token;
+        tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
+        resolve();
+      } else {
+        reject(new Error('Token refresh failed'));
+      }
+    };
+    tokenClient.requestAccessToken({prompt: ''});
+  });
+}
 var workouts = [];
 var allExercises = [];
 var session = null;
@@ -324,24 +343,20 @@ function signIn() {
   showScreen('loading-screen');
   setLoadingMsg('Signing in...');
   try {
-    var client = google.accounts.oauth2.initTokenClient({
+    tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: function(resp) {
-        // Show everything we got back
-        var info = 'Response keys: ' + Object.keys(resp||{}).join(', ') + '\n';
-        info += 'access_token: ' + (resp.access_token ? resp.access_token.substring(0,20)+'... (len='+resp.access_token.length+')' : 'MISSING') + '\n';
-        info += 'error: ' + (resp.error || 'none') + '\n';
-        info += 'token_type: ' + (resp.token_type || 'none');
         if (resp && resp.access_token && resp.access_token.length > 10) {
           accessToken = resp.access_token;
+          tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
           initApp();
         } else {
-          showError('NO TOKEN:\n\n' + info);
+          showError('Sign in failed. Please try again.');
         }
       }
     });
-    client.requestAccessToken();
+    tokenClient.requestAccessToken();
   } catch(e) {
     showError('Sign in error: ' + e.message);
   }
@@ -358,7 +373,7 @@ function signOut() {
 var BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID;
 var enc = encodeURIComponent;
 
-function xhrRequest(method, url, body) {
+function xhrRequest(method, url, body, isRetry) {
   return new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
@@ -368,6 +383,11 @@ function xhrRequest(method, url, body) {
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try { resolve(JSON.parse(xhr.responseText)); } catch(e) { resolve({}); }
+      } else if (xhr.status === 401 && !isRetry) {
+        // Token expired — refresh and retry once
+        ensureFreshToken().then(function() {
+          return xhrRequest(method, url, body, true);
+        }).then(resolve).catch(reject);
       } else {
         reject(new Error('HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,150)));
       }
@@ -670,11 +690,16 @@ function addLogSetFromDetail() {
   // Sheet write is async but happens after focus
   setSyncStatus('syncing');
   var today = new Date().toLocaleDateString('en-GB');
-  var row = ['r'+Date.now(), newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
-  appendRows('Results', [row]).then(function(rowNum) {
+  var syncRow = ['r'+Date.now(), newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
+  appendRows('Results', [syncRow]).then(function(rowNum) {
     newSet.sheetRow = rowNum;
     setSyncStatus('saved');
-  }).catch(function(e) { setSyncStatus('error'); });
+  }).catch(function(e) {
+    setSyncStatus('error');
+    queueFailedSync(async function() {
+      newSet.sheetRow = await appendRows('Results', [syncRow]);
+    });
+  });
 }
 
 async function addLogSet(exId) {
@@ -693,7 +718,11 @@ async function addLogSet(exId) {
     var row = ['r'+Date.now(), newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, newIdx+1, lastWeight, '', today];
     newSet.sheetRow = await appendRows('Results', [row]);
     setSyncStatus('saved');
-  } catch(e) { setSyncStatus('error'); }
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow = row.slice();
+    queueFailedSync(async function() { newSet.sheetRow = await appendRows('Results', [capturedRow]); });
+  }
   rtQuickStart();
 }
 
@@ -712,7 +741,14 @@ async function updateLogSet(exId, setIdx, field, value) {
     if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, row);
     else set.sheetRow = await appendRows('Results', [row]);
     setSyncStatus('saved');
-  } catch(e) { setSyncStatus('error'); }
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow = row.slice(), capturedSet = set;
+    queueFailedSync(async function() {
+      if (capturedSet.sheetRow) await updateSheetRow('Results', capturedSet.sheetRow, capturedRow);
+      else capturedSet.sheetRow = await appendRows('Results', [capturedRow]);
+    });
+  }
   var timeEl = document.querySelector('#setrow-' + exId + '-' + setIdx + ' .set-time');
   if (timeEl && set.timestamp) { timeEl.textContent = new Date(set.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); timeEl.classList.add('logged'); }
   if (field === 'weight') { var w = parseFloat(value); if (!isNaN(w) && (!pbCache[exName] || w > pbCache[exName])) { pbCache[exName] = w; } }
@@ -729,9 +765,12 @@ async function removeLogSet(exId, setIdx) {
     setSyncStatus('syncing');
     try {
       await deleteSheetRow('Results', set.sheetRow);
-      // No row shifting needed - we blank the row instead of deleting
       setSyncStatus('saved');
-    } catch(e) { setSyncStatus('error'); }
+    } catch(e) {
+      setSyncStatus('error');
+      var capturedRow2 = set.sheetRow;
+      queueFailedSync(async function() { await deleteSheetRow('Results', capturedRow2); });
+    }
   }
   sets.splice(setIdx, 1); if (currentExLogName) { renderEldSets(); } else { renderLogExercises(); }
 }
@@ -765,15 +804,21 @@ async function cancelSession() {
 
 async function finishSession() {
   clearInterval(sessionTimerInterval);
-  await loadPBs();
-  showToast('Session complete!');
+  rtStop();
+  // Wait for any in-flight syncs to complete
+  var finishBtn = document.getElementById('finish-btn');
+  if (finishBtn) { finishBtn.textContent = 'Saving...'; finishBtn.disabled = true; }
+  await new Promise(function(r) { setTimeout(r, 2500); });
   session = null;
   document.getElementById('session-info').classList.remove('active');
   document.getElementById('session-actions').classList.remove('active');
   document.getElementById('rest-timer').classList.remove('visible');
   document.getElementById('exercises-list').innerHTML = '<div class="empty-state">Select a workout above and tap Start to begin logging.</div>';
   document.getElementById('session-timer').textContent = '0:00';
-  rtStop();
+  if (finishBtn) { finishBtn.textContent = 'Finish'; finishBtn.disabled = false; }
+  showToast('Session complete!');
+  await loadPBs();
+  await loadSessionHistory();
 }
 
 // SESSION HISTORY
@@ -1018,12 +1063,19 @@ function rtToggle() { rtRunning ? rtStop() : rtStart(); }
 function rtStart() {
   rtRunning = true;
   if (rtRemaining <= 0) rtRemaining = rtPreset;
+  var endTime = Date.now() + rtRemaining * 1000;
   document.getElementById('rt-play').innerHTML = '&#9646;&#9646;';
   document.getElementById('rt-play').classList.add('running');
-  rtInterval = setInterval(function() { rtRemaining--; rtUpdateDisplay(); if (rtRemaining <= 0) { rtStop(); showToast('Rest done!'); sendNotification('Rest Complete', 'Time to lift!'); } }, 1000);
+  scheduleNotification('Rest Complete ⏱', 'Time to lift!', rtRemaining);
+  rtInterval = setInterval(function() {
+    rtRemaining = Math.round((endTime - Date.now()) / 1000);
+    if (rtRemaining <= 0) { rtRemaining = 0; rtUpdateDisplay(); rtStop(); showToast('Rest done!'); }
+    else { rtUpdateDisplay(); }
+  }, 500);
 }
 function rtStop() {
   rtRunning = false; clearInterval(rtInterval);
+  cancelScheduledNotification();
   var b = document.getElementById('rt-play');
   if (b) { b.innerHTML = '&#9654;'; b.classList.remove('running'); }
 }
@@ -1042,12 +1094,45 @@ function rtUpdateDisplay() {
 }
 
 // UTILS
-function setSyncStatus(state) {
+var syncErrorToastShown = false;
+function setSyncStatus(state, errMsg) {
   var dot = document.getElementById('sync-dot'), lbl = document.getElementById('sync-label');
   if (!dot || !lbl) return;
   dot.className = state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '';
   dot.style.background = state === 'error' ? '#ff4747' : state === 'syncing' ? '#888' : '#2a4a00';
-  lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error' : 'synced';
+  lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error — tap to retry' : 'synced';
+  if (state === 'synced') syncErrorToastShown = false;
+  if (state === 'error' && !syncErrorToastShown) {
+    syncErrorToastShown = true;
+    showToast('\u26a0\ufe0f Sync failed — data not saved to Sheets');
+  }
+  // Make sync label tappable to retry when in error state
+  lbl.onclick = state === 'error' ? function() { retryFailedSyncs(); } : null;
+  lbl.style.cursor = state === 'error' ? 'pointer' : 'default';
+}
+
+var failedSyncQueue = [];
+function queueFailedSync(fn) {
+  failedSyncQueue.push(fn);
+}
+async function retryFailedSyncs() {
+  if (!failedSyncQueue.length) { showToast('Nothing to retry'); return; }
+  showToast('Retrying ' + failedSyncQueue.length + ' failed sync(s)...');
+  setSyncStatus('syncing');
+  var queue = failedSyncQueue.slice();
+  failedSyncQueue = [];
+  var failed = 0;
+  for (var i = 0; i < queue.length; i++) {
+    try { await queue[i](); } catch(e) { failed++; failedSyncQueue.push(queue[i]); }
+  }
+  if (failed > 0) {
+    setSyncStatus('error');
+    showToast('\u26a0\ufe0f ' + failed + ' sync(s) still failing');
+  } else {
+    setSyncStatus('saved');
+    showToast('\u2714 All synced successfully');
+    shRows = await readSheet('Results');
+  }
 }
 function showToast(msg) {
   var t = document.getElementById('toast');
@@ -1075,8 +1160,27 @@ function sendNotification(title, body) {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({type:'notify', title:title, body:body});
     } else {
-      new Notification(title, {body:body, icon:'icon-192.png', badge:'icon-192.png', silent:false});
+      new Notification(title, {body:body, icon:'icon-192.png'});
     }
+  }
+}
+
+function scheduleNotification(title, body, delaySeconds) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'scheduleNotify',
+        title: title,
+        body: body,
+        fireAt: Date.now() + delaySeconds * 1000
+      });
+    }
+  }
+}
+
+function cancelScheduledNotification() {
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({type: 'cancelNotify'});
   }
 }
 
