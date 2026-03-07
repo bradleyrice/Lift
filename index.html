@@ -379,7 +379,6 @@ function ensureFreshToken() {
 var workouts = [];
 var allExercises = [];
 var session = null;
-var sessionElapsed = 0;
 var sessionTimerInterval = null;
 var rtPreset = 90, rtRemaining = 90, rtRunning = false, rtInterval = null;
 var pbCache = {};
@@ -841,11 +840,10 @@ function startSession() {
   if (!workout) return;
   session = {workoutId:workout.id, workoutName:workout.name, startTime:new Date(), sets:{}};
   workout.exercises.forEach(function(ex) { session.sets[ex] = []; });
-  sessionElapsed = 0;
-  clearInterval(sessionTimerInterval);
+    clearInterval(sessionTimerInterval);
   sessionTimerInterval = setInterval(function() {
-    sessionElapsed++;
-    var m = Math.floor(sessionElapsed/60), s = sessionElapsed % 60;
+    var elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+    var m = Math.floor(elapsed / 60), s = elapsed % 60;
     document.getElementById('session-timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
     document.getElementById('session-meta').textContent = workout.name + '\n' + new Date().toLocaleDateString('en-GB');
   }, 1000);
@@ -1069,7 +1067,7 @@ async function removeLogSet(exId, setIdx) {
   if (!session) return;
   var exName = nameFromSid(exId);
   var sets = session.sets[exName];
-  if (!sets || sets.length <= 1) return;
+  if (!sets || sets.length === 0) return;
   var set = sets[setIdx];
   if (set._localId) deleteResultLocally(set._localId);
   deleteResultInSheets(set);
