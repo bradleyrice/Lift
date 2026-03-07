@@ -244,8 +244,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div id="sh-filters"></div><div id="sh-list"></div>
     </div>
     <div class="screen" id="screen-exercises">
-      <div class="screen-header"><div class="screen-title">Exercises</div><div class="screen-sub">history by movement</div></div>
-      <div id="eh-search-wrap"><input id="eh-search" type="search" placeholder="Search exercises..."></div>
+      <div class="screen-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><div class="screen-title">Exercises</div><div class="screen-sub">history by movement</div></div>
+        <button onclick="addGlobalExercise()" style="background:transparent;border:1px solid #333;color:#666;font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:7px 12px;border-radius:4px;cursor:pointer;margin-top:4px;">+ NEW</button>
+      </div>
+      <div id="eh-search-wrap"><input id="eh-search" type="search" placeholder="Search exercises..." oninput="renderExerciseHistory()"></div>
       <div id="eh-ex-list"></div>
     </div>
     <div class="screen" id="screen-workouts">
@@ -725,13 +728,36 @@ async function flushSyncQueue() {
   var queue = getSyncQueue();
   if (!queue.length) return;
   clearSyncQueue();
+  setSyncStatus('syncing');
   var failed = [];
+  var email = currentUser ? currentUser.email : 'unknown';
   for (var i = 0; i < queue.length; i++) {
     var op = queue[i];
     try {
-      if (op.type === 'append') await appendRows('Results', [op.row]);
-      else if (op.type === 'update') await appendRows('Results', [op.row]);
-      else if (op.type === 'delete' && op.sheetRow) await deleteSheetRow('Results', op.sheetRow);
+      if (op.type === 'append') {
+        await appendRows('Results', [op.row]);
+      } else if (op.type === 'update') {
+        await appendRows('Results', [op.row]);
+      } else if (op.type === 'delete' && op.sheetRow) {
+        await deleteSheetRow('Results', op.sheetRow);
+      } else if (op.type === 'workout-save') {
+        // Update or append workout row in Sheets
+        var wRows = await readSheet('Workouts');
+        var rowIdx = wRows.findIndex(function(r) { return r[1] === op.workout.id; });
+        var wRow = [email, op.workout.id, op.workout.name, op.workout.exercises.join('|')];
+        if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx + 1, wRow);
+        else await appendRows('Workouts', [wRow]);
+      } else if (op.type === 'workout-delete') {
+        var wRows2 = await readSheet('Workouts');
+        var delIdx = wRows2.findIndex(function(r) { return r[1] === op.workoutId; });
+        if (delIdx > 0) await deleteSheetRow('Workouts', delIdx + 1);
+      } else if (op.type === 'exercise-add') {
+        await appendRows('Exercises', [[email, 'ex'+Date.now(), op.name]]);
+      } else if (op.type === 'exercise-delete') {
+        var eRows = await readSheet('Exercises');
+        var eIdx = eRows.findIndex(function(r) { return r[2] === op.name && r[0] === email; });
+        if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
+      }
     } catch(e) { failed.push(op); }
   }
   if (failed.length) { lsSet(LS_SYNC_QUEUE, failed); setSyncStatus('error'); }
@@ -761,7 +787,7 @@ function goScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'sessions') loadSessionHistory();
-  if (name === 'exercises') { ehRows = []; renderExerciseHistory(); }
+  if (name === 'exercises') { ehRows = lsGet(LS_RESULTS) || shRows; renderExerciseHistory(); }
   if (name === 'workouts') renderWorkoutsScreen();
 }
 
@@ -1048,22 +1074,20 @@ async function finishSession() {
 }
 
 // SESSION HISTORY
-async function loadSessionHistory() {
-  document.getElementById('sh-list').innerHTML = '<div class="spinner">Loading...</div>';
-  // Use local cache, refresh from Sheets if online
+function loadSessionHistory() {
+  // Always render from local immediately — no spinner, no network wait
+  shRows = lsGet(LS_RESULTS) || shRows;
+  ehRows = shRows;
+  renderSessionFilters(); renderSessionList();
+  // Background refresh from Sheets if online
   if (!offlineMode && accessToken) {
-    try {
-      var rawResults = await readUserRows('Results');
+    readUserRows('Results').then(function(rawResults) {
       shRows = rawResults.map(function(r) { return r.slice(1); });
       ehRows = shRows;
       lsSet(LS_RESULTS, shRows);
-    } catch(e) {
-      shRows = lsGet(LS_RESULTS) || shRows;
-    }
-  } else {
-    shRows = lsGet(LS_RESULTS) || shRows;
+      renderSessionFilters(); renderSessionList();
+    }).catch(function() {});
   }
-  renderSessionFilters(); renderSessionList();
 }
 function renderSessionFilters() {
   var names = ['All'].concat(workouts.map(function(w) { return w.name.split('\u2014')[0].trim(); }));
@@ -1153,8 +1177,8 @@ function restStr(ts1, ts2) {
 }
 
 // EXERCISE HISTORY
-async function renderExerciseHistory() {
-  if (!ehRows.length) { document.getElementById('eh-ex-list').innerHTML = '<div class="spinner">Loading...</div>'; ehRows = await readSheet('Results'); }
+function renderExerciseHistory() {
+  if (!ehRows.length) { ehRows = lsGet(LS_RESULTS) || shRows; }
   var query = document.getElementById('eh-search').value.toLowerCase();
   var exSet = {};
   ehRows.filter(function(r) { return r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) { exSet[r[5]] = true; });
@@ -1168,8 +1192,12 @@ async function renderExerciseHistory() {
     var pb = pbCache[ex] !== undefined ? pbCache[ex] : null;
     var sc = new Set(exRows.map(function(r) { return r[9]; })).size;
     var item = document.createElement('div'); item.className = 'eh-ex-item';
-    item.onclick = function() { openExDetail(ex); };
-    item.innerHTML = '<div class="eh-ex-name">' + ex + '</div><div class="eh-ex-meta">' + (pb !== null ? 'PB ' + pb + 'kg' : 'No data') + '<br>' + sc + ' session' + (sc !== 1 ? 's' : '') + '</div>';
+    item.innerHTML = '<div style="flex:1;" onclick="openExDetail(\'' + ex.replace(/'/g,"\'") + '\')">' +
+      '<div class="eh-ex-name">' + ex + '</div>' +
+      '<div class="eh-ex-meta">' + (pb !== null ? 'PB ' + pb + 'kg' : 'No data') + ' · ' + sc + ' session' + (sc !== 1 ? 's' : '') + '</div></div>' +
+      '<button onclick="deleteGlobalExercise(\'' + ex.replace(/'/g,"\'") + '\')" style="background:transparent;border:none;color:#444;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;">&#128465;</button>';
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
     wrap.appendChild(item);
   });
 }
@@ -1227,18 +1255,7 @@ function renderWorkoutsScreen() {
       '</div>';
     wrap.appendChild(item);
   });
-  // Exercise management section
-  var exSection = document.createElement('div');
-  exSection.style.cssText = 'margin-top:24px;padding:16px;background:#111;border-radius:8px;';
-  exSection.innerHTML = '<div style="font-family:var(--display);font-size:11px;letter-spacing:3px;color:#666;margin-bottom:12px;">ALL EXERCISES</div>' +
-    allExercises.map(function(ex) {
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a1a1a;">' +
-        '<span style="font-family:var(--mono);font-size:13px;color:#aaa;">' + ex + '</span>' +
-        '<button onclick="deleteGlobalExercise(\'' + ex.replace(/'/g,"\'") + '\')" style="background:transparent;border:none;color:#555;font-size:16px;cursor:pointer;padding:4px 8px;">&#128465;</button>' +
-        '</div>';
-    }).join('') +
-    '<button onclick="addGlobalExercise()" style="margin-top:12px;width:100%;background:transparent;border:1px dashed #333;color:#666;font-family:var(--mono);font-size:12px;letter-spacing:2px;padding:10px;border-radius:4px;cursor:pointer;">+ New Exercise</button>';
-  wrap.appendChild(exSection);
+
 }
 function toggleWorkoutExpand(wi) {
   document.getElementById('wbody-' + wi).classList.toggle('open');
@@ -1290,29 +1307,39 @@ async function removeExFromWorkout(wi, ei) {
 }
 async function saveWorkoutToSheet(wi) {
   lsSet(LS_WORKOUTS, workouts);
-  if (offlineMode || !accessToken) return;
+  var w = workouts[wi];
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}});
+    return;
+  }
   setSyncStatus('syncing');
   try {
     var email = currentUser ? currentUser.email : 'unknown';
-    var w = workouts[wi];
     var rows = await readSheet('Workouts');
-    // col 1 is WorkoutID in new schema
     var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
-    if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, [email, w.id, w.name, w.exercises.join('|')]);
+    var wRow = [email, w.id, w.name, w.exercises.join('|')];
+    if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, wRow);
+    else await appendRows('Workouts', [wRow]);
     setSyncStatus('saved');
-  } catch(e) { setSyncStatus('error'); }
+  } catch(e) {
+    setSyncStatus('error');
+    addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}});
+  }
 }
 async function addWorkout() {
   var name = prompt('Workout name:');
   if (!name || !name.trim()) return;
   var email = currentUser ? currentUser.email : 'unknown';
   var id = 'w' + Date.now();
-  workouts.push({id:id, name:name.trim(), exercises:[]});
+  var newW = {id:id, name:name.trim(), exercises:[]};
+  workouts.push(newW);
   lsSet(LS_WORKOUTS, workouts);
-  if (!offlineMode && accessToken) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'workout-save', workout:{id:id, name:name.trim(), exercises:[]}});
+  } else {
     setSyncStatus('syncing');
     try { await appendRows('Workouts', [[email, id, name.trim(), '']]); setSyncStatus('saved'); }
-    catch(e) { setSyncStatus('error'); }
+    catch(e) { setSyncStatus('error'); addToSyncQueue({type:'workout-save', workout:{id:id, name:name.trim(), exercises:[]}}); }
   }
   renderWorkoutsScreen(); renderWorkoutPicker();
 }
@@ -1322,14 +1349,16 @@ async function deleteWorkout(wi) {
   if (!confirm('Delete workout "' + w.name + '"? This only removes the workout template, not your logged results.')) return;
   workouts.splice(wi, 1);
   lsSet(LS_WORKOUTS, workouts);
-  if (!offlineMode && accessToken) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'workout-delete', workoutId:w.id});
+  } else {
     setSyncStatus('syncing');
     try {
       var rows = await readSheet('Workouts');
       var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
       if (rowIdx > 0) await deleteSheetRow('Workouts', rowIdx + 1);
       setSyncStatus('saved');
-    } catch(e) { setSyncStatus('error'); }
+    } catch(e) { setSyncStatus('error'); addToSyncQueue({type:'workout-delete', workoutId:w.id}); }
   }
   renderWorkoutsScreen(); renderWorkoutPicker();
 }
@@ -1341,11 +1370,19 @@ async function addGlobalExercise() {
   if (allExercises.indexOf(name) >= 0) { showToast('Exercise already exists'); return; }
   allExercises.push(name);
   lsSet(LS_EXERCISES, allExercises);
-  if (!offlineMode && accessToken) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'exercise-add', name:name});
+  } else {
     var email = currentUser ? currentUser.email : 'unknown';
-    try { await appendRows('Exercises', [[email, 'ex'+Date.now(), name]]); } catch(e) {}
+    setSyncStatus('syncing');
+    try {
+      await appendRows('Exercises', [[email, 'ex'+Date.now(), name]]);
+      setSyncStatus('saved');
+    } catch(e) { setSyncStatus('error'); addToSyncQueue({type:'exercise-add', name:name}); }
   }
   showToast('Exercise "' + name + '" added');
+  renderExerciseHistory();
+  renderWorkoutsScreen();
 }
 
 async function deleteGlobalExercise(name) {
@@ -1354,20 +1391,27 @@ async function deleteGlobalExercise(name) {
   workouts.forEach(function(w) { w.exercises = w.exercises.filter(function(e) { return e !== name; }); });
   lsSet(LS_EXERCISES, allExercises);
   lsSet(LS_WORKOUTS, workouts);
-  if (!offlineMode && accessToken) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'exercise-delete', name:name});
+    workouts.forEach(function(w,wi) { addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}}); });
+  } else {
     setSyncStatus('syncing');
     try {
       var email = currentUser ? currentUser.email : 'unknown';
-      // Remove from Exercises sheet
       var eRows = await readSheet('Exercises');
       var eIdx = eRows.findIndex(function(r) { return r[2] === name && r[0] === email; });
       if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
-      // Update all affected workouts
       for (var i = 0; i < workouts.length; i++) { await saveWorkoutToSheet(i); }
       setSyncStatus('saved');
-    } catch(e) { setSyncStatus('error'); }
+    } catch(e) {
+      setSyncStatus('error');
+      addToSyncQueue({type:'exercise-delete', name:name});
+      workouts.forEach(function(w) { addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}}); });
+    }
   }
   renderWorkoutsScreen(); renderWorkoutPicker();
+  ehRows = lsGet(LS_RESULTS) || shRows;
+  renderExerciseHistory();
 }
 
 // REST TIMER
@@ -1470,6 +1514,14 @@ document.getElementById('signin-btn').style.opacity = '0.5';
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW reg failed:', e); });
 }
+
+// Flush sync queue when coming back online
+window.addEventListener('online', function() {
+  if (!offlineMode && accessToken) {
+    showToast('Back online — syncing...');
+    flushSyncQueue();
+  }
+});
 
 // Request notification permission
 function requestNotifPermission() {
