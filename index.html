@@ -311,6 +311,22 @@ var LS_LAST_SYNC = 'lift_last_sync';
 function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
 function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
 
+function getLocalResults() {
+  var rows = getLocalResults();
+  // Strip any header rows or UserID-prefixed rows that may have been saved incorrectly
+  return rows.filter(function(r) {
+    if (!r || !r[0]) return false;
+    // Skip header rows
+    if (r[0] === 'ResultID' || r[0] === 'UserID') return false;
+    // Skip rows that look like they still have UserID prepended (email in col 0)
+    if (typeof r[0] === 'string' && r[0].indexOf('@') >= 0) {
+      // Re-map: strip the email prefix so indices are correct
+      return false; // we'll handle these separately
+    }
+    return true;
+  });
+}
+
 function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
 function addToSyncQueue(op) { var q = getSyncQueue(); q.push(op); lsSet(LS_SYNC_QUEUE, q); }
 function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); }
@@ -393,7 +409,7 @@ function signIn() {
             currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
           }
           // If we had local offline data, merge it into Sheets first
-          var hadOfflineData = lsGet(LS_MODE) === 'offline' && (lsGet(LS_RESULTS) || []).length > 0;
+          var hadOfflineData = lsGet(LS_MODE) === 'offline' && (getLocalResults()).length > 0;
           lsSet(LS_MODE, 'google');
           if (hadOfflineData) {
             showScreen('loading-screen');
@@ -599,7 +615,7 @@ async function loadFromLocal() {
   }
   workouts = localWorkouts;
   allExercises = localExercises || [];
-  shRows = lsGet(LS_RESULTS) || [];
+  shRows = getLocalResults();
   ehRows = shRows;
   await loadPBs();
   renderWorkoutPicker();
@@ -650,7 +666,7 @@ async function loadPBs() {
 // LOCAL RESULT HELPERS
 function saveResultLocally(row) {
   // row = [ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
-  var results = lsGet(LS_RESULTS) || [];
+  var results = getLocalResults();
   var existingIdx = results.findIndex(function(r) { return r[0] === row[0]; });
   if (existingIdx >= 0) results[existingIdx] = row;
   else results.push(row);
@@ -659,7 +675,7 @@ function saveResultLocally(row) {
 }
 
 function deleteResultLocally(resultId) {
-  var results = lsGet(LS_RESULTS) || [];
+  var results = getLocalResults();
   var idx = results.findIndex(function(r) { return r[0] === resultId; });
   if (idx >= 0) { results[idx][0] = '__DELETED__'; lsSet(LS_RESULTS, results); }
   shRows = results; ehRows = results;
@@ -766,7 +782,7 @@ async function flushSyncQueue() {
 
 // Merge local data into Sheets (when offline user signs in)
 async function mergeLocalToSheets() {
-  var localResults = lsGet(LS_RESULTS) || [];
+  var localResults = getLocalResults();
   var sheetResults = await readSheet('Results');
   var sheetIds = new Set(sheetResults.map(function(r) { return r[0]; }));
   var toUpload = localResults.filter(function(r) {
@@ -787,7 +803,7 @@ function goScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'sessions') loadSessionHistory();
-  if (name === 'exercises') { ehRows = lsGet(LS_RESULTS) || shRows; renderExerciseHistory(); }
+  if (name === 'exercises') { ehRows = getLocalResults(); renderExerciseHistory(); }
   if (name === 'workouts') renderWorkoutsScreen();
 }
 
@@ -1076,7 +1092,7 @@ async function finishSession() {
 // SESSION HISTORY
 function loadSessionHistory() {
   // Always render from local immediately — no spinner, no network wait
-  shRows = lsGet(LS_RESULTS) || shRows;
+  shRows = getLocalResults();
   ehRows = shRows;
   renderSessionFilters(); renderSessionList();
   // Background refresh from Sheets if online
@@ -1178,7 +1194,7 @@ function restStr(ts1, ts2) {
 
 // EXERCISE HISTORY
 function renderExerciseHistory() {
-  if (!ehRows.length) { ehRows = lsGet(LS_RESULTS) || shRows; }
+  ehRows = getLocalResults();
   var query = document.getElementById('eh-search').value.toLowerCase();
   var exSet = {};
   ehRows.filter(function(r) { return r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) { exSet[r[5]] = true; });
@@ -1410,7 +1426,7 @@ async function deleteGlobalExercise(name) {
     }
   }
   renderWorkoutsScreen(); renderWorkoutPicker();
-  ehRows = lsGet(LS_RESULTS) || shRows;
+  ehRows = getLocalResults();
   renderExerciseHistory();
 }
 
