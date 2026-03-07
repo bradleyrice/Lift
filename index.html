@@ -202,8 +202,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 <div id="error-screen" style="display:none;">
   <div style="font-family:var(--display);font-size:24px;font-weight:900;color:#ff4747;">Setup Error</div>
   <div id="error-msg"></div>
-  <button id="retry-btn">Retry</button>
-  <button id="signout-btn-error" style="font-family:var(--mono);font-size:11px;background:transparent;border:1px solid #333;color:#555;padding:8px 16px;border-radius:4px;cursor:pointer;letter-spacing:2px;">Sign Out</button>
+  <button id="retry-btn" onclick="retryInit()">Retry</button>
+  <button id="signout-btn-error" onclick="signOut()" style="font-family:var(--mono);font-size:11px;background:transparent;border:1px solid #333;color:#555;padding:8px 16px;border-radius:4px;cursor:pointer;letter-spacing:2px;">Sign Out</button>
 </div>
 <div id="app" style="display:none;">
   <div id="screens">
@@ -211,10 +211,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div class="screen-header">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div><div class="screen-title">LOG</div><div id="sync-row"><span id="sync-dot"></span><span id="sync-label">synced</span></div></div>
-          <button id="signout-btn-app" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #222;border-radius:3px;color:#333;padding:5px 9px;cursor:pointer;margin-top:4px;">Sign out</button>
+          <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #222;border-radius:3px;color:#333;padding:5px 9px;cursor:pointer;margin-top:4px;">Sign out</button>
         </div>
       </div>
-      <div id="workout-picker"><select id="workout-select"></select><button id="start-session-btn">Start</button></div>
+      <div id="workout-picker"><select id="workout-select"></select><button id="start-session-btn" onclick="startSession()">Start</button></div>
       <div id="rest-timer">
         <div id="rest-inner">
           <div id="rt-ring-wrap">
@@ -222,16 +222,16 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
             <div id="rt-display">0:00</div>
           </div>
           <div style="flex:1;"><div style="font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Rest Timer</div>
-            <div id="rt-presets"><button class="rt-preset" data-preset="60">60s</button><button class="rt-preset active" data-preset="90">90s</button><button class="rt-preset" data-preset="120">2m</button><button class="rt-preset" data-preset="180">3m</button></div>
+            <div id="rt-presets"><button class="rt-preset" data-preset="60" onclick="rtSetPreset(60)">60s</button><button class="rt-preset active" data-preset="90" onclick="rtSetPreset(90)">90s</button><button class="rt-preset" data-preset="120" onclick="rtSetPreset(120)">2m</button><button class="rt-preset" data-preset="180" onclick="rtSetPreset(180)">3m</button></div>
           </div>
-          <div id="rt-btns"><button class="rt-btn" id="rt-play">&#9654;</button><button class="rt-btn" id="rt-reset" style="background:transparent;border:1px solid #222;color:#444;">&#8635;</button></div>
+          <div id="rt-btns"><button class="rt-btn" id="rt-play" onclick="rtToggle()">&#9654;</button><button class="rt-btn" id="rt-reset" onclick="rtReset()" style="background:transparent;border:1px solid #222;color:#444;">&#8635;</button></div>
         </div>
       </div>
       <div id="session-info"><div><div style="font-size:9px;color:#888;letter-spacing:3px;text-transform:uppercase;margin-bottom:2px;">Session Time</div><div id="session-timer">0:00</div></div><div id="session-meta"></div></div>
       <div id="exercises-list"><div class="empty-state">Select a workout above and tap Start to begin logging.</div></div>
-      <div id="session-actions" style="display:none;padding:0 16px 8px;display:none;gap:8px;">
-  <button id="finish-btn" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:16px 0;font-family:var(--display);font-size:18px;font-weight:900;letter-spacing:4px;text-transform:uppercase;cursor:pointer;">Finish</button>
-  <button id="cancel-btn" style="background:transparent;border:1px solid #444;color:#666;border-radius:6px;padding:16px 20px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">Cancel</button>
+      <div id="session-actions" style="display:none;padding:0 16px 8px;gap:8px;">
+  <button id="finish-btn" onclick="finishSession()" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:16px 0;font-family:var(--display);font-size:18px;font-weight:900;letter-spacing:4px;text-transform:uppercase;cursor:pointer;">Finish</button>
+  <button id="cancel-btn" onclick="cancelSession()" style="background:transparent;border:1px solid #444;color:#666;border-radius:6px;padding:16px 20px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">Cancel</button>
 </div>
     </div>
     <div class="screen" id="screen-sessions">
@@ -246,21 +246,21 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     <div class="screen" id="screen-workouts">
       <div class="screen-header"><div class="screen-title">Workouts</div><div class="screen-sub">manage routines</div></div>
       <div style="height:12px;"></div><div id="workouts-list"></div>
-      <button id="add-workout-btn" class="add-workout-btn">+ New Workout</button>
+      <button id="add-workout-btn" class="add-workout-btn" onclick="addWorkout()">+ New Workout</button>
     </div>
   </div>
   <div id="nav">
-    <button class="nav-btn active"  id="nav-log"><span class="nav-icon">&#9675;</span><span class="nav-label">Log</span></button>
-    <button class="nav-btn"  id="nav-sessions"><span class="nav-icon">&#9776;</span><span class="nav-label">Sessions</span></button>
-    <button class="nav-btn"  id="nav-exercises"><span class="nav-icon">&#9672;</span><span class="nav-label">Exercises</span></button>
-    <button class="nav-btn"  id="nav-workouts"><span class="nav-icon">&#10022;</span><span class="nav-label">Workouts</span></button>
+    <button class="nav-btn active" onclick="goScreen('log')" id="nav-log"><span class="nav-icon">&#9675;</span><span class="nav-label">Log</span></button>
+    <button class="nav-btn" onclick="goScreen('sessions')" id="nav-sessions"><span class="nav-icon">&#9776;</span><span class="nav-label">Sessions</span></button>
+    <button class="nav-btn" onclick="goScreen('exercises')" id="nav-exercises"><span class="nav-icon">&#9672;</span><span class="nav-label">Exercises</span></button>
+    <button class="nav-btn" onclick="goScreen('workouts')" id="nav-workouts"><span class="nav-icon">&#10022;</span><span class="nav-label">Workouts</span></button>
   </div>
 </div>
 <div id="ex-log-detail">
   <div id="eld-header">
-    <button id="close-ex-log-detail-btn" class="back-btn">&#8592; Back</button>
+    <button id="close-ex-log-detail-btn" class="back-btn" onclick="closeExLogDetail()">&#8592; Back</button>
     <div style="flex:1"><div id="eld-title"></div><div id="eld-pb"></div></div>
-    <button id="eld-rest-btn" class="rest-btn" style="padding:6px 12px;font-size:16px;">&#9201;</button>
+    <button id="eld-rest-btn" class="rest-btn" onclick="rtQuickStart()" style="padding:6px 12px;font-size:16px;">&#9201;</button>
   </div>
   <div id="eld-body">
     <div class="eld-history">
@@ -273,12 +273,12 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   </div>
   <div id="eld-footer">
     <div id="session-actions-detail" style="display:flex;gap:8px;">
-      <button id="eld-done-btn" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:14px 0;font-family:var(--display);font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer;">Done</button>
+      <button id="eld-done-btn" onclick="closeExLogDetail()" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:14px 0;font-family:var(--display);font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer;">Done</button>
     </div>
   </div>
 </div>
-<div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
-<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn">&#8592; Back</button><div id="exd-name"></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
+<div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn" onclick="closeSessionDetail()">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
+<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div id="exd-name"></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
 <div id="toast"></div>
 <script>
 // CONFIG
