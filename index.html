@@ -312,16 +312,13 @@ function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.p
 function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
 
 function getLocalResults() {
-  var rows = getLocalResults();
-  // Strip any header rows or UserID-prefixed rows that may have been saved incorrectly
+  var rows = lsGet(LS_RESULTS) || [];
   return rows.filter(function(r) {
     if (!r || !r[0]) return false;
-    // Skip header rows
-    if (r[0] === 'ResultID' || r[0] === 'UserID') return false;
-    // Skip rows that look like they still have UserID prepended (email in col 0)
+    if (r[0] === 'ResultID' || r[0] === 'UserID' || r[0] === '__DELETED__') return false;
+    // If row has email in col 0 (UserID accidentally saved), strip and remap
     if (typeof r[0] === 'string' && r[0].indexOf('@') >= 0) {
-      // Re-map: strip the email prefix so indices are correct
-      return false; // we'll handle these separately
+      return false;
     }
     return true;
   });
@@ -589,7 +586,12 @@ async function initApp() {
     var rawResults = await readUserRows('Results');
     // rawResults cols: [UserID, ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
     // Convert to legacy format (drop UserID) for internal use
-    shRows = rawResults.map(function(r) { return r.slice(1); });
+    var sheetsRows = rawResults.map(function(r) { return r.slice(1); });
+    // Merge: local rows take priority, add any Sheets rows not already local
+    var localRows = getLocalResults();
+    var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+    var sheetsOnly = sheetsRows.filter(function(r) { return r[0] && !localIds.has(r[0]); });
+    shRows = localRows.concat(sheetsOnly);
     ehRows = shRows;
     lsSet(LS_RESULTS, shRows);
     await loadPBs();
