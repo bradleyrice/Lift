@@ -195,17 +195,17 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div class="logo-sub">Workout Tracker</div>
   <button id="signin-btn" onclick="signIn()">Sign in with Google</button>
 </div>
-<div id="loading-screen">
+<div id="loading-screen" style="display:none;">
   <div class="loading-dots"><span></span><span></span><span></span></div>
   <div id="loading-msg">Loading...</div>
 </div>
-<div id="error-screen">
+<div id="error-screen" style="display:none;">
   <div style="font-family:var(--display);font-size:24px;font-weight:900;color:#ff4747;">Setup Error</div>
   <div id="error-msg"></div>
   <button id="retry-btn" onclick="retryInit()">Retry</button>
   <button onclick="signOut()" style="font-family:var(--mono);font-size:11px;background:transparent;border:1px solid #333;color:#555;padding:8px 16px;border-radius:4px;cursor:pointer;letter-spacing:2px;">Sign Out</button>
 </div>
-<div id="app">
+<div id="app" style="display:none;">
   <div id="screens">
     <div class="screen active" id="screen-log">
       <div class="screen-header">
