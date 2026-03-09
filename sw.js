@@ -1,4 +1,4 @@
-var CACHE = 'lift-v3';
+var CACHE = 'lift-v4';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
@@ -22,39 +22,58 @@ self.addEventListener('fetch', function(e) {
   }
 });
 
-// Store scheduled timer
+// Scheduled notification: store fireAt + payload, use setTimeout
+// NOTE: Service workers can be killed by the browser when idle (especially on iOS),
+// so this works reliably when the app is foregrounded or recently backgrounded,
+// but cannot be guaranteed on a locked iOS screen without a push server.
 var scheduledTimer = null;
+var scheduledPayload = null;
+
+function scheduleNext() {
+  if (!scheduledPayload) return;
+  var delay = scheduledPayload.fireAt - Date.now();
+  if (delay <= 0) {
+    // Already past — fire immediately
+    self.registration.showNotification(scheduledPayload.title, {
+      body: scheduledPayload.body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      tag: 'rest-timer'
+    });
+    scheduledPayload = null;
+    return;
+  }
+  if (scheduledTimer) clearTimeout(scheduledTimer);
+  scheduledTimer = setTimeout(function() {
+    if (!scheduledPayload) return;
+    self.registration.showNotification(scheduledPayload.title, {
+      body: scheduledPayload.body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      tag: 'rest-timer'
+    });
+    scheduledPayload = null;
+    scheduledTimer = null;
+  }, delay);
+}
 
 self.addEventListener('message', function(e) {
   if (!e.data) return;
 
-  // Schedule a notification at a future timestamp
   if (e.data.type === 'scheduleNotify') {
-    if (scheduledTimer) clearTimeout(scheduledTimer);
-    var delay = e.data.fireAt - Date.now();
-    if (delay <= 0) return;
-    scheduledTimer = setTimeout(function() {
-      self.registration.showNotification(e.data.title, {
-        body: e.data.body,
-        icon: 'icon-192.png',
-        badge: 'icon-192.png',
-        vibrate: [200, 100, 200],
-        requireInteraction: false,
-        tag: 'rest-timer'
-      });
-      scheduledTimer = null;
-    }, delay);
+    scheduledPayload = { title: e.data.title, body: e.data.body, fireAt: e.data.fireAt };
+    scheduleNext();
   }
 
-  // Cancel any scheduled notification (timer stopped/reset)
   if (e.data.type === 'cancelNotify') {
-    if (scheduledTimer) {
-      clearTimeout(scheduledTimer);
-      scheduledTimer = null;
-    }
+    if (scheduledTimer) { clearTimeout(scheduledTimer); scheduledTimer = null; }
+    scheduledPayload = null;
   }
 
-  // Legacy immediate notify (foreground fallback)
   if (e.data.type === 'notify') {
     self.registration.showNotification(e.data.title, {
       body: e.data.body,
@@ -64,4 +83,10 @@ self.addEventListener('message', function(e) {
       tag: 'rest-timer'
     });
   }
+});
+
+// When SW wakes for any reason, reschedule if we have a pending payload
+// (helps recover if SW was briefly suspended)
+self.addEventListener('activate', function() {
+  scheduleNext();
 });
