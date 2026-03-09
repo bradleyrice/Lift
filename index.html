@@ -13,15 +13,15 @@
 <title>LIFT</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--acid:#e8ff47;--bg:#0a0a0a;--surface:#111;--border:#252525;--muted:#444;--text:#f0f0f0;--mono:'Share Tech Mono',monospace;--display:'Barlow Condensed',sans-serif;--nav-h:64px;}
+:root{--acid:#e8ff47;--bg:#0a0a0a;--surface:#161616;--border:#2e2e2e;--muted:#777;--text:#f0f0f0;--mono:'Share Tech Mono',monospace;--display:'Barlow Condensed',sans-serif;--nav-h:64px;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:100%;overscroll-behavior:none;}
 #auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 24px;text-align:center;}
 .logo{font-family:var(--display);font-size:64px;font-weight:900;color:var(--acid);letter-spacing:4px;}
-.logo-sub{font-size:10px;color:#666;letter-spacing:4px;text-transform:uppercase;margin-top:4px;margin-bottom:56px;}
+.logo-sub{font-size:10px;color:#999;letter-spacing:4px;text-transform:uppercase;margin-top:4px;margin-bottom:56px;}
 #signin-btn{background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:16px 36px;font-family:var(--display);font-size:20px;font-weight:900;letter-spacing:3px;text-transform:uppercase;cursor:pointer;}
 #loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;}
-#loading-msg{font-size:14px;color:#555;letter-spacing:2px;text-align:center;padding:0 32px;line-height:1.8;}
+#loading-msg{font-size:14px;color:#b0b0b0;letter-spacing:2px;text-align:center;padding:0 32px;line-height:1.8;}
 #error-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;gap:16px;}
 #error-msg{font-size:12px;color:#ff4747;max-width:320px;line-height:1.8;word-break:break-all;}
 #retry-btn{background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:12px 28px;font-family:var(--display);font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer;}
@@ -29,73 +29,73 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #screens{flex:1;overflow:hidden;position:relative;}
 .screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-bottom:calc(var(--nav-h) + 16px);}
 .screen.active{display:block;}
-#nav{height:var(--nav-h);background:#0d0d0d;border-top:1px solid var(--border);display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:transparent;border:none;color:#555;transition:color 0.15s;padding:8px 0;}
+#nav{height:var(--nav-h);background:#131313;border-top:1px solid var(--border);display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:transparent;border:none;color:#b0b0b0;transition:color 0.15s;padding:8px 0;}
 .nav-btn.active{color:var(--acid);}
 .nav-icon{font-size:20px;line-height:1;}
 .nav-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;}
 .screen-header{padding:18px 16px 14px;border-bottom:2px solid var(--acid);position:sticky;top:0;background:var(--bg);z-index:10;}
 .screen-title{font-family:var(--display);font-size:32px;font-weight:900;}
-.screen-sub{font-size:12px;color:#777;letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+.screen-sub{font-size:12px;color:#aaa;letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
 #sync-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
 #sync-dot{width:6px;height:6px;border-radius:50%;background:#2a4a00;flex-shrink:0;transition:background 0.3s;}
 #sync-dot.syncing{background:#888;animation:pulse 0.8s infinite;}
 #sync-dot.error{background:#ff4747;}
-#sync-label{font-size:11px;color:#777;letter-spacing:2px;text-transform:uppercase;}
+#sync-label{font-size:11px;color:#aaa;letter-spacing:2px;text-transform:uppercase;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.2}}
 #workout-picker{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;}
 #workout-select{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:10px 8px;appearance:none;-webkit-appearance:none;overflow:hidden;text-overflow:ellipsis;}
 #start-session-btn{background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:10px 16px;font-family:var(--display);font-size:15px;font-weight:900;letter-spacing:2px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
-#session-info{padding:10px 16px;background:#0d0d0d;border-bottom:1px solid var(--border);display:none;justify-content:space-between;align-items:center;}
+#session-info{padding:10px 16px;background:#131313;border-bottom:1px solid var(--border);display:none;justify-content:space-between;align-items:center;}
 #session-info.active{display:flex;}
 #session-timer{font-family:var(--display);font-size:22px;font-weight:700;color:var(--acid);}
-#session-meta{font-size:10px;color:#888;text-align:right;white-space:pre-line;}
+#session-meta{font-size:10px;color:#b0b0b0;text-align:right;white-space:pre-line;}
 #exercises-list{padding:12px 16px 0;}
 .ex-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
 .ex-card-header{padding:11px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
 .ex-card-name{font-family:var(--display);font-size:18px;font-weight:700;}
 .ex-card-right{display:flex;align-items:center;gap:8px;}
-.pb-badge{font-size:12px;color:var(--acid);background:#1a1f00;border:1px solid #3a4a00;border-radius:3px;padding:2px 8px;letter-spacing:1px;}
-.rest-btn{background:transparent;border:1px solid #3a3a3a;border-radius:4px;color:#777;padding:3px 8px;font-size:13px;cursor:pointer;}
+.pb-badge{font-size:12px;color:var(--acid);background:#1e2400;border:1px solid #3a4a00;border-radius:3px;padding:2px 8px;letter-spacing:1px;}
+.rest-btn{background:transparent;border:1px solid #404040;border-radius:4px;color:#aaa;padding:3px 8px;font-size:13px;cursor:pointer;}
 .ex-card-body{padding:10px 14px;}
 .sets-hdr{display:grid;grid-template-columns:26px 1fr 1fr 62px 24px;gap:6px;margin-bottom:6px;}
-.sets-hdr span{font-size:11px;color:#888;text-align:center;letter-spacing:1px;text-transform:uppercase;}
+.sets-hdr span{font-size:11px;color:#b0b0b0;text-align:center;letter-spacing:1px;text-transform:uppercase;}
 .set-row{display:grid;grid-template-columns:26px 1fr 1fr 62px 24px;gap:6px;margin-bottom:6px;align-items:center;}
-.set-num{font-size:13px;color:#888;text-align:center;}
-.set-input{background:var(--bg);border:1px solid #333;border-radius:4px;color:var(--text);padding:8px 4px;font-size:16px;font-family:var(--mono);text-align:center;width:100%;-webkit-appearance:none;}
-.set-input:focus{outline:none;border-color:#555;}
-.set-time{font-size:11px;color:#555;text-align:center;letter-spacing:0.5px;}
+.set-num{font-size:13px;color:#b0b0b0;text-align:center;}
+.set-input{background:var(--bg);border:1px solid #383838;border-radius:4px;color:var(--text);padding:8px 4px;font-size:16px;font-family:var(--mono);text-align:center;width:100%;-webkit-appearance:none;}
+.set-input:focus{outline:none;border-color:#b0b0b0;}
+.set-time{font-size:11px;color:#b0b0b0;text-align:center;letter-spacing:0.5px;}
 .set-time.logged{color:#5a8a00;}
-.remove-btn{background:transparent;border:none;color:#666;font-size:16px;cursor:pointer;padding:0;line-height:1;}
+.remove-btn{background:transparent;border:none;color:#999;font-size:16px;cursor:pointer;padding:0;line-height:1;}
 .remove-btn:active{color:#ff4747;}
-.add-set-btn{background:transparent;border:1px dashed #3a3a3a;border-radius:4px;color:#777;padding:9px 0;width:100%;font-size:12px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-top:4px;font-family:var(--mono);}
+.add-set-btn{background:transparent;border:1px dashed #404040;border-radius:4px;color:#aaa;padding:9px 0;width:100%;font-size:12px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-top:4px;font-family:var(--mono);}
 .ex-list-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:13px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;position:relative;overflow:hidden;}
 .ex-list-item:active{background:#161616;}
 .ex-list-item.has-sets::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acid);}
 .ex-list-name{font-family:var(--display);font-size:18px;font-weight:700;}
-.ex-list-meta{font-size:12px;color:#888;text-align:right;line-height:1.6;}
-.ex-list-arrow{color:#555;font-size:14px;margin-left:10px;}
+.ex-list-meta{font-size:12px;color:#b0b0b0;text-align:right;line-height:1.6;}
+.ex-list-arrow{color:#b0b0b0;font-size:14px;margin-left:10px;}
 #ex-log-detail{position:fixed;inset:0;background:var(--bg);z-index:150;display:none;flex-direction:column;}
 #ex-log-detail.visible{display:flex;}
 #eld-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
 #eld-title{font-family:var(--display);font-size:22px;font-weight:900;flex:1;}
 #eld-pb{font-size:10px;color:var(--acid);letter-spacing:1px;}
-#eld-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 120px;}
+#eld-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 24px;}
 .eld-history{margin-bottom:20px;}
-.eld-history-title{font-size:11px;color:#666;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.eld-history-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .eld-hist-session{margin-bottom:12px;}
-.eld-hist-date{font-size:12px;color:#888;letter-spacing:1px;margin-bottom:5px;}
+.eld-hist-date{font-size:12px;color:#b0b0b0;letter-spacing:1px;margin-bottom:5px;}
 .eld-hist-row{display:grid;grid-template-columns:22px 64px 64px;gap:6px;margin-bottom:4px;font-size:15px;align-items:center;}
-.eld-hist-num{font-size:12px;color:#666;text-align:center;}
+.eld-hist-num{font-size:12px;color:#999;text-align:center;}
 .eld-hist-val{text-align:center;}
 .eld-hist-pb{color:var(--acid);}
-.eld-sets-title{font-size:11px;color:#666;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-#eld-footer{position:absolute;bottom:0;left:0;right:0;padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);}
+.eld-sets-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+#eld-footer{padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;}
 .add-set-btn:active{border-color:var(--acid);color:var(--acid);}
 #session-actions{margin:12px 0 0;display:none!important;}
 #session-actions.active{display:flex!important;}
 #finish-btn:active,#cancel-btn:active{opacity:0.8;}
-#rest-timer{background:#0d0d0d;border-bottom:1px solid var(--border);padding:12px 16px;display:none;}
+#rest-timer{background:#131313;border-bottom:1px solid var(--border);padding:12px 16px;display:none;}
 #rest-timer.visible{display:block;}
 #rest-inner{display:flex;align-items:center;gap:14px;}
 #rt-ring-wrap{position:relative;width:52px;height:52px;flex-shrink:0;}
@@ -103,46 +103,78 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #rt-ring-fg{fill:none;stroke:var(--acid);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:138.23;stroke-dashoffset:0;transition:stroke-dashoffset 0.9s linear,stroke 0.3s;}
 #rt-display{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:bold;}
 #rt-presets{display:flex;gap:5px;flex-wrap:wrap;}
-.rt-preset{font-family:var(--mono);font-size:12px;padding:4px 9px;border-radius:3px;cursor:pointer;border:1px solid #333;background:var(--surface);color:#777;}
-.rt-preset.active{background:#1a1f00;color:var(--acid);border-color:#3a4a00;}
+.rt-preset{font-family:var(--mono);font-size:12px;padding:4px 9px;border-radius:3px;cursor:pointer;border:1px solid #383838;background:var(--surface);color:#aaa;}
+.rt-preset.active{background:#1e2400;color:var(--acid);border-color:#4a5a00;}
 #rt-btns{display:flex;gap:6px;}
 .rt-btn{font-family:var(--mono);font-size:12px;padding:8px 12px;border-radius:4px;cursor:pointer;border:none;font-weight:bold;}
 #rt-play{background:var(--acid);color:var(--bg);}
 #rt-play.running{background:#ff4747;}
+/* ── STATS SCREEN ── */
+#stats-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column;}
+#stats-screen.visible{display:flex;}
+#stats-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
+#stats-title{font-family:var(--display);font-size:20px;font-weight:900;flex:1;}
+#stats-sub{font-size:10px;color:#999;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+#stats-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;}
+.stats-section{margin-bottom:28px;}
+.stats-section-title{font-size:10px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.stats-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+.stats-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center;}
+.stats-card-val{font-family:var(--display);font-size:18px;font-weight:900;color:var(--acid);}
+.stats-card-lbl{font-size:9px;color:#999;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.stats-chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;}
+.stats-chart-title{font-size:10px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+.stats-chart{width:100%;height:110px;display:block;}
+/* ELD summary strip */
+#eld-stats-strip{background:#131313;border-top:1px solid var(--border);padding:10px 16px;display:none;flex-shrink:0;}
+.eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
+.eld-strip-card{text-align:center;}
+.eld-strip-val{font-family:var(--display);font-size:14px;font-weight:900;color:var(--acid);line-height:1;}
+.eld-strip-lbl{font-size:8px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.eld-strip-vs{font-size:8px;color:#888;margin-top:2px;height:10px;}
+.eld-gauge-wrap{height:3px;background:#2a2a2a;border-radius:2px;margin-top:4px;overflow:hidden;}
+.eld-gauge-bar{height:3px;background:var(--acid);border-radius:2px;transition:width 0.4s ease;}
+.eld-gauge-beat{background:#44ff88;}
+#eld-vol-row{border-top:1px solid var(--border);margin-top:8px;padding-top:8px;}
+#eld-vol-row .eld-gauge-wrap{height:5px;margin-top:6px;}
+.eld-vol-numbers{display:flex;justify-content:space-between;align-items:baseline;}
+.eld-vol-fraction{font-family:var(--display);font-size:15px;font-weight:900;color:var(--acid);}
+.eld-vol-remaining{font-size:9px;color:#888;letter-spacing:1px;}
+#sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
 #sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
 #sh-filters::-webkit-scrollbar{display:none;}
-.filter-btn{font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:6px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:#888;white-space:nowrap;}
+.filter-btn{font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:6px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:#b0b0b0;white-space:nowrap;}
 .filter-btn.active{background:var(--acid);color:var(--bg);border-color:var(--acid);}
 #sh-list{padding:12px 16px 0;}
 .session-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;cursor:pointer;}
 .session-card-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;}
-.session-delete-btn{background:transparent;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;line-height:1;}
+.session-delete-btn{background:transparent;border:none;color:#b0b0b0;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;line-height:1;}
 .session-delete-btn:active{color:#ff4747;}
 .session-date{font-size:14px;color:var(--acid);letter-spacing:1px;}
 .session-workout{font-family:var(--display);font-size:16px;font-weight:700;}
-.session-meta-r{font-size:12px;color:#888;text-align:right;}
+.session-meta-r{font-size:12px;color:#b0b0b0;text-align:right;}
 .session-exercises{padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px;}
 .session-ex-tag{font-size:12px;color:#999;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:3px 8px;}
 #session-detail{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;overflow-y:auto;padding-bottom:40px;}
 #session-detail.visible{display:block;}
 #sd-header{padding:16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:var(--bg);z-index:10;}
-.back-btn{background:transparent;border:1px solid var(--border);border-radius:4px;color:#666;font-family:var(--mono);font-size:11px;padding:6px 12px;cursor:pointer;letter-spacing:1px;}
+.back-btn{background:transparent;border:1px solid var(--border);border-radius:4px;color:#999;font-family:var(--mono);font-size:11px;padding:6px 12px;cursor:pointer;letter-spacing:1px;}
 #sd-title{font-family:var(--display);font-size:20px;font-weight:900;}
 #sd-content{padding:14px 16px 0;}
 .sd-ex{margin-bottom:18px;}
 .sd-ex-name{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:8px;color:var(--acid);}
 .sd-set-row{display:grid;grid-template-columns:26px 80px 80px 1fr;gap:8px;margin-bottom:5px;align-items:center;}
-.sd-set-num{font-size:12px;color:#777;text-align:center;}
+.sd-set-num{font-size:12px;color:#aaa;text-align:center;}
 .sd-set-val{font-size:14px;text-align:center;}
-.sd-set-time{font-size:12px;color:#888;}
+.sd-set-time{font-size:12px;color:#b0b0b0;}
 .sd-rest{font-size:12px;color:#4a8a00;padding-left:34px;margin-bottom:5px;}
 #eh-search-wrap{padding:12px 16px;border-bottom:1px solid var(--border);}
 #eh-search{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:15px;padding:10px 12px;}
-#eh-search:focus{outline:none;border-color:#444;}
+#eh-search:focus{outline:none;border-color:#707070;}
 #eh-ex-list{padding:12px 16px 0;}
 .eh-ex-item{padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
 .eh-ex-name{font-family:var(--display);font-size:15px;font-weight:700;}
-.eh-ex-meta{font-size:12px;color:#888;text-align:right;}
+.eh-ex-meta{font-size:12px;color:#b0b0b0;text-align:right;}
 #ex-detail{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;overflow-y:auto;padding-bottom:40px;}
 #ex-detail.visible{display:block;}
 #exd-header{padding:16px;border-bottom:2px solid var(--acid);position:sticky;top:0;background:var(--bg);z-index:10;}
@@ -150,9 +182,9 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #exd-pb{font-size:11px;color:var(--acid);margin-top:3px;}
 #exd-content{padding:14px 16px 0;}
 .exd-session{margin-bottom:18px;}
-.exd-session-date{font-size:13px;color:#888;letter-spacing:2px;margin-bottom:6px;}
+.exd-session-date{font-size:13px;color:#b0b0b0;letter-spacing:2px;margin-bottom:6px;}
 .exd-set-row{display:grid;grid-template-columns:26px 70px 70px 1fr;gap:8px;margin-bottom:5px;align-items:center;font-size:13px;}
-.exd-set-num{color:#777;text-align:center;font-size:12px;}
+.exd-set-num{color:#aaa;text-align:center;font-size:12px;}
 .exd-set-val{text-align:center;}
 .exd-rest{font-size:12px;color:#4a8a00;padding-left:34px;margin-bottom:4px;}
 .exd-pb-row{color:var(--acid);}
@@ -160,28 +192,28 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .workout-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
 .workout-item-header{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
 .workout-item-name{font-family:var(--display);font-size:17px;font-weight:700;}
-.workout-item-meta{font-size:12px;color:#888;}
-.workout-expand{color:#888;font-size:14px;transition:transform 0.2s;}
+.workout-item-meta{font-size:12px;color:#b0b0b0;}
+.workout-expand{color:#b0b0b0;font-size:14px;transition:transform 0.2s;}
 .workout-expand.open{transform:rotate(180deg);}
 .workout-body{display:none;border-top:1px solid var(--border);padding:10px 14px;}
 .workout-body.open{display:block;}
 .workout-ex-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #161616;}
 .workout-ex-row:last-of-type{border-bottom:none;}
 .workout-ex-name{font-size:15px;}
-.remove-ex-btn{background:transparent;border:none;color:#666;font-size:15px;cursor:pointer;padding:2px 6px;}
+.remove-ex-btn{background:transparent;border:none;color:#999;font-size:15px;cursor:pointer;padding:2px 6px;}
 .remove-ex-btn:active{color:#ff4747;}
 .reorder-btns{display:flex;flex-direction:column;}
-.reorder-btn{background:transparent;border:none;color:#666;font-size:11px;cursor:pointer;padding:1px 6px;line-height:1.2;}
+.reorder-btn{background:transparent;border:none;color:#999;font-size:11px;cursor:pointer;padding:1px 6px;line-height:1.2;}
 .reorder-btn:active{color:var(--acid);}
-.reorder-btn:disabled{color:#333;cursor:default;}
+.reorder-btn:disabled{color:#999;cursor:default;}
 .workout-add-ex{margin-top:10px;display:flex;gap:8px;}
 .ex-sel{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 10px;appearance:none;-webkit-appearance:none;}
 .workout-add-btn{background:var(--acid);color:var(--bg);border:none;border-radius:4px;padding:7px 14px;font-family:var(--display);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
-.add-workout-btn{margin:0 16px 12px;width:calc(100% - 32px);background:transparent;border:1px dashed #3a3a3a;border-radius:6px;color:#777;padding:12px;font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;}
-.empty-state{color:#777;font-size:15px;text-align:center;margin-top:60px;padding:0 32px;line-height:1.8;}
+.add-workout-btn{margin:0 16px 12px;width:calc(100% - 32px);background:transparent;border:1px dashed #404040;border-radius:6px;color:#aaa;padding:12px;font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;}
+.empty-state{color:#aaa;font-size:15px;text-align:center;margin-top:60px;padding:0 32px;line-height:1.8;}
 #toast{position:fixed;bottom:calc(var(--nav-h) + 16px);left:50%;transform:translateX(-50%) translateY(40px);background:var(--acid);color:var(--bg);padding:10px 24px;border-radius:6px;font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:2px;z-index:999;white-space:nowrap;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;opacity:0;}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
-.spinner{color:#666;font-size:13px;text-align:center;margin-top:40px;animation:pulse 1s infinite;}
+.spinner{color:#999;font-size:13px;text-align:center;margin-top:40px;animation:pulse 1s infinite;}
 .loading-dots{display:flex;gap:6px;justify-content:center;}
 .loading-dots span{width:8px;height:8px;border-radius:50%;background:var(--acid);animation:bounce 1.2s infinite;}
 .loading-dots span:nth-child(2){animation-delay:0.2s;}
@@ -194,6 +226,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div class="logo">LIFT</div>
   <div class="logo-sub">Workout Tracker</div>
   <button id="signin-btn" onclick="signIn()">Sign in with Google</button>
+  <div style="margin:8px 0;font-family:var(--mono);font-size:11px;color:#707070;letter-spacing:2px;">OR</div>
+  <button onclick="useOffline()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-family:var(--mono);font-size:12px;letter-spacing:2px;padding:12px 24px;border-radius:6px;cursor:pointer;">Use Offline</button>
+  <div style="margin-top:16px;font-family:var(--mono);font-size:10px;color:#707070;letter-spacing:1px;max-width:280px;text-align:center;line-height:1.6;">
+    ⚠️ Offline mode stores data on this device only. Data may be lost if you clear Safari storage or reinstall the app.
+  </div>
 </div>
 <div id="loading-screen" style="display:none;">
   <div class="loading-dots"><span></span><span></span><span></span></div>
@@ -203,7 +240,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div style="font-family:var(--display);font-size:24px;font-weight:900;color:#ff4747;">Setup Error</div>
   <div id="error-msg"></div>
   <button id="retry-btn" onclick="retryInit()">Retry</button>
-  <button id="signout-btn-error" onclick="signOut()" style="font-family:var(--mono);font-size:11px;background:transparent;border:1px solid #333;color:#555;padding:8px 16px;border-radius:4px;cursor:pointer;letter-spacing:2px;">Sign Out</button>
+  <button id="signout-btn-error" onclick="signOut()" style="font-family:var(--mono);font-size:11px;background:transparent;border:1px solid #383838;color:#b0b0b0;padding:8px 16px;border-radius:4px;cursor:pointer;letter-spacing:2px;">Sign Out</button>
 </div>
 <div id="app" style="display:none;">
   <div id="screens">
@@ -211,7 +248,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div class="screen-header">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div><div class="screen-title">LOG</div><div id="sync-row"><span id="sync-dot"></span><span id="sync-label">synced</span></div></div>
-          <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #222;border-radius:3px;color:#333;padding:5px 9px;cursor:pointer;margin-top:4px;">Sign out</button>
+          <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;margin-top:4px;">Sign out</button>
         </div>
       </div>
       <div id="workout-picker"><select id="workout-select"></select><button id="start-session-btn" onclick="startSession()">Start</button></div>
@@ -224,14 +261,14 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
           <div style="flex:1;"><div style="font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Rest Timer</div>
             <div id="rt-presets"><button class="rt-preset" data-preset="60" onclick="rtSetPreset(60)">60s</button><button class="rt-preset active" data-preset="90" onclick="rtSetPreset(90)">90s</button><button class="rt-preset" data-preset="120" onclick="rtSetPreset(120)">2m</button><button class="rt-preset" data-preset="180" onclick="rtSetPreset(180)">3m</button></div>
           </div>
-          <div id="rt-btns"><button class="rt-btn" id="rt-play" onclick="rtToggle()">&#9654;</button><button class="rt-btn" id="rt-reset" onclick="rtReset()" style="background:transparent;border:1px solid #222;color:#444;">&#8635;</button></div>
+          <div id="rt-btns"><button class="rt-btn" id="rt-play" onclick="rtToggle()">&#9654;</button><button class="rt-btn" id="rt-reset" onclick="rtReset()" style="background:transparent;border:1px solid #2e2e2e;color:#707070;">&#8635;</button></div>
         </div>
       </div>
-      <div id="session-info"><div><div style="font-size:9px;color:#888;letter-spacing:3px;text-transform:uppercase;margin-bottom:2px;">Session Time</div><div id="session-timer">0:00</div></div><div id="session-meta"></div></div>
+      <div id="session-info"><div><div style="font-size:9px;color:#b0b0b0;letter-spacing:3px;text-transform:uppercase;margin-bottom:2px;">Session Time</div><div id="session-timer">0:00</div></div><div id="session-meta"></div></div>
       <div id="exercises-list"><div class="empty-state">Select a workout above and tap Start to begin logging.</div></div>
       <div id="session-actions" style="display:none;padding:0 16px 8px;gap:8px;">
   <button id="finish-btn" onclick="finishSession()" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:16px 0;font-family:var(--display);font-size:18px;font-weight:900;letter-spacing:4px;text-transform:uppercase;cursor:pointer;">Finish</button>
-  <button id="cancel-btn" onclick="cancelSession()" style="background:transparent;border:1px solid #444;color:#666;border-radius:6px;padding:16px 20px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">Cancel</button>
+  <button id="cancel-btn" onclick="cancelSession()" style="background:transparent;border:1px solid #444;color:#999;border-radius:6px;padding:16px 20px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">Cancel</button>
 </div>
     </div>
     <div class="screen" id="screen-sessions">
@@ -239,14 +276,19 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div id="sh-filters"></div><div id="sh-list"></div>
     </div>
     <div class="screen" id="screen-exercises">
-      <div class="screen-header"><div class="screen-title">Exercises</div><div class="screen-sub">history by movement</div></div>
-      <div id="eh-search-wrap"><input id="eh-search" type="search" placeholder="Search exercises..."></div>
+      <div class="screen-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><div class="screen-title">Exercises</div><div class="screen-sub">history by movement</div></div>
+        <button onclick="addGlobalExercise()" style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:7px 12px;border-radius:4px;cursor:pointer;margin-top:4px;">+ NEW</button>
+      </div>
+      <div id="eh-search-wrap"><input id="eh-search" type="search" placeholder="Search exercises..." oninput="renderExerciseHistory()"></div>
       <div id="eh-ex-list"></div>
     </div>
     <div class="screen" id="screen-workouts">
-      <div class="screen-header"><div class="screen-title">Workouts</div><div class="screen-sub">manage routines</div></div>
+      <div class="screen-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><div class="screen-title">Workouts</div><div class="screen-sub">manage routines</div></div>
+        <button onclick="addWorkout()" style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:7px 12px;border-radius:4px;cursor:pointer;margin-top:4px;">+ NEW</button>
+      </div>
       <div style="height:12px;"></div><div id="workouts-list"></div>
-      <button id="add-workout-btn" class="add-workout-btn" onclick="addWorkout()">+ New Workout</button>
     </div>
   </div>
   <div id="nav">
@@ -260,7 +302,26 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div id="eld-header">
     <button id="close-ex-log-detail-btn" class="back-btn" onclick="closeExLogDetail()">&#8592; Back</button>
     <div style="flex:1"><div id="eld-title"></div><div id="eld-pb"></div></div>
-    <button id="eld-rest-btn" class="rest-btn" onclick="rtQuickStart()" style="padding:6px 12px;font-size:16px;">&#9201;</button>
+    <button onclick="openStatsFromEld()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-size:16px;padding:6px 11px;border-radius:4px;cursor:pointer;" title="Stats">&#9650;&#9650;</button>
+  </div>
+  <div id="eld-rest-bar" style="display:none;background:#131313;border-bottom:1px solid var(--border);padding:10px 16px;flex-shrink:0;align-items:center;gap:14px;">
+    <div style="position:relative;width:44px;height:44px;flex-shrink:0;">
+      <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(-90deg);"><circle cx="22" cy="22" r="18" fill="none" stroke="#1e1e1e" stroke-width="3"/><circle id="eld-rt-ring" cx="22" cy="22" r="18" fill="none" stroke="var(--acid)" stroke-width="3" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="0" style="transition:stroke-dashoffset 0.9s linear,stroke 0.3s;"/></svg>
+      <div id="eld-rt-display" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:bold;">0:00</div>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;">Rest Timer</div>
+      <div style="display:flex;gap:5px;">
+        <button class="rt-preset" data-eld-preset="60" onclick="rtSetPreset(60)">60s</button>
+        <button class="rt-preset" data-eld-preset="90" onclick="rtSetPreset(90)">90s</button>
+        <button class="rt-preset" data-eld-preset="120" onclick="rtSetPreset(120)">2m</button>
+        <button class="rt-preset" data-eld-preset="180" onclick="rtSetPreset(180)">3m</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="rt-btn" id="eld-rt-play" onclick="rtToggle()" style="background:var(--acid);color:var(--bg);">&#9654;</button>
+      <button class="rt-btn" onclick="rtReset()" style="background:transparent;border:1px solid #2e2e2e;color:#707070;">&#8635;</button>
+    </div>
   </div>
   <div id="eld-body">
     <div class="eld-history">
@@ -271,6 +332,38 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     <div id="eld-sets-list"></div>
     <button id="add-set-detail-btn" class="add-set-btn" onclick="addLogSetFromDetail()" style="margin-top:8px;">+ Add Set</button>
   </div>
+  <div id="eld-stats-strip">
+    <div class="eld-strip-inner">
+      <div class="eld-strip-card">
+        <div class="eld-strip-val" id="eld-strip-int">—</div>
+        <div class="eld-strip-lbl">Intensity</div>
+        <div class="eld-strip-vs" id="eld-strip-int-vs"></div>
+        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-int" style="width:0%"></div></div>
+      </div>
+      <div class="eld-strip-card">
+        <div class="eld-strip-val" id="eld-strip-pb">—</div>
+        <div class="eld-strip-lbl">PB</div>
+        <div class="eld-strip-vs" style="height:10px;"></div>
+        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-pb" style="width:0%"></div></div>
+      </div>
+      <div class="eld-strip-card">
+        <div class="eld-strip-val" id="eld-strip-e1rm">—</div>
+        <div class="eld-strip-lbl">e1RM</div>
+        <div class="eld-strip-vs" style="height:10px;"></div>
+        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-e1rm" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div id="eld-vol-row">
+      <div class="eld-vol-numbers">
+        <div>
+          <span style="font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;">Volume</span>
+          <div class="eld-vol-fraction"><span id="eld-strip-vol">—</span><span style="color:#555;font-size:11px;"> / </span><span id="eld-vol-target">—</span></div>
+        </div>
+        <div id="eld-vol-remaining" class="eld-vol-remaining"></div>
+      </div>
+      <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-vol" style="width:0%"></div></div>
+    </div>
+  </div>
   <div id="eld-footer">
     <div id="session-actions-detail" style="display:flex;gap:8px;">
       <button id="eld-done-btn" onclick="closeExLogDetail()" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:14px 0;font-family:var(--display);font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer;">Done</button>
@@ -279,12 +372,60 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 </div>
 <div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn" onclick="closeSessionDetail()">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
 <div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div id="exd-name"></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
+<div id="stats-screen">
+  <div id="stats-header">
+    <button class="back-btn" onclick="closeStats()">&#8592; Back</button>
+    <div style="flex:1"><div id="stats-title">Stats</div><div id="stats-sub"></div></div>
+  </div>
+  <div id="stats-body">
+    <div class="stats-section">
+      <div class="stats-section-title">Summary</div>
+      <div class="stats-cards">
+        <div class="stats-card"><div class="stats-card-val" id="sc-sessions">—</div><div class="stats-card-lbl">Sessions</div></div>
+        <div class="stats-card"><div class="stats-card-val" id="sc-pb">—</div><div class="stats-card-lbl">PB</div></div>
+        <div class="stats-card"><div class="stats-card-val" id="sc-e1rm">—</div><div class="stats-card-lbl">e1RM</div></div>
+      </div>
+      <div class="stats-cards" style="grid-template-columns:1fr 1fr;">
+        <div class="stats-card"><div class="stats-card-val" id="sc-vol-last">—</div><div class="stats-card-lbl">Last Volume</div></div>
+        <div class="stats-card"><div class="stats-card-val" id="sc-vol-best">—</div><div class="stats-card-lbl">Best Volume</div></div>
+      </div>
+      <div class="stats-cards" style="grid-template-columns:1fr 1fr;">
+        <div class="stats-card"><div class="stats-card-val" id="sc-int-last">—</div><div class="stats-card-lbl">Last Intensity</div></div>
+        <div class="stats-card"><div class="stats-card-val" id="sc-int-best">—</div><div class="stats-card-lbl">Best Intensity</div></div>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">Volume per Session</div>
+      <div class="stats-chart-wrap">
+        <canvas id="chart-volume" class="stats-chart"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">Intensity per Session (avg kg/rep)</div>
+      <div class="stats-chart-wrap">
+        <canvas id="chart-intensity" class="stats-chart"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">Max Weight per Session</div>
+      <div class="stats-chart-wrap">
+        <canvas id="chart-maxwt" class="stats-chart"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">Estimated 1RM (Epley)</div>
+      <div class="stats-chart-wrap">
+        <canvas id="chart-e1rm" class="stats-chart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 <script>
 // CONFIG
 var CLIENT_ID = '459205389789-8s4a9lrbpk7d9e7cbivg4sfsi56k0e2r.apps.googleusercontent.com';
 var SHEET_ID  = '1-KElLUfG8oQgRq4ObNQSaiGReKb57BJ1f8VQK6SgnqI';
-var SCOPES    = 'https://www.googleapis.com/auth/spreadsheets';
+var SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email';
 var DEFAULT_WORKOUTS = [
   {id:'w1',name:'Day 1 \u2014 Chest, Shoulders & Biceps',exercises:['Iso Lateral Bench Press','Incline Iso Lateral Bench Press','Pectoral Machine','Iso Lateral Machine Shoulder Press','Machine Side Lateral Raise','Machine Bicep Curl','Barbell Curl']},
   {id:'w2',name:'Day 2 \u2014 Quads, Calves & Adductors',exercises:['Sissy Squat','Leg Extension','Straight Leg Kick','Seated Straight Leg Calf Raise','Seated Calf Raise','Hip Adductor']},
@@ -292,12 +433,102 @@ var DEFAULT_WORKOUTS = [
   {id:'w4',name:'Day 4 \u2014 Hamstrings, Glutes & Abductors',exercises:['Standing Hip Extension Squat Machine','Seated Leg Curl','Iso Lateral Kneeling Leg Curl','Back Extension','Hip Abductor','Hip Adductor']}
 ];
 
+// LOCAL STORAGE LAYER
+var LS_WORKOUTS = 'lift_workouts';
+var LS_EXERCISES = 'lift_exercises';
+var LS_RESULTS = 'lift_results';
+var LS_SYNC_QUEUE = 'lift_sync_queue';
+var LS_MODE = 'lift_mode'; // 'google' or 'offline'
+var LS_LAST_SYNC = 'lift_last_sync';
+var LS_VERSION = 'lift_version';
+var CURRENT_VERSION = '7'; // bump to force cache clear
+
+// Clear stale cache on version mismatch
+(function() {
+  try {
+    if (localStorage.getItem(LS_VERSION) !== CURRENT_VERSION) {
+      localStorage.removeItem(LS_RESULTS);
+      localStorage.setItem(LS_VERSION, CURRENT_VERSION);
+    }
+  } catch(e) {}
+})();
+
+function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
+
+function isValidResultRow(r) {
+  // A valid result row must have:
+  // r[0] = ResultID (starts with 'r' or similar, not a number or field name)
+  // r[2] = WorkoutID (starts with 'w')
+  // r[9] = SessionDate (DD/MM/YYYY format)
+  if (!r || r.length < 10) return false;
+  if (!r[0] || r[0] === 'ResultID' || r[0] === 'UserID' || r[0] === '__DELETED__') return false;
+  // Reject rows where col 0 looks like a number (shifted row)
+  if (!isNaN(parseFloat(r[0])) && isFinite(r[0])) return false;
+  // Reject rows where col 0 looks like a field name (header row)
+  if (['Reps','Weight','Set','ExerciseID','ExerciseName','WorkoutID','WorkoutName','Timestamp','SessionDate'].indexOf(r[0]) >= 0) return false;
+  // WorkoutID should start with 'w'
+  if (!r[2] || typeof r[2] !== 'string' || r[2].charAt(0) !== 'w') return false;
+  // SessionDate should match DD/MM/YYYY
+  if (!r[9] || !/^\d{2}\/\d{2}\/\d{4}$/.test(r[9])) return false;
+  return true;
+}
+
+function getLocalResults() {
+  var rows = lsGet(LS_RESULTS) || [];
+  var result = [];
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r || !r[0]) continue;
+    if (r[0] === 'ResultID' || r[0] === 'UserID') continue;
+    if (r[0] === '__DELETED__') continue;
+    // If UserID was accidentally saved in col 0 (email address), strip it
+    if (typeof r[0] === 'string' && r[0].indexOf('@') >= 0) {
+      r = r.slice(1);
+    }
+    if (isValidResultRow(r)) result.push(r);
+  }
+  return result;
+}
+
+function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
+function addToSyncQueue(op) { var q = getSyncQueue(); q.push(op); lsSet(LS_SYNC_QUEUE, q); }
+function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); }
+
+// MODE
+var offlineMode = false;
+function useOffline() {
+  offlineMode = true;
+  lsSet(LS_MODE, 'offline');
+  initApp();
+}
+
 // STATE
 var accessToken = null;
+var tokenClient = null;
+var tokenExpiry = 0;
+var currentUser = null; // { email, name }
+var LS_USER = 'lift_user';
+
+function ensureFreshToken() {
+  return new Promise(function(resolve, reject) {
+    if (accessToken && Date.now() < tokenExpiry - 60000) { resolve(); return; }
+    if (!tokenClient) { reject(new Error('No token client')); return; }
+    tokenClient.callback = function(resp) {
+      if (resp && resp.access_token) {
+        accessToken = resp.access_token;
+        tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
+        resolve();
+      } else {
+        reject(new Error('Token refresh failed'));
+      }
+    };
+    tokenClient.requestAccessToken({prompt: ''});
+  });
+}
 var workouts = [];
 var allExercises = [];
 var session = null;
-var sessionElapsed = 0;
 var sessionTimerInterval = null;
 var rtPreset = 90, rtRemaining = 90, rtRunning = false, rtInterval = null;
 var pbCache = {};
@@ -313,7 +544,7 @@ function showScreen(id) {
 }
 function setLoadingMsg(m) { document.getElementById('loading-msg').textContent = m; }
 function showError(msg) { document.getElementById('error-msg').textContent = msg; showScreen('error-screen'); }
-function retryInit() { showScreen('loading-screen'); initApp(); }
+function retryInit() { showScreen('loading-screen'); offlineMode = (lsGet(LS_MODE) === 'offline'); initApp(); }
 
 // AUTH
 function signIn() {
@@ -324,24 +555,37 @@ function signIn() {
   showScreen('loading-screen');
   setLoadingMsg('Signing in...');
   try {
-    var client = google.accounts.oauth2.initTokenClient({
+    tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
-      callback: function(resp) {
-        // Show everything we got back
-        var info = 'Response keys: ' + Object.keys(resp||{}).join(', ') + '\n';
-        info += 'access_token: ' + (resp.access_token ? resp.access_token.substring(0,20)+'... (len='+resp.access_token.length+')' : 'MISSING') + '\n';
-        info += 'error: ' + (resp.error || 'none') + '\n';
-        info += 'token_type: ' + (resp.token_type || 'none');
+      callback: async function(resp) {
         if (resp && resp.access_token && resp.access_token.length > 10) {
           accessToken = resp.access_token;
+          tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
+          offlineMode = false;
+          // Fetch user email
+          try {
+            var uResp = await xhrRequest('GET', 'https://www.googleapis.com/oauth2/v2/userinfo', null);
+            currentUser = { email: uResp.email, name: uResp.name || uResp.email };
+            lsSet(LS_USER, currentUser);
+          } catch(e) {
+            currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
+          }
+          // If we had local offline data, merge it into Sheets first
+          var hadOfflineData = lsGet(LS_MODE) === 'offline' && (getLocalResults()).length > 0;
+          lsSet(LS_MODE, 'google');
+          if (hadOfflineData) {
+            showScreen('loading-screen');
+            setLoadingMsg('Merging local data to Sheets...');
+            try { await mergeLocalToSheets(); } catch(e) { console.warn('Merge failed:', e); }
+          }
           initApp();
         } else {
-          showError('NO TOKEN:\n\n' + info);
+          showError('Sign in failed. Please try again.');
         }
       }
     });
-    client.requestAccessToken();
+    tokenClient.requestAccessToken();
   } catch(e) {
     showError('Sign in error: ' + e.message);
   }
@@ -349,8 +593,9 @@ function signIn() {
 
 function signOut() {
   if (accessToken) { try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
-  accessToken = null; session = null;
+  accessToken = null; session = null; offlineMode = false;
   clearInterval(sessionTimerInterval);
+  lsSet(LS_MODE, null);
   showScreen('auth-screen');
 }
 
@@ -358,7 +603,7 @@ function signOut() {
 var BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID;
 var enc = encodeURIComponent;
 
-function xhrRequest(method, url, body) {
+function xhrRequest(method, url, body, isRetry) {
   return new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
@@ -368,6 +613,15 @@ function xhrRequest(method, url, body) {
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try { resolve(JSON.parse(xhr.responseText)); } catch(e) { resolve({}); }
+      } else if (xhr.status === 401 && !isRetry) {
+        ensureFreshToken().then(function() {
+          return xhrRequest(method, url, body, true);
+        }).then(resolve).catch(reject);
+      } else if (xhr.status === 429 && !isRetry) {
+        // Rate limited — wait 2s and retry once
+        setTimeout(function() {
+          xhrRequest(method, url, body, true).then(resolve).catch(reject);
+        }, 2000);
       } else {
         reject(new Error('HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,150)));
       }
@@ -393,6 +647,66 @@ function readSheet(tab) {
   });
 }
 
+// Read rows for current user only (col 0 = UserID)
+async function readUserRows(tab) {
+  var rows = await readSheet(tab);
+  if (!rows.length) return [];
+  var header = rows[0];
+  var hasUserCol = header[0] === 'UserID';
+  // If no UserID column, sheet hasn't been manually migrated yet
+  if (!hasUserCol) {
+    showError('Please add a UserID column to your "' + tab + '" sheet in Google Sheets. See setup instructions.');
+    throw new Error('Sheet not migrated: ' + tab);
+  }
+  var email = currentUser ? currentUser.email : null;
+  return rows.filter(function(r) {
+    return r[0] && r[0] !== 'UserID' && r[0] !== '__DELETED__' && (!email || r[0] === email);
+  });
+}
+
+var LS_MIGRATED = 'lift_migrated_v2';
+
+async function migrateSheetAddUser(tab, rows) {
+  if (!currentUser) return;
+  // Only migrate once per tab
+  var migratedTabs = lsGet(LS_MIGRATED) || {};
+  if (migratedTabs[tab]) return;
+
+  var email = currentUser.email;
+  var headerMap = {
+    'Workouts': ['UserID','WorkoutID','Name','ExerciseOrder'],
+    'Exercises': ['UserID','ExerciseID','Name'],
+    'Results': ['UserID','ResultID','Timestamp','WorkoutID','WorkoutName','ExerciseID','ExerciseName','Set','Weight','Reps','SessionDate']
+  };
+  var header = headerMap[tab];
+
+  // Filter rows that need migrating (no email prefix yet)
+  var dataRows = rows.filter(function(r) {
+    var id = r[0];
+    return id && id !== 'WorkoutID' && id !== 'ExerciseID' && id !== 'ResultID' && id !== '__DELETED__' && id !== email;
+  });
+
+  setLoadingMsg('Migrating ' + tab + ' (' + dataRows.length + ' rows)...');
+
+  // Write header first
+  if (header) {
+    await writeRow(tab, 1, header);
+    await new Promise(function(r) { setTimeout(r, 300); });
+  }
+
+  // Write rows with delay to avoid rate limit
+  for (var i = 0; i < dataRows.length; i++) {
+    var origRow = dataRows[i];
+    var sheetRowNum = rows.indexOf(origRow) + 1;
+    await writeRow(tab, sheetRowNum, [email].concat(origRow));
+    if (i % 5 === 4) await new Promise(function(r) { setTimeout(r, 1000); }); // pause every 5 writes
+  }
+
+  // Mark as done
+  migratedTabs[tab] = true;
+  lsSet(LS_MIGRATED, migratedTabs);
+}
+
 function writeRow(tab, rowNum, values) {
   var cols = String.fromCharCode(64 + Math.min(values.length, 26));
   var url = BASE_URL + '/values/' + enc(tab) + '!A' + rowNum + ':' + cols + rowNum + '?valueInputOption=RAW';
@@ -413,7 +727,7 @@ function updateSheetRow(tab, rowNum, values) {
 }
 
 async function deleteSheetRow(tab, rowNum) {
-  var blanks = ['__DELETED__','','','','','','','','',''];
+  var blanks = ['__DELETED__','','','','','','','','','',''];
   await writeRow(tab, rowNum, blanks);
 }
 
@@ -421,59 +735,240 @@ async function deleteSheetRow(tab, rowNum) {
 async function initApp() {
   showScreen('loading-screen');
   try {
+    if (offlineMode) {
+      setLoadingMsg('Loading local data...');
+      await loadFromLocal();
+      showScreen('app');
+      return;
+    }
     setLoadingMsg('Connecting...');
     if (!accessToken || accessToken.length < 10) {
       showError('No valid token. Please sign out and sign in again.');
       return;
     }
-    setLoadingMsg('Checking spreadsheet...');
-    // Sheets already exist - just verify we can read them
-    var testRead = await readSheet('Workouts');
-    console.log('Workouts sheet rows:', testRead.length);
     setLoadingMsg('Loading workouts...');
     await loadWorkoutsAndExercises();
     setLoadingMsg('Loading history...');
-    shRows = await readSheet('Results');
+    var rawResults = await readUserRows('Results');
+    // rawResults cols: [UserID, ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
+    // Convert to legacy format (drop UserID) for internal use
+    var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+    // Merge: local rows take priority, add any Sheets rows not already local
+    var localRows = getLocalResults();
+    var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+    var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
+    shRows = localRows.concat(sheetsOnly);
     ehRows = shRows;
+    lsSet(LS_RESULTS, shRows);
     await loadPBs();
     renderWorkoutPicker();
     renderWorkoutsScreen();
+    // Flush any queued offline writes
+    setTimeout(flushSyncQueue, 1000);
     showScreen('app');
   } catch(e) {
     showError('Error: ' + e.message);
   }
 }
 
+async function loadFromLocal() {
+  // Load workouts from local or seed defaults
+  var localWorkouts = lsGet(LS_WORKOUTS);
+  var localExercises = lsGet(LS_EXERCISES);
+  if (!localWorkouts || localWorkouts.length === 0) {
+    setLoadingMsg('Setting up your routine...');
+    seedLocalDefaults();
+    localWorkouts = lsGet(LS_WORKOUTS);
+    localExercises = lsGet(LS_EXERCISES);
+  }
+  workouts = localWorkouts;
+  allExercises = localExercises || [];
+  shRows = getLocalResults();
+  ehRows = shRows;
+  await loadPBs();
+  renderWorkoutPicker();
+  renderWorkoutsScreen();
+}
+
+function seedLocalDefaults() {
+  var exSet = {};
+  DEFAULT_WORKOUTS.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
+  lsSet(LS_WORKOUTS, DEFAULT_WORKOUTS.map(function(w) { return {id:w.id, name:w.name, exercises:w.exercises}; }));
+  lsSet(LS_EXERCISES, Object.keys(exSet));
+  lsSet(LS_RESULTS, []);
+}
+
 async function loadWorkoutsAndExercises() {
-  var wRows = await readSheet('Workouts');
-  var eRows = await readSheet('Exercises');
-  var wData = wRows.filter(function(r) { return r[0] && r[0] !== 'WorkoutID'; });
-  if (wData.length === 0) {
+  var wRows = await readUserRows('Workouts');
+  var eRows = await readUserRows('Exercises');
+  // wRows cols: [UserID, WorkoutID, Name, ExerciseOrder]
+  if (wRows.length === 0) {
     setLoadingMsg('Setting up your routine...');
     await seedDefaults();
-    wRows = await readSheet('Workouts');
-    eRows = await readSheet('Exercises');
-    wData = wRows.filter(function(r) { return r[0] && r[0] !== 'WorkoutID'; });
+    wRows = await readUserRows('Workouts');
+    eRows = await readUserRows('Exercises');
   }
-  workouts = wData.map(function(r) { return {id:r[0], name:r[1], exercises:(r[2]||'').split('|').filter(Boolean)}; });
-  allExercises = eRows.filter(function(r) { return r[0] && r[0] !== 'ExerciseID'; }).map(function(r) { return r[1]; }).filter(Boolean);
+  workouts = wRows.map(function(r) { return {id:r[1], name:r[2], exercises:(r[3]||'').split('|').filter(Boolean)}; });
+  allExercises = eRows.map(function(r) { return r[2]; }).filter(Boolean);
+  lsSet(LS_WORKOUTS, workouts);
+  lsSet(LS_EXERCISES, allExercises);
 }
 
 async function seedDefaults() {
+  var email = currentUser ? currentUser.email : 'unknown';
   var exSet = {};
   DEFAULT_WORKOUTS.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
-  var exRows = Object.keys(exSet).map(function(e, i) { return ['ex' + (i+1), e]; });
+  var exRows = Object.keys(exSet).map(function(e, i) { return [email, 'ex' + (i+1), e]; });
   await appendRows('Exercises', exRows);
-  await appendRows('Workouts', DEFAULT_WORKOUTS.map(function(w) { return [w.id, w.name, w.exercises.join('|')]; }));
+  await appendRows('Workouts', DEFAULT_WORKOUTS.map(function(w) { return [email, w.id, w.name, w.exercises.join('|')]; }));
 }
 
 async function loadPBs() {
-  var rows = await readSheet('Results');
   pbCache = {};
-  rows.filter(function(r) { return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) {
+  shRows.filter(function(r) { return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) {
     var ex = r[5], w = parseFloat(r[7]);
     if (ex && !isNaN(w) && (!pbCache[ex] || w > pbCache[ex])) pbCache[ex] = w;
   });
+}
+
+// LOCAL RESULT HELPERS
+function saveResultLocally(row) {
+  // row = [ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
+  var results = getLocalResults();
+  var existingIdx = results.findIndex(function(r) { return r[0] === row[0]; });
+  if (existingIdx >= 0) results[existingIdx] = row;
+  else results.push(row);
+  lsSet(LS_RESULTS, results);
+  shRows = results; ehRows = results;
+}
+
+function deleteResultLocally(resultId) {
+  var results = getLocalResults();
+  var idx = results.findIndex(function(r) { return r[0] === resultId; });
+  if (idx >= 0) { results[idx][0] = '__DELETED__'; lsSet(LS_RESULTS, results); }
+  shRows = results; ehRows = results;
+}
+
+async function syncResultToSheets(row, set) {
+  var email = currentUser ? currentUser.email : 'unknown';
+  var sheetRow = [email].concat(row);
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'append', row:sheetRow, setId: set._localId});
+    return;
+  }
+  try {
+    setSyncStatus('syncing');
+    set.sheetRow = await appendRows('Results', [sheetRow]);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow = sheetRow.slice(), capturedSet = set;
+    queueFailedSync(async function() { capturedSet.sheetRow = await appendRows('Results', [capturedRow]); });
+  }
+}
+
+async function updateResultInSheets(row, set) {
+  var email = currentUser ? currentUser.email : 'unknown';
+  var sheetRow = [email].concat(row);
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
+    return;
+  }
+  try {
+    setSyncStatus('syncing');
+    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, sheetRow);
+    else set.sheetRow = await appendRows('Results', [sheetRow]);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow = sheetRow.slice(), capturedSet = set;
+    queueFailedSync(async function() {
+      if (capturedSet.sheetRow) await updateSheetRow('Results', capturedSet.sheetRow, capturedRow);
+      else capturedSet.sheetRow = await appendRows('Results', [capturedRow]);
+    });
+  }
+}
+
+async function deleteResultInSheets(set) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+    return;
+  }
+  if (!set.sheetRow) return;
+  try {
+    setSyncStatus('syncing');
+    await deleteSheetRow('Results', set.sheetRow);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+    var capturedRow2 = set.sheetRow;
+    queueFailedSync(async function() { await deleteSheetRow('Results', capturedRow2); });
+  }
+}
+
+// Flush queued offline writes when back online
+async function flushSyncQueue() {
+  if (offlineMode || !accessToken) return;
+  var queue = getSyncQueue();
+  if (!queue.length) return;
+  clearSyncQueue();
+  setSyncStatus('syncing');
+  var failed = [];
+  var email = currentUser ? currentUser.email : 'unknown';
+  for (var i = 0; i < queue.length; i++) {
+    var op = queue[i];
+    try {
+      if (op.type === 'append') {
+        await appendRows('Results', [op.row]);
+      } else if (op.type === 'update') {
+        // Try to find existing row by ResultID (op.row[1] after UserID prepend)
+        var localId = op.localId || (op.row && op.row[1]);
+        var raw = await readSheet('Results');
+        var existingIdx = raw.findIndex(function(r) { return r[1] === localId; });
+        if (existingIdx > 0) await updateSheetRow('Results', existingIdx + 1, op.row);
+        else await appendRows('Results', [op.row]);
+      } else if (op.type === 'delete' && op.sheetRow) {
+        await deleteSheetRow('Results', op.sheetRow);
+      } else if (op.type === 'workout-save') {
+        // Update or append workout row in Sheets
+        var wRows = await readSheet('Workouts');
+        var rowIdx = wRows.findIndex(function(r) { return r[1] === op.workout.id; });
+        var wRow = [email, op.workout.id, op.workout.name, op.workout.exercises.join('|')];
+        if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx + 1, wRow);
+        else await appendRows('Workouts', [wRow]);
+      } else if (op.type === 'workout-delete') {
+        var wRows2 = await readSheet('Workouts');
+        var delIdx = wRows2.findIndex(function(r) { return r[1] === op.workoutId; });
+        if (delIdx > 0) await deleteSheetRow('Workouts', delIdx + 1);
+      } else if (op.type === 'exercise-add') {
+        await appendRows('Exercises', [[email, 'ex'+Date.now(), op.name]]);
+      } else if (op.type === 'exercise-delete') {
+        var eRows = await readSheet('Exercises');
+        var eIdx = eRows.findIndex(function(r) { return r[2] === op.name && r[0] === email; });
+        if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
+      }
+    } catch(e) { failed.push(op); }
+  }
+  if (failed.length) { lsSet(LS_SYNC_QUEUE, failed); setSyncStatus('error'); }
+  else { setSyncStatus('saved'); lsSet(LS_LAST_SYNC, Date.now()); }
+}
+
+// Merge local data into Sheets (when offline user signs in)
+async function mergeLocalToSheets() {
+  var localResults = getLocalResults();
+  var rawMerge = await readUserRows('Results');
+  var sheetResults = rawMerge.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+  var sheetIds = new Set(sheetResults.map(function(r) { return r[0]; }));
+  var toUpload = localResults.filter(function(r) {
+    return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !sheetIds.has(r[0]);
+  });
+  if (toUpload.length > 0) {
+    setLoadingMsg('Merging ' + toUpload.length + ' local sets to Sheets...');
+    var mergeEmail = currentUser ? currentUser.email : 'unknown';
+    for (var i = 0; i < toUpload.length; i++) {
+      await appendRows('Results', [[mergeEmail].concat(toUpload[i])]);
+    }
+  }
 }
 
 // NAV
@@ -483,7 +978,7 @@ function goScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'sessions') loadSessionHistory();
-  if (name === 'exercises') { ehRows = []; renderExerciseHistory(); }
+  if (name === 'exercises') { ehRows = getLocalResults(); renderExerciseHistory(); }
   if (name === 'workouts') renderWorkoutsScreen();
 }
 
@@ -502,11 +997,10 @@ function startSession() {
   if (!workout) return;
   session = {workoutId:workout.id, workoutName:workout.name, startTime:new Date(), sets:{}};
   workout.exercises.forEach(function(ex) { session.sets[ex] = []; });
-  sessionElapsed = 0;
-  clearInterval(sessionTimerInterval);
+    clearInterval(sessionTimerInterval);
   sessionTimerInterval = setInterval(function() {
-    sessionElapsed++;
-    var m = Math.floor(sessionElapsed/60), s = sessionElapsed % 60;
+    var elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+    var m = Math.floor(elapsed / 60), s = elapsed % 60;
     document.getElementById('session-timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
     document.getElementById('session-meta').textContent = workout.name + '\n' + new Date().toLocaleDateString('en-GB');
   }, 1000);
@@ -561,6 +1055,7 @@ var currentExLogName = null;
 
 function getLastSessionWeight(exName) {
   // Find the most recent session date for this exercise and return max weight used
+  // Includes today so weight pre-fills correctly on first log of the day
   var source = shRows.length > 0 ? shRows : [];
   var byDate = {};
   source.filter(function(r) {
@@ -570,6 +1065,16 @@ function getLastSessionWeight(exName) {
     if (!byDate[d]) byDate[d] = [];
     byDate[d].push(parseFloat(r[7])||0);
   });
+  // Also include current session sets in memory
+  if (session && session.sets && session.sets[exName]) {
+    var today = new Date().toLocaleDateString('en-GB');
+    session.sets[exName].forEach(function(s) {
+      if (s.weight) {
+        if (!byDate[today]) byDate[today] = [];
+        byDate[today].push(parseFloat(s.weight)||0);
+      }
+    });
+  }
   var dates = Object.keys(byDate).sort(function(a,b) {
     var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
     return p(b).localeCompare(p(a));
@@ -581,11 +1086,17 @@ function getLastSessionWeight(exName) {
 
 function getExHistory(exName) {
   // Get last 3 sessions for this exercise from shRows/ehRows cache
-  // Use shRows if loaded, otherwise fall back to empty
+  // Exclude rows belonging to the current live session
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
+    });
+  }
   var source = shRows.length > 0 ? shRows : [];
   var byDate = {};
   source.filter(function(r) {
-    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__';
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !currentIds.has(r[0]);
   }).forEach(function(r) {
     var d = r[9]; if (!d) return;
     if (!byDate[d]) byDate[d] = [];
@@ -595,9 +1106,6 @@ function getExHistory(exName) {
     var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
     return p(b).localeCompare(p(a));
   });
-  // Exclude today
-  var today = new Date().toLocaleDateString('en-GB');
-  dates = dates.filter(function(d) { return d !== today; });
   return dates.slice(0,3).map(function(d) {
     return {date:d, sets:byDate[d].sort(function(a,b){return a.set-b.set;})};
   });
@@ -606,6 +1114,13 @@ function getExHistory(exName) {
 function openExLogDetail(exName) {
   if (!session) return;
   currentExLogName = exName;
+  // Show/sync eld rest bar if timer is active
+  var eldBar = document.getElementById('eld-rest-bar');
+  if (eldBar) {
+    eldBar.style.display = rtRunning ? 'flex' : 'none';
+    if (rtRunning) rtUpdateDisplay();
+  }
+  updateEldStatsStrip(exName);
   if (!session.sets[exName]) session.sets[exName] = [];
   var pb = pbCache[exName] !== undefined ? pbCache[exName] : null;
   document.getElementById('eld-title').textContent = exName;
@@ -615,7 +1130,7 @@ function openExLogDetail(exName) {
   var hist = getExHistory(exName);
   var histEl = document.getElementById('eld-history-content');
   if (!hist.length) {
-    histEl.innerHTML = '<div style="font-size:12px;color:#555;">No previous sessions yet.</div>';
+    histEl.innerHTML = '<div style="font-size:12px;color:#b0b0b0;">No previous sessions yet.</div>';
   } else {
     histEl.innerHTML = hist.map(function(session_hist) {
       var rows = session_hist.sets.map(function(s) {
@@ -642,11 +1157,12 @@ function closeExLogDetail() {
 }
 
 function renderEldSets() {
+  if (currentExLogName) updateEldStatsStrip(currentExLogName);
   if (!currentExLogName || !session) return;
   var sets = session.sets[currentExLogName] || [];
   var list = document.getElementById('eld-sets-list');
   if (!sets.length) {
-    list.innerHTML = '<div style="font-size:12px;color:#666;margin-bottom:12px;">No sets logged yet. Tap Add Set below.</div>';
+    list.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:12px;">No sets logged yet. Tap Add Set below.</div>';
     return;
   }
   list.innerHTML = '<div class="sets-hdr"><span>#</span><span>KG</span><span>REPS</span><span>Time</span><span></span></div>' +
@@ -667,14 +1183,12 @@ function addLogSetFromDetail() {
   var inputs = document.querySelectorAll('#eld-sets-list .set-input');
   if (inputs.length) inputs[inputs.length-1].focus();
   rtQuickStart();
-  // Sheet write is async but happens after focus
-  setSyncStatus('syncing');
+  // Save locally first, then sync to Sheets
   var today = new Date().toLocaleDateString('en-GB');
-  var row = ['r'+Date.now(), newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
-  appendRows('Results', [row]).then(function(rowNum) {
-    newSet.sheetRow = rowNum;
-    setSyncStatus('saved');
-  }).catch(function(e) { setSyncStatus('error'); });
+  newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
+  saveResultLocally(syncRow);
+  syncResultToSheets(syncRow, newSet);
 }
 
 async function addLogSet(exId) {
@@ -687,13 +1201,12 @@ async function addLogSet(exId) {
   var newIdx = sets.length - 1;
   var list = document.getElementById('setlist-' + exId);
   if (list) list.insertAdjacentHTML('beforeend', logSetHTML(exName, newIdx, newSet));
-  setSyncStatus('syncing');
-  try {
-    var today = new Date().toLocaleDateString('en-GB');
-    var row = ['r'+Date.now(), newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, newIdx+1, lastWeight, '', today];
-    newSet.sheetRow = await appendRows('Results', [row]);
-    setSyncStatus('saved');
-  } catch(e) { setSyncStatus('error'); }
+  var today = new Date().toLocaleDateString('en-GB');
+  newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var exIdReal = (exercises.find(function(e){return e.name===exName;})||{}).id || sid(exName);
+  var row = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, exIdReal, exName, newIdx+1, lastWeight, '', today];
+  saveResultLocally(row);
+  syncResultToSheets(row, newSet);
   rtQuickStart();
 }
 
@@ -705,14 +1218,12 @@ async function updateLogSet(exId, setIdx, field, value) {
   var set = sets[setIdx];
   set[field] = value;
   if (!set.timestamp) set.timestamp = new Date().toISOString();
-  setSyncStatus('syncing');
-  try {
-    var today = new Date().toLocaleDateString('en-GB');
-    var row = ['r'+Date.now(), set.timestamp, session.workoutId, session.workoutName, sid(exName), exName, setIdx+1, set.weight||'', set.reps||'', today];
-    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, row);
-    else set.sheetRow = await appendRows('Results', [row]);
-    setSyncStatus('saved');
-  } catch(e) { setSyncStatus('error'); }
+  var today = new Date().toLocaleDateString('en-GB');
+  if (!set._localId) set._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var exIdReal2 = (exercises.find(function(e){return e.name===exName;})||{}).id || sid(exName);
+  var row = [set._localId, set.timestamp, session.workoutId, session.workoutName, exIdReal2, exName, setIdx+1, set.weight||'', set.reps||'', today];
+  saveResultLocally(row);
+  updateResultInSheets(row, set);
   var timeEl = document.querySelector('#setrow-' + exId + '-' + setIdx + ' .set-time');
   if (timeEl && set.timestamp) { timeEl.textContent = new Date(set.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); timeEl.classList.add('logged'); }
   if (field === 'weight') { var w = parseFloat(value); if (!isNaN(w) && (!pbCache[exName] || w > pbCache[exName])) { pbCache[exName] = w; } }
@@ -723,16 +1234,10 @@ async function removeLogSet(exId, setIdx) {
   if (!session) return;
   var exName = nameFromSid(exId);
   var sets = session.sets[exName];
-  if (!sets || sets.length <= 1) return;
+  if (!sets || sets.length === 0) return;
   var set = sets[setIdx];
-  if (set.sheetRow) {
-    setSyncStatus('syncing');
-    try {
-      await deleteSheetRow('Results', set.sheetRow);
-      // No row shifting needed - we blank the row instead of deleting
-      setSyncStatus('saved');
-    } catch(e) { setSyncStatus('error'); }
-  }
+  if (set._localId) deleteResultLocally(set._localId);
+  deleteResultInSheets(set);
   sets.splice(setIdx, 1); if (currentExLogName) { renderEldSets(); } else { renderLogExercises(); }
 }
 
@@ -765,22 +1270,42 @@ async function cancelSession() {
 
 async function finishSession() {
   clearInterval(sessionTimerInterval);
-  await loadPBs();
-  showToast('Session complete!');
+  rtStop();
+  // Wait for any in-flight syncs to complete
+  var finishBtn = document.getElementById('finish-btn');
+  if (finishBtn) { finishBtn.textContent = 'Saving...'; finishBtn.disabled = true; }
+  await new Promise(function(r) { setTimeout(r, 2500); });
   session = null;
   document.getElementById('session-info').classList.remove('active');
   document.getElementById('session-actions').classList.remove('active');
   document.getElementById('rest-timer').classList.remove('visible');
   document.getElementById('exercises-list').innerHTML = '<div class="empty-state">Select a workout above and tap Start to begin logging.</div>';
   document.getElementById('session-timer').textContent = '0:00';
-  rtStop();
+  if (finishBtn) { finishBtn.textContent = 'Finish'; finishBtn.disabled = false; }
+  showToast('Session complete!');
+  await loadPBs();
+  await loadSessionHistory();
 }
 
 // SESSION HISTORY
-async function loadSessionHistory() {
-  document.getElementById('sh-list').innerHTML = '<div class="spinner">Loading...</div>';
-  shRows = await readSheet('Results');
+function loadSessionHistory() {
+  // Always render from local immediately — no spinner, no network wait
+  shRows = getLocalResults();
+  ehRows = shRows;
   renderSessionFilters(); renderSessionList();
+  // Background refresh from Sheets if online
+  if (!offlineMode && accessToken) {
+    readUserRows('Results').then(function(rawResults) {
+      var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+      var localRows = getLocalResults();
+      var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+      var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
+      shRows = localRows.concat(sheetsOnly);
+      ehRows = shRows;
+      lsSet(LS_RESULTS, shRows);
+      renderSessionFilters(); renderSessionList();
+    }).catch(function() {});
+  }
 }
 function renderSessionFilters() {
   var names = ['All'].concat(workouts.map(function(w) { return w.name.split('\u2014')[0].trim(); }));
@@ -794,31 +1319,46 @@ async function deleteSession(date, wid) {
   if (!confirm('Delete this entire session? This cannot be undone.')) return;
   setSyncStatus('syncing');
   try {
-    var toDelete = [];
-    for (var i = 0; i < shRows.length; i++) {
-      var r = shRows[i];
-      if (r[9] === date && r[2] === wid && r[0] !== 'ResultID' && r[0] !== '__DELETED__') {
-        toDelete.push(i + 1); // 1-indexed sheet row
-      }
-    }
-    for (var j = 0; j < toDelete.length; j++) {
-      await deleteSheetRow('Results', toDelete[j]);
-    }
-    shRows = await readSheet('Results');
-    setSyncStatus('saved');
-    renderSessionFilters();
-    renderSessionList();
+    // Remove from local immediately — source of truth
+    var localRows = getLocalResults();
+    var toKeep = localRows.filter(function(r) { return !(r[9] === date && r[2] === wid); });
+    lsSet(LS_RESULTS, toKeep);
+    shRows = toKeep; ehRows = toKeep;
+    renderSessionFilters(); renderSessionList();
     showToast('Session deleted');
+    setSyncStatus('saved');
+    // Delete from Sheets in background — find rows by ResultID not index
+    // (index-based row numbers break if sheet has gaps)
+    var deletedIds = localRows
+      .filter(function(r) { return r[9] === date && r[2] === wid; })
+      .map(function(r) { return r[0]; });
+    if (deletedIds.length && !offlineMode && accessToken) {
+      deleteSessionFromSheets(deletedIds).catch(function() {
+        setSyncStatus('error');
+      });
+    }
   } catch(e) {
     setSyncStatus('error');
     showToast('Delete failed');
   }
 }
 
+async function deleteSessionFromSheets(resultIds) {
+  // Read current sheet to find row numbers by ResultID
+  var raw = await readSheet('Results');
+  // raw[0] is header, raw[1+] are data rows with UserID in col 0
+  for (var i = 1; i < raw.length; i++) {
+    var rowId = raw[i][1]; // col 1 = ResultID (after UserID in col 0)
+    if (resultIds.indexOf(rowId) >= 0) {
+      await deleteSheetRow('Results', i + 1); // +1 for 1-indexed
+    }
+  }
+}
+
 function renderSessionList() {
   var wrap = document.getElementById('sh-list');
   var sessions = {};
-  shRows.filter(function(r) { return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) {
+  shRows.filter(isValidResultRow).forEach(function(r) {
     var date = r[9], wid = r[2], wname = r[3]; if (!date) return;
     if (shFilter !== 'all' && wid !== shFilter) return;
     var key = date + '||' + wid;
@@ -833,8 +1373,6 @@ function renderSessionList() {
   wrap.innerHTML = '';
   sorted.slice(0, 30).forEach(function(s) {
     var card = document.createElement('div'); card.className = 'session-card';
-    // onclick handled per-element above
-    var sDate = s.date, sWid = s.wid;
     card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"><div class="session-date">' + s.date + '</div><div class="session-workout">' + s.wname + '</div></div>' +
       '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
       '<button class="session-delete-btn" onclick="deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">f5d1</button></div>' +
@@ -870,8 +1408,8 @@ function restStr(ts1, ts2) {
 }
 
 // EXERCISE HISTORY
-async function renderExerciseHistory() {
-  if (!ehRows.length) { document.getElementById('eh-ex-list').innerHTML = '<div class="spinner">Loading...</div>'; ehRows = await readSheet('Results'); }
+function renderExerciseHistory() {
+  ehRows = getLocalResults();
   var query = document.getElementById('eh-search').value.toLowerCase();
   var exSet = {};
   ehRows.filter(function(r) { return r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) { exSet[r[5]] = true; });
@@ -885,8 +1423,12 @@ async function renderExerciseHistory() {
     var pb = pbCache[ex] !== undefined ? pbCache[ex] : null;
     var sc = new Set(exRows.map(function(r) { return r[9]; })).size;
     var item = document.createElement('div'); item.className = 'eh-ex-item';
-    item.onclick = function() { openExDetail(ex); };
-    item.innerHTML = '<div class="eh-ex-name">' + ex + '</div><div class="eh-ex-meta">' + (pb !== null ? 'PB ' + pb + 'kg' : 'No data') + '<br>' + sc + ' session' + (sc !== 1 ? 's' : '') + '</div>';
+    item.innerHTML = '<div style="flex:1;" onclick="openExDetail(\'' + ex.replace(/'/g,"\'") + '\')">' +
+      '<div class="eh-ex-name">' + ex + '</div>' +
+      '<div class="eh-ex-meta">' + (pb !== null ? 'PB ' + pb + 'kg' : 'No data') + ' · ' + sc + ' session' + (sc !== 1 ? 's' : '') + '</div></div>' +
+      '<button onclick="deleteGlobalExercise(\'' + ex.replace(/'/g,"\'") + '\')" style="background:transparent;border:none;color:#707070;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;">&#128465;</button>';
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
     wrap.appendChild(item);
   });
 }
@@ -907,7 +1449,7 @@ function openExDetail(exName) {
       var isPB = parseFloat(s.weight) === pb && pb !== null;
       var rest = i > 0 && s.ts && sets[i-1].ts ? restStr(sets[i-1].ts, s.ts) : '';
       return (rest ? '<div class="exd-rest">&#8627; ' + rest + ' rest</div>' : '') +
-        '<div class="exd-set-row' + (isPB ? ' exd-pb-row' : '') + '"><span class="exd-set-num">' + s.set + '</span><span class="exd-set-val">' + (s.weight||'\u2014') + 'kg</span><span class="exd-set-val">' + (s.reps||'\u2014') + ' reps</span><span style="font-size:10px;color:#666;">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + (isPB ? ' &#127942;' : '') + '</span></div>';
+        '<div class="exd-set-row' + (isPB ? ' exd-pb-row' : '') + '"><span class="exd-set-num">' + s.set + '</span><span class="exd-set-val">' + (s.weight||'\u2014') + 'kg</span><span class="exd-set-val">' + (s.reps||'\u2014') + ' reps</span><span style="font-size:10px;color:#999;">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + (isPB ? ' &#127942;' : '') + '</span></div>';
     }).join('');
     content.appendChild(div);
   });
@@ -921,7 +1463,9 @@ function renderWorkoutsScreen() {
   workouts.forEach(function(w, wi) {
     var item = document.createElement('div'); item.className = 'workout-item';
     item.innerHTML = '<div class="workout-item-header" onclick="toggleWorkoutExpand(' + wi + ')">' +
-      '<div><div class="workout-item-name">' + w.name + '</div><div class="workout-item-meta">' + w.exercises.length + ' exercises</div></div>' +
+      '<div style="flex:1"><div class="workout-item-name">' + w.name + '</div><div class="workout-item-meta">' + w.exercises.length + ' exercises</div></div>' +
+      '<button onclick="event.stopPropagation();openStatsForWorkout(' + wi + ')" style="background:transparent;border:none;color:#999;font-size:15px;cursor:pointer;padding:4px 6px;margin-right:2px;" title="Stats">&#9650;&#9650;</button>' +
+      '<button onclick="event.stopPropagation();deleteWorkout(' + wi + ')" style="background:transparent;border:none;color:#b0b0b0;font-size:16px;cursor:pointer;padding:4px 8px;margin-right:4px;" title="Delete workout">&#128465;</button>' +
       '<span class="workout-expand" id="wexp-' + wi + '">&#9660;</span></div>' +
       '<div class="workout-body" id="wbody-' + wi + '">' +
       w.exercises.map(function(ex, ei) {
@@ -939,9 +1483,11 @@ function renderWorkoutsScreen() {
       '<div class="workout-add-ex"><select class="ex-sel" id="ex-sel-' + wi + '">' +
       allExercises.map(function(e) { return '<option>' + e + '</option>'; }).join('') +
       '<option value="__new__">+ New exercise...</option></select>' +
-      '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div></div>';
+      '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div>' +
+      '</div>';
     wrap.appendChild(item);
   });
+
 }
 function toggleWorkoutExpand(wi) {
   document.getElementById('wbody-' + wi).classList.toggle('open');
@@ -957,7 +1503,11 @@ async function addExToWorkout(wi) {
     if (allExercises.indexOf(exName) < 0) {
       allExercises.push(exName);
       setSyncStatus('syncing');
-      await appendRows('Exercises', [['ex'+Date.now(), exName]]);
+      allExercises.push(exName); lsSet(LS_EXERCISES, allExercises);
+      if (!offlineMode && accessToken) {
+        var email = currentUser ? currentUser.email : 'unknown';
+        await appendRows('Exercises', [[email, 'ex'+Date.now(), exName]]);
+      }
       setSyncStatus('saved');
     }
   }
@@ -988,22 +1538,112 @@ async function removeExFromWorkout(wi, ei) {
   renderWorkoutsScreen(); renderWorkoutPicker();
 }
 async function saveWorkoutToSheet(wi) {
-  setSyncStatus('syncing');
+  lsSet(LS_WORKOUTS, workouts);
   var w = workouts[wi];
-  var rows = await readSheet('Workouts');
-  var rowIdx = rows.findIndex(function(r) { return r[0] === w.id; });
-  if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, [w.id, w.name, w.exercises.join('|')]);
-  setSyncStatus('saved');
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}});
+    return;
+  }
+  setSyncStatus('syncing');
+  try {
+    var email = currentUser ? currentUser.email : 'unknown';
+    var rows = await readSheet('Workouts');
+    var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
+    var wRow = [email, w.id, w.name, w.exercises.join('|')];
+    if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, wRow);
+    else await appendRows('Workouts', [wRow]);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+    addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}});
+  }
 }
 async function addWorkout() {
   var name = prompt('Workout name:');
   if (!name || !name.trim()) return;
+  var email = currentUser ? currentUser.email : 'unknown';
   var id = 'w' + Date.now();
-  workouts.push({id:id, name:name.trim(), exercises:[]});
-  setSyncStatus('syncing');
-  await appendRows('Workouts', [[id, name.trim(), '']]);
-  setSyncStatus('saved');
+  var newW = {id:id, name:name.trim(), exercises:[]};
+  workouts.push(newW);
+  lsSet(LS_WORKOUTS, workouts);
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'workout-save', workout:{id:id, name:name.trim(), exercises:[]}});
+  } else {
+    setSyncStatus('syncing');
+    try { await appendRows('Workouts', [[email, id, name.trim(), '']]); setSyncStatus('saved'); }
+    catch(e) { setSyncStatus('error'); addToSyncQueue({type:'workout-save', workout:{id:id, name:name.trim(), exercises:[]}}); }
+  }
   renderWorkoutsScreen(); renderWorkoutPicker();
+}
+
+async function deleteWorkout(wi) {
+  var w = workouts[wi];
+  if (!confirm('Delete workout "' + w.name + '"? This only removes the workout template, not your logged results.')) return;
+  workouts.splice(wi, 1);
+  lsSet(LS_WORKOUTS, workouts);
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'workout-delete', workoutId:w.id});
+  } else {
+    setSyncStatus('syncing');
+    try {
+      var rows = await readSheet('Workouts');
+      var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
+      if (rowIdx > 0) await deleteSheetRow('Workouts', rowIdx + 1);
+      setSyncStatus('saved');
+    } catch(e) { setSyncStatus('error'); addToSyncQueue({type:'workout-delete', workoutId:w.id}); }
+  }
+  renderWorkoutsScreen(); renderWorkoutPicker();
+}
+
+async function addGlobalExercise() {
+  var name = prompt('New exercise name:');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  if (allExercises.indexOf(name) >= 0) { showToast('Exercise already exists'); return; }
+  allExercises.push(name);
+  lsSet(LS_EXERCISES, allExercises);
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'exercise-add', name:name});
+  } else {
+    var email = currentUser ? currentUser.email : 'unknown';
+    setSyncStatus('syncing');
+    try {
+      await appendRows('Exercises', [[email, 'ex'+Date.now(), name]]);
+      setSyncStatus('saved');
+    } catch(e) { setSyncStatus('error'); addToSyncQueue({type:'exercise-add', name:name}); }
+  }
+  showToast('Exercise "' + name + '" added');
+  renderExerciseHistory();
+  renderWorkoutsScreen();
+}
+
+async function deleteGlobalExercise(name) {
+  if (!confirm('Delete exercise "' + name + '"? It will be removed from all workouts. Results are kept.')) return;
+  allExercises = allExercises.filter(function(e) { return e !== name; });
+  workouts.forEach(function(w) { w.exercises = w.exercises.filter(function(e) { return e !== name; }); });
+  lsSet(LS_EXERCISES, allExercises);
+  lsSet(LS_WORKOUTS, workouts);
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'exercise-delete', name:name});
+    workouts.forEach(function(w,wi) { addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}}); });
+  } else {
+    setSyncStatus('syncing');
+    try {
+      var email = currentUser ? currentUser.email : 'unknown';
+      var eRows = await readSheet('Exercises');
+      var eIdx = eRows.findIndex(function(r) { return r[2] === name && r[0] === email; });
+      if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
+      for (var i = 0; i < workouts.length; i++) { await saveWorkoutToSheet(i); }
+      setSyncStatus('saved');
+    } catch(e) {
+      setSyncStatus('error');
+      addToSyncQueue({type:'exercise-delete', name:name});
+      workouts.forEach(function(w) { addToSyncQueue({type:'workout-save', workout:{id:w.id, name:w.name, exercises:w.exercises.slice()}}); });
+    }
+  }
+  renderWorkoutsScreen(); renderWorkoutPicker();
+  ehRows = getLocalResults();
+  renderExerciseHistory();
 }
 
 // REST TIMER
@@ -1013,41 +1653,472 @@ function rtSetPreset(s) {
     b.classList.toggle('active', b.textContent === s+'s' || (s===120 && b.textContent==='2m') || (s===180 && b.textContent==='3m'));
   });
 }
-function rtQuickStart() { document.getElementById('rest-timer').classList.add('visible'); rtRemaining = rtPreset; rtStop(); rtStart(); }
+function rtQuickStart() {
+  document.getElementById('rest-timer').classList.add('visible');
+  var eldBar = document.getElementById('eld-rest-bar');
+  if (eldBar) eldBar.style.display = 'flex';
+  rtRemaining = rtPreset; rtStop(); rtStart();
+}
 function rtToggle() { rtRunning ? rtStop() : rtStart(); }
 function rtStart() {
   rtRunning = true;
   if (rtRemaining <= 0) rtRemaining = rtPreset;
+  var endTime = Date.now() + rtRemaining * 1000;
   document.getElementById('rt-play').innerHTML = '&#9646;&#9646;';
   document.getElementById('rt-play').classList.add('running');
-  rtInterval = setInterval(function() { rtRemaining--; rtUpdateDisplay(); if (rtRemaining <= 0) { rtStop(); showToast('Rest done!'); sendNotification('Rest Complete', 'Time to lift!'); } }, 1000);
+  var eldBar = document.getElementById('eld-rest-bar');
+  if (eldBar) { eldBar.style.display = 'flex'; }
+  var eldPlay = document.getElementById('eld-rt-play');
+  if (eldPlay) { eldPlay.innerHTML = '&#9646;&#9646;'; }
+  scheduleNotification('Rest Complete ⏱', 'Time to lift!', rtRemaining);
+  rtInterval = setInterval(function() {
+    rtRemaining = Math.round((endTime - Date.now()) / 1000);
+    if (rtRemaining <= 0) { rtRemaining = 0; rtUpdateDisplay(); rtStop(); showToast('Rest done!'); }
+    else { rtUpdateDisplay(); }
+  }, 500);
 }
 function rtStop() {
   rtRunning = false; clearInterval(rtInterval);
+  cancelScheduledNotification();
   var b = document.getElementById('rt-play');
   if (b) { b.innerHTML = '&#9654;'; b.classList.remove('running'); }
+  var eldPlay = document.getElementById('eld-rt-play');
+  if (eldPlay) { eldPlay.innerHTML = '&#9654;'; }
 }
 function rtReset() { rtStop(); rtRemaining = rtPreset; rtUpdateDisplay(); }
 function rtUpdateDisplay() {
   var m = Math.floor(rtRemaining/60), s = rtRemaining % 60;
-  var disp = document.getElementById('rt-display'), ring = document.getElementById('rt-ring-fg');
-  if (!disp || !ring) return;
-  disp.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-  var circ = 2 * Math.PI * 22;
-  ring.style.strokeDasharray = circ;
-  ring.style.strokeDashoffset = circ * (1 - Math.max(0, rtRemaining) / rtPreset);
+  var timeStr = m + ':' + (s < 10 ? '0' : '') + s;
   var color = rtRemaining <= 0 ? '#ff4747' : rtRemaining < 20 ? '#ff9900' : '#e8ff47';
-  ring.style.stroke = color;
-  disp.style.color = rtRemaining < 20 ? color : '#f0f0f0';
+  // Main bar
+  var disp = document.getElementById('rt-display'), ring = document.getElementById('rt-ring-fg');
+  if (disp && ring) {
+    disp.textContent = timeStr;
+    var circ = 2 * Math.PI * 22;
+    ring.style.strokeDasharray = circ;
+    ring.style.strokeDashoffset = circ * (1 - Math.max(0, rtRemaining) / rtPreset);
+    ring.style.stroke = color;
+    disp.style.color = rtRemaining < 20 ? color : '#f0f0f0';
+  }
+  // ELD bar mirror
+  var eldDisp = document.getElementById('eld-rt-display'), eldRing = document.getElementById('eld-rt-ring');
+  if (eldDisp && eldRing) {
+    eldDisp.textContent = timeStr;
+    var eldCirc = 2 * Math.PI * 18;
+    eldRing.style.strokeDasharray = eldCirc;
+    eldRing.style.strokeDashoffset = eldCirc * (1 - Math.max(0, rtRemaining) / rtPreset);
+    eldRing.style.stroke = color;
+    eldDisp.style.color = rtRemaining < 20 ? color : '#f0f0f0';
+  }
+}
+
+// ── STATS ────────────────────────────────────────────────────────────────────
+
+var statsContext = null; // {type:'exercise', name:'...'} or {type:'workout', id:'...', name:'...'}
+
+function e1rm(weight, reps) {
+  // Epley formula — skip if reps = 1 (actual 1RM) or missing
+  if (!weight || !reps || reps < 1) return null;
+  return Math.round(weight * (1 + reps / 30));
+}
+
+function getExerciseSessionData(exName, rows) {
+  // Returns array of {date, volume, maxWeight, maxE1rm} per session, oldest first
+  var byDate = {};
+  rows.filter(function(r) {
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' &&
+           r[7] && r[8] && parseFloat(r[7]) > 0 && parseInt(r[8]) > 0;
+  }).forEach(function(r) {
+    var d = r[9]; if (!d) return;
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push({weight: parseFloat(r[7]), reps: parseInt(r[8])});
+  });
+  var dates = Object.keys(byDate).sort(function(a,b) {
+    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
+    return p(a).localeCompare(p(b));
+  });
+  return dates.map(function(d) {
+    var sets = byDate[d];
+    var vol = sets.reduce(function(s,x) { return s + x.weight * x.reps; }, 0);
+    var totalReps = sets.reduce(function(s,x) { return s + x.reps; }, 0);
+    var maxWt = Math.max.apply(null, sets.map(function(x) { return x.weight; }));
+    var maxE = Math.max.apply(null, sets.map(function(x) { return e1rm(x.weight, x.reps) || 0; }));
+    var intensity = totalReps > 0 ? Math.round(vol / totalReps * 10) / 10 : null;
+    return {date: d, volume: Math.round(vol), maxWeight: maxWt, maxE1rm: maxE || null, intensity: intensity};
+  });
+}
+
+function getWorkoutSessionData(workoutId, rows) {
+  // Returns array of {date, volume, maxE1rm} per session, oldest first
+  var byDate = {};
+  rows.filter(function(r) {
+    return r[2] === workoutId && r[0] !== 'ResultID' && r[0] !== '__DELETED__' &&
+           r[7] && r[8] && parseFloat(r[7]) > 0 && parseInt(r[8]) > 0;
+  }).forEach(function(r) {
+    var d = r[9]; if (!d) return;
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push({weight: parseFloat(r[7]), reps: parseInt(r[8])});
+  });
+  var dates = Object.keys(byDate).sort(function(a,b) {
+    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
+    return p(a).localeCompare(p(b));
+  });
+  return dates.map(function(d) {
+    var sets = byDate[d];
+    var vol = sets.reduce(function(s,x) { return s + x.weight * x.reps; }, 0);
+    var totalReps = sets.reduce(function(s,x) { return s + x.reps; }, 0);
+    var maxE = Math.max.apply(null, sets.map(function(x) { return e1rm(x.weight, x.reps) || 0; }));
+    var intensity = totalReps > 0 ? Math.round(vol / totalReps * 10) / 10 : null;
+    return {date: d, volume: Math.round(vol), maxE1rm: maxE || null, intensity: intensity};
+  });
+}
+
+function openStatsFromEld() {
+  if (!currentExLogName) return;
+  statsContext = {type: 'exercise', name: currentExLogName};
+  renderStats();
+  document.getElementById('stats-screen').classList.add('visible');
+}
+
+function openStatsForWorkout(wi) {
+  var w = workouts[wi];
+  if (!w) return;
+  statsContext = {type: 'workout', id: w.id, name: w.name};
+  renderStats();
+  document.getElementById('stats-screen').classList.add('visible');
+}
+
+function closeStats() {
+  document.getElementById('stats-screen').classList.remove('visible');
+}
+
+function renderStats() {
+  if (!statsContext) return;
+  var rows = getLocalResults();
+  var data, title, sub;
+
+  if (statsContext.type === 'exercise') {
+    data = getExerciseSessionData(statsContext.name, rows);
+    title = statsContext.name;
+    sub = 'exercise stats';
+  } else {
+    data = getWorkoutSessionData(statsContext.id, rows);
+    title = statsContext.name.split('\u2014')[0].trim();
+    sub = 'workout stats';
+  }
+
+  document.getElementById('stats-title').textContent = title;
+  document.getElementById('stats-sub').textContent = sub;
+
+  var recent = data.slice(-10);
+
+  // Summary cards
+  var sessions = data.length;
+  var allVols = data.map(function(d) { return d.volume; });
+  var lastVol = allVols.length ? allVols[allVols.length-1] : null;
+  var bestVol = allVols.length ? Math.max.apply(null, allVols) : null;
+  var allInts = data.map(function(d) { return d.intensity; }).filter(Boolean);
+  var lastInt = allInts.length ? allInts[allInts.length-1] : null;
+  var bestInt = allInts.length ? Math.max.apply(null, allInts) : null;
+
+  var pb = null, beste1rm = null;
+  if (statsContext.type === 'exercise') {
+    var allWts = data.map(function(d) { return d.maxWeight; }).filter(Boolean);
+    pb = allWts.length ? Math.max.apply(null, allWts) : null;
+    var alle1rm = data.map(function(d) { return d.maxE1rm; }).filter(Boolean);
+    beste1rm = alle1rm.length ? Math.max.apply(null, alle1rm) : null;
+  } else {
+    var alle1rmW = data.map(function(d) { return d.maxE1rm; }).filter(Boolean);
+    beste1rm = alle1rmW.length ? Math.max.apply(null, alle1rmW) : null;
+  }
+
+  document.getElementById('sc-sessions').textContent = sessions || '—';
+  document.getElementById('sc-pb').textContent = pb !== null ? pb + 'kg' : '—';
+  document.getElementById('sc-e1rm').textContent = beste1rm !== null ? beste1rm + 'kg' : '—';
+  document.getElementById('sc-vol-last').textContent = lastVol !== null ? fmtVol(lastVol) : '—';
+  document.getElementById('sc-vol-best').textContent = bestVol !== null ? fmtVol(bestVol) : '—';
+  // Intensity summary — update or create cards dynamically
+  var intLastEl = document.getElementById('sc-int-last');
+  var intBestEl = document.getElementById('sc-int-best');
+  if (intLastEl) intLastEl.textContent = lastInt !== null ? lastInt + 'kg' : '—';
+  if (intBestEl) intBestEl.textContent = bestInt !== null ? bestInt + 'kg' : '—';
+
+  if (!recent.length) {
+    ['chart-volume','chart-maxwt','chart-e1rm'].forEach(function(id) {
+      var ctx = document.getElementById(id); if (!ctx) return;
+      var c = ctx.getContext('2d');
+      c.clearRect(0,0,ctx.width,ctx.height);
+      c.fillStyle = '#444'; c.font = '12px monospace'; c.textAlign = 'center';
+      c.fillText('No data yet', ctx.width/2, ctx.height/2);
+    });
+    return;
+  }
+
+  drawChart('chart-volume', recent.map(function(d){return d.date;}),
+    recent.map(function(d){return d.volume;}), '#e8ff47', fmtVol);
+
+  drawChart('chart-intensity', recent.map(function(d){return d.date;}),
+    recent.map(function(d){return d.intensity||0;}), '#ff9900', function(v){return v?v+'kg':'—';});
+
+  if (statsContext.type === 'exercise') {
+    drawChart('chart-maxwt', recent.map(function(d){return d.date;}),
+      recent.map(function(d){return d.maxWeight||0;}), '#44aaff', function(v){return v+'kg';});
+    drawChart('chart-e1rm', recent.map(function(d){return d.date;}),
+      recent.map(function(d){return d.maxE1rm||0;}), '#ff7744', function(v){return v+'kg';});
+  } else {
+    // Workout: hide max weight chart, use e1rm for second slot
+    drawChart('chart-maxwt', recent.map(function(d){return d.date;}),
+      recent.map(function(d){return d.maxE1rm||0;}), '#44aaff', function(v){return v?v+'kg':'—';});
+    document.querySelector('#chart-e1rm').closest('.stats-section').style.display = 'none';
+  }
+  if (statsContext.type === 'exercise') {
+    document.querySelector('#chart-e1rm').closest('.stats-section').style.display = '';
+    document.querySelector('#chart-maxwt').closest('.stats-section').style.display = '';
+    document.querySelector('#chart-maxwt').closest('.stats-section').querySelector('.stats-section-title').textContent = 'Max Weight per Session';
+  } else {
+    document.querySelector('#chart-maxwt').closest('.stats-section').querySelector('.stats-section-title').textContent = 'Best e1RM per Session';
+  }
+}
+
+function fmtVol(v) {
+  if (v >= 1000) return (v/1000).toFixed(1) + 't';
+  return v + 'kg';
+}
+
+function drawChart(canvasId, labels, values, color, fmtFn) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var cssW = canvas.parentElement.clientWidth - 24;
+  var cssH = 110;
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  var W = cssW, H = cssH;
+  var padL = 42, padR = 10, padT = 16, padB = 28;
+  var chartW = W - padL - padR;
+  var chartH = H - padT - padB;
+
+  ctx.clearRect(0, 0, W, H);
+
+  var maxVal = Math.max.apply(null, values.filter(Boolean)) || 1;
+  var minVal = Math.min.apply(null, values.filter(Boolean));
+  // give a bit of padding
+  var range = maxVal - minVal || maxVal;
+  var lo = Math.max(0, minVal - range * 0.15);
+  var hi = maxVal + range * 0.1;
+  var span = hi - lo || 1;
+
+  var n = values.length;
+  var xs = values.map(function(_, i) { return padL + (n === 1 ? chartW/2 : i * chartW / (n-1)); });
+  var ys = values.map(function(v) { return padT + chartH - ((v - lo) / span) * chartH; });
+
+  // Grid lines (3)
+  [0, 0.5, 1].forEach(function(t) {
+    var y = padT + chartH * (1 - t);
+    var val = lo + span * t;
+    ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + chartW, y); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(fmtFn(Math.round(val)), padL - 4, y + 3);
+  });
+
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(xs[0], padT + chartH);
+  xs.forEach(function(x, i) { ctx.lineTo(x, ys[i]); });
+  ctx.lineTo(xs[xs.length-1], padT + chartH);
+  ctx.closePath();
+  var grad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
+  grad.addColorStop(0, color + '33');
+  grad.addColorStop(1, color + '00');
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  xs.forEach(function(x, i) { i === 0 ? ctx.moveTo(x, ys[i]) : ctx.lineTo(x, ys[i]); });
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+
+  // Dots + date labels
+  xs.forEach(function(x, i) {
+    ctx.beginPath(); ctx.arc(x, ys[i], 3, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    // Date label (DD/MM)
+    var parts = labels[i] ? labels[i].split('/') : [];
+    var lbl = parts.length >= 2 ? parts[0]+'/'+parts[1] : labels[i];
+    ctx.fillStyle = '#888'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(lbl, x, H - 6);
+  });
+
+  // Latest value label
+  var last = values[values.length-1];
+  if (last) {
+    ctx.fillStyle = color; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(fmtFn(last), xs[xs.length-1] + 5, ys[ys.length-1] + 4);
+  }
+}
+
+function setGauge(barId, pct, beat) {
+  var bar = document.getElementById(barId);
+  if (!bar) return;
+  bar.style.width = Math.min(100, pct) + '%';
+  bar.className = 'eld-gauge-bar' + (beat ? ' eld-gauge-beat' : '');
+}
+
+function vsLabel(current, last) {
+  if (!last || !current) return '';
+  var diff = Math.round((current / last - 1) * 100);
+  if (diff > 0) return '+' + diff + '%';
+  if (diff < 0) return diff + '%';
+  return '=';
+}
+
+function updateEldStatsStrip(exName) {
+  var strip = document.getElementById('eld-stats-strip');
+  if (!strip) return;
+  strip.style.display = 'block';
+
+  var rows = getLocalResults();
+  // Exclude current session rows for historical comparison
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
+    });
+  }
+  var histRows = rows.filter(function(r) { return !currentIds.has(r[0]); });
+  var data = getExerciseSessionData(exName, histRows);
+  var lastSession = data.length ? data[data.length - 1] : null;
+
+  // Current session stats from memory
+  var curVol = 0, curReps = 0, curMaxWt = 0, curMaxE1rm = 0;
+  if (session && session.sets && session.sets[exName]) {
+    session.sets[exName].forEach(function(s) {
+      var w = parseFloat(s.weight), r = parseInt(s.reps);
+      if (w && r) {
+        curVol += w * r;
+        curReps += r;
+        if (w > curMaxWt) curMaxWt = w;
+        var est = e1rm(w, r);
+        if (est && est > curMaxE1rm) curMaxE1rm = est;
+      }
+    });
+  }
+  var curInt = curReps > 0 ? Math.round(curVol / curReps * 10) / 10 : 0;
+  curVol = Math.round(curVol);
+
+  // All-time PB and e1rm (include all data)
+  var allData = getExerciseSessionData(exName, rows);
+  var allWts = allData.map(function(d) { return d.maxWeight; }).filter(Boolean);
+  var pb = allWts.length ? Math.max.apply(null, allWts) : null;
+  var alle1rm = allData.map(function(d) { return d.maxE1rm; }).filter(Boolean);
+  var beste1rm = alle1rm.length ? Math.max.apply(null, alle1rm) : null;
+
+  // Volume row
+  var lastVol = lastSession ? lastSession.volume : null;
+  var lastIntForReps = lastSession ? lastSession.intensity : null;
+  document.getElementById('eld-strip-vol').textContent = curVol > 0 ? fmtVol(curVol) : '—';
+  document.getElementById('eld-vol-target').textContent = lastVol ? fmtVol(lastVol) : '—';
+  if (lastVol && curVol < lastVol) {
+    // Remaining reps needed = remaining volume / current avg weight per rep
+    var remaining = lastVol - curVol;
+    var avgWt = curInt || lastIntForReps;
+    if (avgWt && avgWt > 0) {
+      var repsNeeded = Math.ceil(remaining / avgWt);
+      document.getElementById('eld-vol-remaining').textContent = repsNeeded + ' reps to target';
+    } else {
+      document.getElementById('eld-vol-remaining').textContent = fmtVol(remaining) + ' to go';
+    }
+  } else if (lastVol && curVol >= lastVol) {
+    var overPct = Math.round((curVol / lastVol - 1) * 100);
+    document.getElementById('eld-vol-remaining').textContent = overPct > 0 ? '+' + overPct + '% ✓' : '✓ matched';
+  } else {
+    document.getElementById('eld-vol-remaining').textContent = '';
+  }
+  if (lastVol && curVol) {
+    var volPct = curVol / lastVol * 100;
+    setGauge('eld-gauge-vol', volPct, volPct >= 100);
+  } else {
+    setGauge('eld-gauge-vol', 0, false);
+  }
+
+  // Intensity card
+  var lastInt = lastSession ? lastSession.intensity : null;
+  document.getElementById('eld-strip-int').textContent = curInt > 0 ? curInt + 'kg' : '—';
+  document.getElementById('eld-strip-int-vs').textContent = lastInt ? 'vs ' + lastInt + 'kg' + (curInt ? ' ' + vsLabel(curInt, lastInt) : '') : '';
+  if (lastInt && curInt) {
+    var intPct = curInt / lastInt * 100;
+    setGauge('eld-gauge-int', intPct, intPct >= 100);
+  } else {
+    setGauge('eld-gauge-int', 0, false);
+  }
+
+  // PB card — gauge shows today's best set vs all-time PB
+  document.getElementById('eld-strip-pb').textContent = pb !== null ? pb + 'kg' : '—';
+  if (pb && curMaxWt) setGauge('eld-gauge-pb', curMaxWt / pb * 100, curMaxWt >= pb);
+  else setGauge('eld-gauge-pb', 0, false);
+
+  // e1RM card
+  document.getElementById('eld-strip-e1rm').textContent = beste1rm !== null ? beste1rm + 'kg' : '—';
+  if (beste1rm && curMaxE1rm) setGauge('eld-gauge-e1rm', curMaxE1rm / beste1rm * 100, curMaxE1rm >= beste1rm);
+  else setGauge('eld-gauge-e1rm', 0, false);
 }
 
 // UTILS
-function setSyncStatus(state) {
+var syncErrorToastShown = false;
+function setSyncStatus(state, errMsg) {
   var dot = document.getElementById('sync-dot'), lbl = document.getElementById('sync-label');
   if (!dot || !lbl) return;
+  if (offlineMode) {
+    dot.className = ''; dot.style.background = '#444';
+    lbl.textContent = 'offline mode'; lbl.onclick = null; lbl.style.cursor = 'default';
+    return;
+  }
   dot.className = state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '';
-  dot.style.background = state === 'error' ? '#ff4747' : state === 'syncing' ? '#888' : '#2a4a00';
-  lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error' : 'synced';
+  dot.style.background = state === 'error' ? '#ff4747' : state === 'syncing' ? '#888' : '#3a6000';
+  lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error — tap to retry' : 'synced';
+  if (state === 'synced') syncErrorToastShown = false;
+  if (state === 'error' && !syncErrorToastShown) {
+    syncErrorToastShown = true;
+    showToast('\u26a0\ufe0f Sync failed — data not saved to Sheets');
+  }
+  lbl.onclick = state === 'error' ? function() { retryFailedSyncs(); } : null;
+  lbl.style.cursor = state === 'error' ? 'pointer' : 'default';
+}
+
+var failedSyncQueue = [];
+function queueFailedSync(fn) {
+  failedSyncQueue.push(fn);
+}
+async function retryFailedSyncs() {
+  if (!failedSyncQueue.length) { showToast('Nothing to retry'); return; }
+  showToast('Retrying ' + failedSyncQueue.length + ' failed sync(s)...');
+  setSyncStatus('syncing');
+  var queue = failedSyncQueue.slice();
+  failedSyncQueue = [];
+  var failed = 0;
+  for (var i = 0; i < queue.length; i++) {
+    try { await queue[i](); } catch(e) { failed++; failedSyncQueue.push(queue[i]); }
+  }
+  if (failed > 0) {
+    setSyncStatus('error');
+    showToast('\u26a0\ufe0f ' + failed + ' sync(s) still failing');
+  } else {
+    setSyncStatus('saved');
+    showToast('\u2714 All synced successfully');
+    var rawFlush = await readUserRows('Results');
+    var validFlush = rawFlush.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+    var localFlush = getLocalResults();
+    var localFlushIds = new Set(localFlush.map(function(r) { return r[0]; }));
+    var sheetsFlushOnly = validFlush.filter(function(r) { return !localFlushIds.has(r[0]); });
+    shRows = localFlush.concat(sheetsFlushOnly);
+    ehRows = shRows;
+    lsSet(LS_RESULTS, shRows);
+  }
 }
 function showToast(msg) {
   var t = document.getElementById('toast');
@@ -1063,6 +2134,14 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW reg failed:', e); });
 }
 
+// Flush sync queue when coming back online
+window.addEventListener('online', function() {
+  if (!offlineMode && accessToken) {
+    showToast('Back online — syncing...');
+    flushSyncQueue();
+  }
+});
+
 // Request notification permission
 function requestNotifPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
@@ -1071,12 +2150,55 @@ function requestNotifPermission() {
 }
 
 function sendNotification(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({type:'notify', title:title, body:body});
-    } else {
-      new Notification(title, {body:body, icon:'icon-192.png', badge:'icon-192.png', silent:false});
-    }
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  // Use SW registration directly — more reliable than postMessage
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      reg.showNotification(title, {
+        body: body,
+        icon: 'icon-192.png',
+        badge: 'icon-192.png',
+        vibrate: [200, 100, 200],
+        tag: 'rest-timer'
+      });
+    }).catch(function() {
+      // Fallback for when SW isn't available
+      new Notification(title, {body: body, icon: 'icon-192.png'});
+    });
+  } else {
+    new Notification(title, {body: body, icon: 'icon-192.png'});
+  }
+}
+
+var _notifyPageTimer = null;
+
+function scheduleNotification(title, body, delaySeconds) {
+  cancelScheduledNotification();
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  // Page-level timer — fires via SW registration for reliability
+  _notifyPageTimer = setTimeout(function() {
+    sendNotification(title, body);
+    _notifyPageTimer = null;
+  }, delaySeconds * 1000);
+  // Also tell SW in case page timer is throttled when backgrounded
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      if (reg.active) {
+        reg.active.postMessage({
+          type: 'scheduleNotify', title: title, body: body,
+          fireAt: Date.now() + delaySeconds * 1000
+        });
+      }
+    });
+  }
+}
+
+function cancelScheduledNotification() {
+  if (_notifyPageTimer) { clearTimeout(_notifyPageTimer); _notifyPageTimer = null; }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      if (reg.active) reg.active.postMessage({type: 'cancelNotify'});
+    });
   }
 }
 
