@@ -135,6 +135,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-gauge-wrap{height:3px;background:#2a2a2a;border-radius:2px;margin-top:4px;overflow:hidden;}
 .eld-gauge-bar{height:3px;background:var(--acid);border-radius:2px;transition:width 0.4s ease;}
 .eld-gauge-beat{background:#44ff88;}
+#eld-vol-row{border-top:1px solid var(--border);margin-top:8px;padding-top:8px;}
+#eld-vol-row .eld-gauge-wrap{height:5px;margin-top:6px;}
+.eld-vol-numbers{display:flex;justify-content:space-between;align-items:baseline;}
+.eld-vol-fraction{font-family:var(--display);font-size:15px;font-weight:900;color:var(--acid);}
+.eld-vol-remaining{font-size:9px;color:#888;letter-spacing:1px;}
 #sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
 #sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
 #sh-filters::-webkit-scrollbar{display:none;}
@@ -330,12 +335,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div id="eld-stats-strip">
     <div class="eld-strip-inner">
       <div class="eld-strip-card">
-        <div class="eld-strip-val" id="eld-strip-vol">—</div>
-        <div class="eld-strip-lbl">Volume</div>
-        <div class="eld-strip-vs" id="eld-strip-vol-vs"></div>
-        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-vol" style="width:0%"></div></div>
-      </div>
-      <div class="eld-strip-card">
         <div class="eld-strip-val" id="eld-strip-int">—</div>
         <div class="eld-strip-lbl">Intensity</div>
         <div class="eld-strip-vs" id="eld-strip-int-vs"></div>
@@ -353,6 +352,16 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
         <div class="eld-strip-vs" style="height:10px;"></div>
         <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-e1rm" style="width:0%"></div></div>
       </div>
+    </div>
+    <div id="eld-vol-row">
+      <div class="eld-vol-numbers">
+        <div>
+          <span style="font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;">Volume</span>
+          <div class="eld-vol-fraction"><span id="eld-strip-vol">—</span><span style="color:#555;font-size:11px;"> / </span><span id="eld-vol-target">—</span></div>
+        </div>
+        <div id="eld-vol-remaining" class="eld-vol-remaining"></div>
+      </div>
+      <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-vol" style="width:0%"></div></div>
     </div>
   </div>
   <div id="eld-footer">
@@ -432,7 +441,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev4'; // bump to force cache clear
+var CURRENT_VERSION = 'dev5'; // bump to force cache clear
 
 // Clear stale cache on version mismatch
 (function() {
@@ -1970,10 +1979,27 @@ function updateEldStatsStrip(exName) {
   var alle1rm = allData.map(function(d) { return d.maxE1rm; }).filter(Boolean);
   var beste1rm = alle1rm.length ? Math.max.apply(null, alle1rm) : null;
 
-  // Volume card
+  // Volume row
   var lastVol = lastSession ? lastSession.volume : null;
+  var lastIntForReps = lastSession ? lastSession.intensity : null;
   document.getElementById('eld-strip-vol').textContent = curVol > 0 ? fmtVol(curVol) : '—';
-  document.getElementById('eld-strip-vol-vs').textContent = lastVol ? 'vs ' + fmtVol(lastVol) + (curVol ? ' ' + vsLabel(curVol, lastVol) : '') : '';
+  document.getElementById('eld-vol-target').textContent = lastVol ? fmtVol(lastVol) : '—';
+  if (lastVol && curVol < lastVol) {
+    // Remaining reps needed = remaining volume / current avg weight per rep
+    var remaining = lastVol - curVol;
+    var avgWt = curInt || lastIntForReps;
+    if (avgWt && avgWt > 0) {
+      var repsNeeded = Math.ceil(remaining / avgWt);
+      document.getElementById('eld-vol-remaining').textContent = repsNeeded + ' reps to target';
+    } else {
+      document.getElementById('eld-vol-remaining').textContent = fmtVol(remaining) + ' to go';
+    }
+  } else if (lastVol && curVol >= lastVol) {
+    var overPct = Math.round((curVol / lastVol - 1) * 100);
+    document.getElementById('eld-vol-remaining').textContent = overPct > 0 ? '+' + overPct + '% ✓' : '✓ matched';
+  } else {
+    document.getElementById('eld-vol-remaining').textContent = '';
+  }
   if (lastVol && curVol) {
     var volPct = curVol / lastVol * 100;
     setGauge('eld-gauge-vol', volPct, volPct >= 100);
