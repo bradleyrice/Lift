@@ -127,10 +127,14 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .stats-chart{width:100%;height:110px;display:block;}
 /* ELD summary strip */
 #eld-stats-strip{background:#131313;border-top:1px solid var(--border);padding:10px 16px;display:none;flex-shrink:0;}
-.eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
 .eld-strip-card{text-align:center;}
-.eld-strip-val{font-family:var(--display);font-size:15px;font-weight:900;color:var(--acid);}
-.eld-strip-lbl{font-size:8px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.eld-strip-val{font-family:var(--display);font-size:14px;font-weight:900;color:var(--acid);line-height:1;}
+.eld-strip-lbl{font-size:8px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.eld-strip-vs{font-size:8px;color:#888;margin-top:2px;height:10px;}
+.eld-gauge-wrap{height:3px;background:#2a2a2a;border-radius:2px;margin-top:4px;overflow:hidden;}
+.eld-gauge-bar{height:3px;background:var(--acid);border-radius:2px;transition:width 0.4s ease;}
+.eld-gauge-beat{background:#44ff88;}
 #sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
 #sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
 #sh-filters::-webkit-scrollbar{display:none;}
@@ -325,9 +329,30 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   </div>
   <div id="eld-stats-strip">
     <div class="eld-strip-inner">
-      <div class="eld-strip-card"><div class="eld-strip-val" id="eld-strip-vol">—</div><div class="eld-strip-lbl">Volume</div></div>
-      <div class="eld-strip-card"><div class="eld-strip-val" id="eld-strip-pb">—</div><div class="eld-strip-lbl">PB</div></div>
-      <div class="eld-strip-card"><div class="eld-strip-val" id="eld-strip-e1rm">—</div><div class="eld-strip-lbl">e1RM</div></div>
+      <div class="eld-strip-card">
+        <div class="eld-strip-val" id="eld-strip-vol">—</div>
+        <div class="eld-strip-lbl">Volume</div>
+        <div class="eld-strip-vs" id="eld-strip-vol-vs"></div>
+        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-vol" style="width:0%"></div></div>
+      </div>
+      <div class="eld-strip-card">
+        <div class="eld-strip-val" id="eld-strip-int">—</div>
+        <div class="eld-strip-lbl">Intensity</div>
+        <div class="eld-strip-vs" id="eld-strip-int-vs"></div>
+        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-int" style="width:0%"></div></div>
+      </div>
+      <div class="eld-strip-card">
+        <div class="eld-strip-val" id="eld-strip-pb">—</div>
+        <div class="eld-strip-lbl">PB</div>
+        <div class="eld-strip-vs" style="height:10px;"></div>
+        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-pb" style="width:0%"></div></div>
+      </div>
+      <div class="eld-strip-card">
+        <div class="eld-strip-val" id="eld-strip-e1rm">—</div>
+        <div class="eld-strip-lbl">e1RM</div>
+        <div class="eld-strip-vs" style="height:10px;"></div>
+        <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-e1rm" style="width:0%"></div></div>
+      </div>
     </div>
   </div>
   <div id="eld-footer">
@@ -355,11 +380,21 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
         <div class="stats-card"><div class="stats-card-val" id="sc-vol-last">—</div><div class="stats-card-lbl">Last Volume</div></div>
         <div class="stats-card"><div class="stats-card-val" id="sc-vol-best">—</div><div class="stats-card-lbl">Best Volume</div></div>
       </div>
+      <div class="stats-cards" style="grid-template-columns:1fr 1fr;">
+        <div class="stats-card"><div class="stats-card-val" id="sc-int-last">—</div><div class="stats-card-lbl">Last Intensity</div></div>
+        <div class="stats-card"><div class="stats-card-val" id="sc-int-best">—</div><div class="stats-card-lbl">Best Intensity</div></div>
+      </div>
     </div>
     <div class="stats-section">
       <div class="stats-section-title">Volume per Session</div>
       <div class="stats-chart-wrap">
         <canvas id="chart-volume" class="stats-chart"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">Intensity per Session (avg kg/rep)</div>
+      <div class="stats-chart-wrap">
+        <canvas id="chart-intensity" class="stats-chart"></canvas>
       </div>
     </div>
     <div class="stats-section">
@@ -397,7 +432,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev3'; // bump to force cache clear
+var CURRENT_VERSION = 'dev4'; // bump to force cache clear
 
 // Clear stale cache on version mismatch
 (function() {
@@ -1657,9 +1692,11 @@ function getExerciseSessionData(exName, rows) {
   return dates.map(function(d) {
     var sets = byDate[d];
     var vol = sets.reduce(function(s,x) { return s + x.weight * x.reps; }, 0);
+    var totalReps = sets.reduce(function(s,x) { return s + x.reps; }, 0);
     var maxWt = Math.max.apply(null, sets.map(function(x) { return x.weight; }));
     var maxE = Math.max.apply(null, sets.map(function(x) { return e1rm(x.weight, x.reps) || 0; }));
-    return {date: d, volume: Math.round(vol), maxWeight: maxWt, maxE1rm: maxE || null};
+    var intensity = totalReps > 0 ? Math.round(vol / totalReps * 10) / 10 : null;
+    return {date: d, volume: Math.round(vol), maxWeight: maxWt, maxE1rm: maxE || null, intensity: intensity};
   });
 }
 
@@ -1681,8 +1718,10 @@ function getWorkoutSessionData(workoutId, rows) {
   return dates.map(function(d) {
     var sets = byDate[d];
     var vol = sets.reduce(function(s,x) { return s + x.weight * x.reps; }, 0);
+    var totalReps = sets.reduce(function(s,x) { return s + x.reps; }, 0);
     var maxE = Math.max.apply(null, sets.map(function(x) { return e1rm(x.weight, x.reps) || 0; }));
-    return {date: d, volume: Math.round(vol), maxE1rm: maxE || null};
+    var intensity = totalReps > 0 ? Math.round(vol / totalReps * 10) / 10 : null;
+    return {date: d, volume: Math.round(vol), maxE1rm: maxE || null, intensity: intensity};
   });
 }
 
@@ -1730,6 +1769,9 @@ function renderStats() {
   var allVols = data.map(function(d) { return d.volume; });
   var lastVol = allVols.length ? allVols[allVols.length-1] : null;
   var bestVol = allVols.length ? Math.max.apply(null, allVols) : null;
+  var allInts = data.map(function(d) { return d.intensity; }).filter(Boolean);
+  var lastInt = allInts.length ? allInts[allInts.length-1] : null;
+  var bestInt = allInts.length ? Math.max.apply(null, allInts) : null;
 
   var pb = null, beste1rm = null;
   if (statsContext.type === 'exercise') {
@@ -1738,7 +1780,6 @@ function renderStats() {
     var alle1rm = data.map(function(d) { return d.maxE1rm; }).filter(Boolean);
     beste1rm = alle1rm.length ? Math.max.apply(null, alle1rm) : null;
   } else {
-    // For workout: best e1rm across all exercises
     var alle1rmW = data.map(function(d) { return d.maxE1rm; }).filter(Boolean);
     beste1rm = alle1rmW.length ? Math.max.apply(null, alle1rmW) : null;
   }
@@ -1748,6 +1789,11 @@ function renderStats() {
   document.getElementById('sc-e1rm').textContent = beste1rm !== null ? beste1rm + 'kg' : '—';
   document.getElementById('sc-vol-last').textContent = lastVol !== null ? fmtVol(lastVol) : '—';
   document.getElementById('sc-vol-best').textContent = bestVol !== null ? fmtVol(bestVol) : '—';
+  // Intensity summary — update or create cards dynamically
+  var intLastEl = document.getElementById('sc-int-last');
+  var intBestEl = document.getElementById('sc-int-best');
+  if (intLastEl) intLastEl.textContent = lastInt !== null ? lastInt + 'kg' : '—';
+  if (intBestEl) intBestEl.textContent = bestInt !== null ? bestInt + 'kg' : '—';
 
   if (!recent.length) {
     ['chart-volume','chart-maxwt','chart-e1rm'].forEach(function(id) {
@@ -1762,6 +1808,9 @@ function renderStats() {
 
   drawChart('chart-volume', recent.map(function(d){return d.date;}),
     recent.map(function(d){return d.volume;}), '#e8ff47', fmtVol);
+
+  drawChart('chart-intensity', recent.map(function(d){return d.date;}),
+    recent.map(function(d){return d.intensity||0;}), '#ff9900', function(v){return v?v+'kg':'—';});
 
   if (statsContext.type === 'exercise') {
     drawChart('chart-maxwt', recent.map(function(d){return d.date;}),
@@ -1865,28 +1914,93 @@ function drawChart(canvasId, labels, values, color, fmtFn) {
   }
 }
 
+function setGauge(barId, pct, beat) {
+  var bar = document.getElementById(barId);
+  if (!bar) return;
+  bar.style.width = Math.min(100, pct) + '%';
+  bar.className = 'eld-gauge-bar' + (beat ? ' eld-gauge-beat' : '');
+}
+
+function vsLabel(current, last) {
+  if (!last || !current) return '';
+  var diff = Math.round((current / last - 1) * 100);
+  if (diff > 0) return '+' + diff + '%';
+  if (diff < 0) return diff + '%';
+  return '=';
+}
+
 function updateEldStatsStrip(exName) {
   var strip = document.getElementById('eld-stats-strip');
   if (!strip) return;
-  // Always show strip when exercise detail is open
   strip.style.display = 'block';
+
   var rows = getLocalResults();
-  var data = getExerciseSessionData(exName, rows);
-  // Current session volume (sets in memory with both weight + reps)
-  var sessionVol = 0;
-  if (session && session.sets && session.sets[exName]) {
-    session.sets[exName].forEach(function(s) {
-      if (s.weight && s.reps) sessionVol += parseFloat(s.weight) * parseInt(s.reps);
+  // Exclude current session rows for historical comparison
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
     });
   }
-  // Overall PB and best e1rm from history
-  var allWts = data.map(function(d) { return d.maxWeight; }).filter(Boolean);
+  var histRows = rows.filter(function(r) { return !currentIds.has(r[0]); });
+  var data = getExerciseSessionData(exName, histRows);
+  var lastSession = data.length ? data[data.length - 1] : null;
+
+  // Current session stats from memory
+  var curVol = 0, curReps = 0, curMaxWt = 0, curMaxE1rm = 0;
+  if (session && session.sets && session.sets[exName]) {
+    session.sets[exName].forEach(function(s) {
+      var w = parseFloat(s.weight), r = parseInt(s.reps);
+      if (w && r) {
+        curVol += w * r;
+        curReps += r;
+        if (w > curMaxWt) curMaxWt = w;
+        var est = e1rm(w, r);
+        if (est && est > curMaxE1rm) curMaxE1rm = est;
+      }
+    });
+  }
+  var curInt = curReps > 0 ? Math.round(curVol / curReps * 10) / 10 : 0;
+  curVol = Math.round(curVol);
+
+  // All-time PB and e1rm (include all data)
+  var allData = getExerciseSessionData(exName, rows);
+  var allWts = allData.map(function(d) { return d.maxWeight; }).filter(Boolean);
   var pb = allWts.length ? Math.max.apply(null, allWts) : null;
-  var alle1rm = data.map(function(d) { return d.maxE1rm; }).filter(Boolean);
+  var alle1rm = allData.map(function(d) { return d.maxE1rm; }).filter(Boolean);
   var beste1rm = alle1rm.length ? Math.max.apply(null, alle1rm) : null;
-  document.getElementById('eld-strip-vol').textContent = sessionVol > 0 ? fmtVol(Math.round(sessionVol)) : '—';
+
+  // Volume card
+  var lastVol = lastSession ? lastSession.volume : null;
+  document.getElementById('eld-strip-vol').textContent = curVol > 0 ? fmtVol(curVol) : '—';
+  document.getElementById('eld-strip-vol-vs').textContent = lastVol ? 'vs ' + fmtVol(lastVol) + (curVol ? ' ' + vsLabel(curVol, lastVol) : '') : '';
+  if (lastVol && curVol) {
+    var volPct = curVol / lastVol * 100;
+    setGauge('eld-gauge-vol', volPct, volPct >= 100);
+  } else {
+    setGauge('eld-gauge-vol', 0, false);
+  }
+
+  // Intensity card
+  var lastInt = lastSession ? lastSession.intensity : null;
+  document.getElementById('eld-strip-int').textContent = curInt > 0 ? curInt + 'kg' : '—';
+  document.getElementById('eld-strip-int-vs').textContent = lastInt ? 'vs ' + lastInt + 'kg' + (curInt ? ' ' + vsLabel(curInt, lastInt) : '') : '';
+  if (lastInt && curInt) {
+    var intPct = curInt / lastInt * 100;
+    setGauge('eld-gauge-int', intPct, intPct >= 100);
+  } else {
+    setGauge('eld-gauge-int', 0, false);
+  }
+
+  // PB card — gauge shows today's best set vs all-time PB
   document.getElementById('eld-strip-pb').textContent = pb !== null ? pb + 'kg' : '—';
+  if (pb && curMaxWt) setGauge('eld-gauge-pb', curMaxWt / pb * 100, curMaxWt >= pb);
+  else setGauge('eld-gauge-pb', 0, false);
+
+  // e1RM card
   document.getElementById('eld-strip-e1rm').textContent = beste1rm !== null ? beste1rm + 'kg' : '—';
+  if (beste1rm && curMaxE1rm) setGauge('eld-gauge-e1rm', curMaxE1rm / beste1rm * 100, curMaxE1rm >= beste1rm);
+  else setGauge('eld-gauge-e1rm', 0, false);
 }
 
 // UTILS
