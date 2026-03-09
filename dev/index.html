@@ -441,7 +441,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev5'; // bump to force cache clear
+var CURRENT_VERSION = 'dev7'; // bump to force cache clear
 
 // Clear stale cache on version mismatch
 (function() {
@@ -456,6 +456,24 @@ var CURRENT_VERSION = 'dev5'; // bump to force cache clear
 function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
 function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
 
+function isValidResultRow(r) {
+  // A valid result row must have:
+  // r[0] = ResultID (starts with 'r' or similar, not a number or field name)
+  // r[2] = WorkoutID (starts with 'w')
+  // r[9] = SessionDate (DD/MM/YYYY format)
+  if (!r || r.length < 10) return false;
+  if (!r[0] || r[0] === 'ResultID' || r[0] === 'UserID' || r[0] === '__DELETED__') return false;
+  // Reject rows where col 0 looks like a number (shifted row)
+  if (!isNaN(parseFloat(r[0])) && isFinite(r[0])) return false;
+  // Reject rows where col 0 looks like a field name (header row)
+  if (['Reps','Weight','Set','ExerciseID','ExerciseName','WorkoutID','WorkoutName','Timestamp','SessionDate'].indexOf(r[0]) >= 0) return false;
+  // WorkoutID should start with 'w'
+  if (!r[2] || typeof r[2] !== 'string' || r[2].charAt(0) !== 'w') return false;
+  // SessionDate should match DD/MM/YYYY
+  if (!r[9] || !/^\d{2}\/\d{2}\/\d{4}$/.test(r[9])) return false;
+  return true;
+}
+
 function getLocalResults() {
   var rows = lsGet(LS_RESULTS) || [];
   var result = [];
@@ -466,10 +484,9 @@ function getLocalResults() {
     if (r[0] === '__DELETED__') continue;
     // If UserID was accidentally saved in col 0 (email address), strip it
     if (typeof r[0] === 'string' && r[0].indexOf('@') >= 0) {
-      result.push(r.slice(1)); // drop the email prefix
-      continue;
+      r = r.slice(1);
     }
-    result.push(r);
+    if (isValidResultRow(r)) result.push(r);
   }
   return result;
 }
@@ -735,11 +752,11 @@ async function initApp() {
     var rawResults = await readUserRows('Results');
     // rawResults cols: [UserID, ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
     // Convert to legacy format (drop UserID) for internal use
-    var sheetsRows = rawResults.map(function(r) { return r.slice(1); });
+    var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
     // Merge: local rows take priority, add any Sheets rows not already local
     var localRows = getLocalResults();
     var localIds = new Set(localRows.map(function(r) { return r[0]; }));
-    var sheetsOnly = sheetsRows.filter(function(r) { return r[0] && !localIds.has(r[0]); });
+    var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
     shRows = localRows.concat(sheetsOnly);
     ehRows = shRows;
     lsSet(LS_RESULTS, shRows);
@@ -934,7 +951,8 @@ async function flushSyncQueue() {
 // Merge local data into Sheets (when offline user signs in)
 async function mergeLocalToSheets() {
   var localResults = getLocalResults();
-  var sheetResults = await readSheet('Results');
+  var rawMerge = await readUserRows('Results');
+  var sheetResults = rawMerge.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
   var sheetIds = new Set(sheetResults.map(function(r) { return r[0]; }));
   var toUpload = localResults.filter(function(r) {
     return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !sheetIds.has(r[0]);
@@ -1270,10 +1288,10 @@ function loadSessionHistory() {
   // Background refresh from Sheets if online
   if (!offlineMode && accessToken) {
     readUserRows('Results').then(function(rawResults) {
-      var sheetsRows = rawResults.map(function(r) { return r.slice(1); });
+      var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
       var localRows = getLocalResults();
       var localIds = new Set(localRows.map(function(r) { return r[0]; }));
-      var sheetsOnly = sheetsRows.filter(function(r) { return r[0] && !localIds.has(r[0]); });
+      var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
       shRows = localRows.concat(sheetsOnly);
       ehRows = shRows;
       lsSet(LS_RESULTS, shRows);
@@ -1303,7 +1321,22 @@ async function deleteSession(date, wid) {
     for (var j = 0; j < toDelete.length; j++) {
       await deleteSheetRow('Results', toDelete[j]);
     }
-    shRows = await readSheet('Results');
+    // Mark deleted locally too
+    var localRows = getLocalResults().filter(function(r) {
+      return !(r[9] === date && r[2] === wid);
+    });
+    lsSet(LS_RESULTS, localRows);
+    shRows = localRows; ehRows = localRows;
+    // Background refresh from sheets with proper validation
+    readUserRows('Results').then(function(rawResults) {
+      var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+      var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+      var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
+      shRows = localRows.concat(sheetsOnly);
+      ehRows = shRows;
+      lsSet(LS_RESULTS, shRows);
+      renderSessionFilters(); renderSessionList();
+    }).catch(function() {});
     setSyncStatus('saved');
     renderSessionFilters();
     renderSessionList();
@@ -1317,7 +1350,7 @@ async function deleteSession(date, wid) {
 function renderSessionList() {
   var wrap = document.getElementById('sh-list');
   var sessions = {};
-  shRows.filter(function(r) { return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) {
+  shRows.filter(isValidResultRow).forEach(function(r) {
     var date = r[9], wid = r[2], wname = r[3]; if (!date) return;
     if (shFilter !== 'all' && wid !== shFilter) return;
     var key = date + '||' + wid;
@@ -2071,7 +2104,14 @@ async function retryFailedSyncs() {
   } else {
     setSyncStatus('saved');
     showToast('\u2714 All synced successfully');
-    shRows = await readSheet('Results');
+    var rawFlush = await readUserRows('Results');
+    var validFlush = rawFlush.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+    var localFlush = getLocalResults();
+    var localFlushIds = new Set(localFlush.map(function(r) { return r[0]; }));
+    var sheetsFlushOnly = validFlush.filter(function(r) { return !localFlushIds.has(r[0]); });
+    shRows = localFlush.concat(sheetsFlushOnly);
+    ehRows = shRows;
+    lsSet(LS_RESULTS, shRows);
   }
 }
 function showToast(msg) {
