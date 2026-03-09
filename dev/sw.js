@@ -90,4 +90,3 @@ self.addEventListener('message', function(e) {
 self.addEventListener('activate', function() {
   scheduleNext();
 });
-
