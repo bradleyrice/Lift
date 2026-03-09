@@ -150,6 +150,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .session-card-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;}
 .session-delete-btn{background:transparent;border:none;color:#b0b0b0;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;line-height:1;}
 .session-delete-btn:active{color:#ff4747;}
+.session-resume-btn{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid var(--acid);color:var(--acid);border-radius:4px;padding:5px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.session-resume-btn:active{background:var(--acid);color:var(--bg);}
 .session-date{font-size:14px;color:var(--acid);letter-spacing:1px;}
 .session-workout{font-family:var(--display);font-size:16px;font-weight:700;}
 .session-meta-r{font-size:12px;color:#b0b0b0;text-align:right;}
@@ -1011,6 +1013,45 @@ function startSession() {
   showToast('Session started!'); requestNotifPermission();
 }
 
+function resumeSession(wid, date) {
+  if (session && !confirm('End current session and resume this one?')) return;
+  var workout = workouts.find(function(w) { return w.id === wid; });
+  if (!workout) { showToast('Workout not found'); return; }
+  if (session) clearInterval(sessionTimerInterval);
+
+  // Rebuild sets from stored rows
+  var rows = getLocalResults().filter(function(r) { return r[2] === wid && r[9] === date; });
+  var sets = {};
+  workout.exercises.forEach(function(ex) { sets[ex] = []; });
+  var sorted = rows.slice().sort(function(a,b) { return parseInt(a[6]||0) - parseInt(b[6]||0); });
+  sorted.forEach(function(r) {
+    var ex = r[5]; if (!sets[ex]) sets[ex] = [];
+    sets[ex].push({weight:r[7], reps:r[8], timestamp:r[1], _localId:r[0], sheetRow:null});
+  });
+
+  // Use earliest timestamp as start time
+  var ts = rows.map(function(r){return r[1];}).filter(Boolean).sort();
+  var startTime = ts.length ? new Date(ts[0]) : new Date();
+  session = {workoutId:workout.id, workoutName:workout.name, startTime:startTime, sets:sets};
+
+  clearInterval(sessionTimerInterval);
+  sessionTimerInterval = setInterval(function() {
+    var elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+    var m = Math.floor(elapsed/60), s = elapsed%60;
+    document.getElementById('session-timer').textContent = m+':'+(s<10?'0':'')+s;
+    document.getElementById('session-meta').textContent = workout.name+'\n'+new Date().toLocaleDateString('en-GB');
+  }, 1000);
+
+  document.getElementById('session-info').classList.add('active');
+  document.getElementById('session-actions').classList.add('active');
+  document.getElementById('rest-timer').classList.add('visible');
+  document.getElementById('workout-select').value = wid;
+  loadPBs();
+  renderLogExercises();
+  goScreen('log');
+  showToast('Session resumed');
+}
+
 function sid(n) { return n.replace(/[^a-zA-Z0-9]/g,'_'); }
 function nameFromSid(id) {
   if (!session) return id;
@@ -1371,12 +1412,18 @@ function renderSessionList() {
   });
   if (!sorted.length) { wrap.innerHTML = '<div class="empty-state">No sessions logged yet.</div>'; return; }
   wrap.innerHTML = '';
+  var today = new Date().toLocaleDateString('en-GB');
   sorted.slice(0, 30).forEach(function(s) {
     var card = document.createElement('div'); card.className = 'session-card';
-    card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"><div class="session-date">' + s.date + '</div><div class="session-workout">' + s.wname + '</div></div>' +
-      '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
-      '<button class="session-delete-btn" onclick="deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">f5d1</button></div>' +
-      '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"> ' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
+    var isToday = s.date === today;
+    var wnameSafe = s.wname.replace(/'/g,"\\'");
+    var resumeBtn = isToday ? '<button class="session-resume-btn" onclick="event.stopPropagation();resumeSession(\'' + s.wid + '\',\'' + s.date + '\')">&rsaquo; Resume</button>' : '';
+    var todayLabel = isToday ? ' <span style="font-size:9px;color:var(--acid);letter-spacing:2px;">TODAY</span>' : '';
+    card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"><div class="session-date">' + s.date + todayLabel + '</div><div class="session-workout">' + s.wname + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' + resumeBtn +
+      '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
+      '<button class="session-delete-btn" onclick="event.stopPropagation();deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">f5d1</button></div></div>' +
+      '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
     wrap.appendChild(card);
   });
 }
