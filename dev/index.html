@@ -441,7 +441,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev7'; // bump to force cache clear
+var CURRENT_VERSION = 'dev8'; // bump to force cache clear
 
 // Clear stale cache on version mismatch
 (function() {
@@ -1311,39 +1311,39 @@ async function deleteSession(date, wid) {
   if (!confirm('Delete this entire session? This cannot be undone.')) return;
   setSyncStatus('syncing');
   try {
-    var toDelete = [];
-    for (var i = 0; i < shRows.length; i++) {
-      var r = shRows[i];
-      if (r[9] === date && r[2] === wid && r[0] !== 'ResultID' && r[0] !== '__DELETED__') {
-        toDelete.push(i + 1); // 1-indexed sheet row
-      }
-    }
-    for (var j = 0; j < toDelete.length; j++) {
-      await deleteSheetRow('Results', toDelete[j]);
-    }
-    // Mark deleted locally too
-    var localRows = getLocalResults().filter(function(r) {
-      return !(r[9] === date && r[2] === wid);
-    });
-    lsSet(LS_RESULTS, localRows);
-    shRows = localRows; ehRows = localRows;
-    // Background refresh from sheets with proper validation
-    readUserRows('Results').then(function(rawResults) {
-      var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
-      var localIds = new Set(localRows.map(function(r) { return r[0]; }));
-      var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
-      shRows = localRows.concat(sheetsOnly);
-      ehRows = shRows;
-      lsSet(LS_RESULTS, shRows);
-      renderSessionFilters(); renderSessionList();
-    }).catch(function() {});
-    setSyncStatus('saved');
-    renderSessionFilters();
-    renderSessionList();
+    // Remove from local immediately — source of truth
+    var localRows = getLocalResults();
+    var toKeep = localRows.filter(function(r) { return !(r[9] === date && r[2] === wid); });
+    lsSet(LS_RESULTS, toKeep);
+    shRows = toKeep; ehRows = toKeep;
+    renderSessionFilters(); renderSessionList();
     showToast('Session deleted');
+    setSyncStatus('saved');
+    // Delete from Sheets in background — find rows by ResultID not index
+    // (index-based row numbers break if sheet has gaps)
+    var deletedIds = localRows
+      .filter(function(r) { return r[9] === date && r[2] === wid; })
+      .map(function(r) { return r[0]; });
+    if (deletedIds.length && !offlineMode && accessToken) {
+      deleteSessionFromSheets(deletedIds).catch(function() {
+        setSyncStatus('error');
+      });
+    }
   } catch(e) {
     setSyncStatus('error');
     showToast('Delete failed');
+  }
+}
+
+async function deleteSessionFromSheets(resultIds) {
+  // Read current sheet to find row numbers by ResultID
+  var raw = await readSheet('Results');
+  // raw[0] is header, raw[1+] are data rows with UserID in col 0
+  for (var i = 1; i < raw.length; i++) {
+    var rowId = raw[i][1]; // col 1 = ResultID (after UserID in col 0)
+    if (resultIds.indexOf(rowId) >= 0) {
+      await deleteSheetRow('Results', i + 1); // +1 for 1-indexed
+    }
   }
 }
 
