@@ -455,35 +455,44 @@ var PUSH_SERVER = 'https://stages-frame-feof-says.trycloudflare.com';
 var _pushSubscription = null;
 
 async function initPushSubscription() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-  if (Notification.permission !== 'granted') return;
+  if (!('serviceWorker' in navigator)) { showToast('Push: no SW support'); return; }
+  if (!('PushManager' in window)) { showToast('Push: no PushManager'); return; }
+  if (Notification.permission !== 'granted') { showToast('Push: no permission (' + Notification.permission + ')'); return; }
   try {
-    // Get VAPID public key from server
+    showToast('Push: fetching VAPID key...');
     var resp = await fetch(PUSH_SERVER + '/vapid-public-key');
     var data = await resp.json();
     var vapidKey = data.key;
+    if (!vapidKey) { showToast('Push: no VAPID key from server'); return; }
 
+    showToast('Push: subscribing...');
     var reg = await navigator.serviceWorker.ready;
-    // Check for existing subscription first
+    // Always get fresh subscription — previous one may be stale after reinstall
     var existing = await reg.pushManager.getSubscription();
     if (existing) {
-      _pushSubscription = existing;
-    } else {
-      _pushSubscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey)
-      });
+      showToast('Push: unsubscribing stale...');
+      await existing.unsubscribe();
     }
-    // Register subscription with server
+    _pushSubscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey)
+    });
+    showToast('Push: subscribed, registering...');
+
     var userId = currentUser ? currentUser.email : null;
-    if (!userId) return;
-    await fetch(PUSH_SERVER + '/subscribe', {
+    if (!userId) { showToast('Push: no userId'); return; }
+    var regResp = await fetch(PUSH_SERVER + '/subscribe', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ userId: userId, subscription: _pushSubscription.toJSON() })
     });
-    console.log('[LIFT] Push subscription registered');
+    if (regResp.ok) {
+      showToast('Push: ready ✓');
+    } else {
+      showToast('Push: server reg failed ' + regResp.status);
+    }
   } catch(e) {
+    showToast('Push error: ' + e.message);
     console.warn('[LIFT] Push subscription failed:', e.message);
   }
 }
@@ -915,7 +924,8 @@ async function initApp() {
     renderWorkoutsScreen();
     // Flush any queued offline writes
     setTimeout(flushSyncQueue, 1000);
-    // Init push subscription after sign-in
+    // Request notification permission then init push subscription
+    await requestNotifPermission();
     initPushSubscription();
     showScreen('app');
   } catch(e) {
@@ -2416,9 +2426,10 @@ window.addEventListener('online', function() {
 });
 
 // Request notification permission
-function requestNotifPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
   }
 }
 
