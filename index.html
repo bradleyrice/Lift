@@ -578,12 +578,12 @@ function signIn() {
           } catch(e) {
             currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
           }
-          // If we had local offline data, merge it into Sheets first
-          var hadOfflineData = lsGet(LS_MODE) === 'offline' && (getLocalResults()).length > 0;
+          // Always merge local rows to Sheets on sign-in — catches any unsynced local data
           lsSet(LS_MODE, 'google');
-          if (hadOfflineData) {
+          var localPending = getLocalResults().length > 0;
+          if (localPending) {
             showScreen('loading-screen');
-            setLoadingMsg('Merging local data to Sheets...');
+            setLoadingMsg('Syncing local data to Sheets...');
             try { await mergeLocalToSheets(); } catch(e) { console.warn('Merge failed:', e); }
           }
           initApp();
@@ -883,8 +883,19 @@ async function updateResultInSheets(row, set) {
   }
   try {
     setSyncStatus('syncing');
-    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, sheetRow);
-    else set.sheetRow = await appendRows('Results', [sheetRow]);
+    if (set.sheetRow) {
+      await updateSheetRow('Results', set.sheetRow, sheetRow);
+    } else {
+      // No sheetRow index — find by ResultID to avoid duplicating
+      var raw = await readSheet('Results');
+      var existingIdx = raw.findIndex(function(r) { return r[1] === row[0]; });
+      if (existingIdx > 0) {
+        set.sheetRow = existingIdx + 1;
+        await updateSheetRow('Results', set.sheetRow, sheetRow);
+      } else {
+        set.sheetRow = await appendRows('Results', [sheetRow]);
+      }
+    }
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
@@ -1091,8 +1102,8 @@ function logSetHTML(exName, i, s) {
   var t = s.timestamp ? new Date(s.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
   return '<div class="set-row" id="setrow-' + sid(exName) + '-' + i + '">' +
     '<span class="set-num">' + (i+1) + '</span>' +
-    '<input class="set-input" type="number" inputmode="decimal" placeholder="0" value="' + (s.weight||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'weight\',this.value)" oninput="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'weight\',this.value)">' +
-    '<input class="set-input" type="number" inputmode="numeric" placeholder="0" value="' + (s.reps||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'reps\',this.value)" oninput="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'reps\',this.value)">' +
+    '<input class="set-input" type="number" inputmode="decimal" placeholder="0" value="' + (s.weight||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'weight\',this.value)" oninput="previewLogSet(\'' + sid(exName) + '\',' + i + ')">' +
+    '<input class="set-input" type="number" inputmode="numeric" placeholder="0" value="' + (s.reps||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'reps\',this.value)" oninput="previewLogSet(\'' + sid(exName) + '\',' + i + ')">' +
     '<span class="set-time' + (s.timestamp ? ' logged' : '') + '">' + t + '</span>' +
     '<button class="remove-btn" onclick="removeLogSet(\'' + sid(exName) + '\',' + i + ')">&#215;</button></div>';
 }
@@ -1254,6 +1265,26 @@ async function addLogSet(exId) {
   saveResultLocally(row);
   syncResultToSheets(row, newSet);
   rtQuickStart();
+}
+
+function previewLogSet(exId, setIdx) {
+  // Update stats strip live as user types without triggering save/sync
+  var exName = nameFromSid(exId);
+  var row = document.getElementById('setrow-' + exId + '-' + setIdx);
+  if (!row || !session) return;
+  var inputs = row.querySelectorAll('.set-input');
+  var weight = inputs[0] ? inputs[0].value : '';
+  var reps = inputs[1] ? inputs[1].value : '';
+  // Temporarily update session in memory for strip calculation only
+  var sets = session.sets[exName];
+  if (sets && sets[setIdx]) {
+    var prev = {weight: sets[setIdx].weight, reps: sets[setIdx].reps};
+    sets[setIdx].weight = weight;
+    sets[setIdx].reps = reps;
+    if (currentExLogName === exName) updateEldStatsStrip(exName);
+    sets[setIdx].weight = prev.weight;
+    sets[setIdx].reps = prev.reps;
+  }
 }
 
 async function updateLogSet(exId, setIdx, field, value) {
