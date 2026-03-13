@@ -90,3 +90,41 @@ self.addEventListener('message', function(e) {
 self.addEventListener('activate', function() {
   scheduleNext();
 });
+
+// Handle incoming push events from the LIFT push server
+self.addEventListener('push', function(e) {
+  var title = 'Rest Complete';
+  var body = 'Time to lift!';
+  try {
+    if (e.data) {
+      var data = e.data.json();
+      if (data.title) title = data.title;
+      if (data.body) body = data.body;
+    }
+  } catch(err) {}
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body: body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      tag: 'rest-timer'
+    })
+  );
+});
+
+// Tap on notification opens/focuses the app
+self.addEventListener('notificationclick', function(e) {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].url.indexOf('bradleyrice.github.io') !== -1) {
+          return list[i].focus();
+        }
+      }
+      return clients.openWindow('https://bradleyrice.github.io/Lift/');
+    })
+  );
+});

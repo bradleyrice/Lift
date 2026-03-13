@@ -90,6 +90,17 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-hist-val{text-align:center;}
 .eld-hist-pb{color:var(--acid);}
 .eld-sets-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.eld-committed-row{display:grid;grid-template-columns:24px 1fr 1fr 60px 28px;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #181818;}
+.eld-committed-row .set-num{font-family:var(--mono);font-size:11px;color:#555;text-align:center;}
+.eld-committed-val{font-family:var(--mono);font-size:14px;color:#e0e0e0;text-align:center;cursor:pointer;padding:4px 6px;border-radius:3px;border:1px solid transparent;}
+.eld-committed-val:hover{border-color:#2e2e2e;background:#111;}
+.eld-committed-val.editing{border-color:var(--acid);background:#111;outline:none;width:100%;color:#e0e0e0;}
+.eld-committed-time{font-family:var(--mono);font-size:10px;color:#444;text-align:center;}
+.eld-input-row{display:grid;grid-template-columns:24px 1fr 1fr 60px 28px;align-items:center;gap:6px;padding:8px 0 4px;margin-top:4px;border-top:1px solid #2a2a2a;}
+.eld-input-row .set-num{font-family:var(--mono);font-size:11px;color:var(--acid);text-align:center;}
+.eld-quick-input{background:#111;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:15px;text-align:center;padding:7px 4px;width:100%;outline:none;}
+.eld-quick-input:focus{border-color:var(--acid);}
+.eld-commit-btn{background:var(--acid);color:var(--bg);border:none;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:900;cursor:pointer;padding:7px 0;width:100%;grid-column:span 1;}
 #eld-footer{padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;}
 .add-set-btn:active{border-color:var(--acid);color:var(--acid);}
 #session-actions{margin:12px 0 0;display:none!important;}
@@ -150,6 +161,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .session-card-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;}
 .session-delete-btn{background:transparent;border:none;color:#b0b0b0;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;line-height:1;}
 .session-delete-btn:active{color:#ff4747;}
+.session-resume-btn{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid var(--acid);color:var(--acid);border-radius:4px;padding:5px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.session-resume-btn:active{background:var(--acid);color:var(--bg);}
 .session-date{font-size:14px;color:var(--acid);letter-spacing:1px;}
 .session-workout{font-family:var(--display);font-size:16px;font-weight:700;}
 .session-meta-r{font-size:12px;color:#b0b0b0;text-align:right;}
@@ -163,10 +176,12 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #sd-content{padding:14px 16px 0;}
 .sd-ex{margin-bottom:18px;}
 .sd-ex-name{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:8px;color:var(--acid);}
-.sd-set-row{display:grid;grid-template-columns:26px 80px 80px 1fr;gap:8px;margin-bottom:5px;align-items:center;}
+.sd-set-row{display:grid;grid-template-columns:26px 1fr 1fr 1fr;gap:8px;margin-bottom:5px;align-items:center;}
 .sd-set-num{font-size:12px;color:#aaa;text-align:center;}
 .sd-set-val{font-size:14px;text-align:center;}
-.sd-set-time{font-size:12px;color:#b0b0b0;}
+.sd-set-time{font-size:11px;color:#b0b0b0;text-align:right;}
+.sd-edit-input{background:#1e1e1e;border:1px solid #2e2e2e;border-radius:4px;color:#ddd;font-size:14px;width:100%;padding:4px 6px;text-align:center;-moz-appearance:textfield;box-sizing:border-box;}
+.sd-edit-input:focus{outline:none;border-color:var(--acid);}
 .sd-rest{font-size:12px;color:#4a8a00;padding-left:34px;margin-bottom:5px;}
 #eh-search-wrap{padding:12px 16px;border-bottom:1px solid var(--border);}
 #eh-search{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:15px;padding:10px 12px;}
@@ -248,7 +263,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div class="screen-header">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div><div class="screen-title">LOG</div><div id="sync-row"><span id="sync-dot"></span><span id="sync-label">synced</span></div></div>
-          <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;margin-top:4px;">Sign out</button>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <button onclick="forceSyncToSheets()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Force sync</button>
+            <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Sign out</button>
+          </div>
         </div>
       </div>
       <div id="workout-picker"><select id="workout-select"></select><button id="start-session-btn" onclick="startSession()">Start</button></div>
@@ -289,6 +307,18 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
         <button onclick="addWorkout()" style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:7px 12px;border-radius:4px;cursor:pointer;margin-top:4px;">+ NEW</button>
       </div>
       <div style="height:12px;"></div><div id="workouts-list"></div>
+      <div style="margin:24px 0 8px;padding:16px;background:#111;border-radius:8px;border:1px solid #1e1e1e;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:10px;">Push Server</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="push-server-input" type="url" placeholder="https://your-tunnel.trycloudflare.com"
+            style="flex:1;background:#0a0a0a;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:11px;padding:8px 10px;outline:none;"
+            oninput="this.style.borderColor='#2e2e2e'"
+            value="">
+          <button onclick="savePushServerUrl()"
+            style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:10px;letter-spacing:2px;padding:8px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;">SAVE</button>
+        </div>
+        <div id="push-server-status" style="font-family:var(--mono);font-size:10px;color:#555;margin-top:6px;"></div>
+      </div>
     </div>
   </div>
   <div id="nav">
@@ -330,7 +360,13 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     </div>
     <div class="eld-sets-title">Today's Sets</div>
     <div id="eld-sets-list"></div>
-    <button id="add-set-detail-btn" class="add-set-btn" onclick="addLogSetFromDetail()" style="margin-top:8px;">+ Add Set</button>
+    <div class="eld-input-row" id="eld-input-row">
+      <span class="set-num" id="eld-input-setnum">1</span>
+      <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
+      <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
+      <span class="eld-committed-time"></span>
+      <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
+    </div>
   </div>
   <div id="eld-stats-strip">
     <div class="eld-strip-inner">
@@ -437,11 +473,118 @@ var DEFAULT_WORKOUTS = [
 var LS_WORKOUTS = 'lift_workouts';
 var LS_EXERCISES = 'lift_exercises';
 var LS_RESULTS = 'lift_results';
+var LS_PUSH_SERVER = 'lift_push_server';
 var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev6'; // bump to force cache clear
+var CURRENT_VERSION = 'dev30';
+
+// ── PUSH SERVER ──────────────────────────────────────────────────────────────
+function savePushServerUrl() {
+  var input = document.getElementById('push-server-input');
+  var val = (input.value || '').trim().replace(/\/+$/, '');
+  if (!val) { document.getElementById('push-server-status').textContent = 'Enter a URL first'; return; }
+  PUSH_SERVER = val;
+  lsSet(LS_PUSH_SERVER, val);
+  document.getElementById('push-server-status').textContent = 'Saved. Sign out and back in to reconnect.';
+  input.style.borderColor = 'var(--acid)';
+}
+
+function loadPushServerUrl() {
+  var saved = lsGet(LS_PUSH_SERVER);
+  if (saved) PUSH_SERVER = saved;
+  var input = document.getElementById('push-server-input');
+  if (input) input.value = PUSH_SERVER;
+}
+
+var PUSH_SERVER = 'https://replica-scheme-advisory-flowers.trycloudflare.com';
+var _pushSubscription = null;
+
+async function initPushSubscription() {
+  if (!('serviceWorker' in navigator)) { showToast('Push: no SW support'); return; }
+  if (!('PushManager' in window)) { showToast('Push: no PushManager'); return; }
+  if (Notification.permission !== 'granted') { showToast('Push: no permission (' + Notification.permission + ')'); return; }
+  try {
+    showToast('Push: fetching VAPID key...');
+    var resp = await fetch(PUSH_SERVER + '/vapid-public-key');
+    var data = await resp.json();
+    var vapidKey = data.key;
+    if (!vapidKey) { showToast('Push: no VAPID key from server'); return; }
+
+    showToast('Push: subscribing...');
+    var reg = await navigator.serviceWorker.ready;
+    // Always get fresh subscription — previous one may be stale after reinstall
+    var existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      showToast('Push: unsubscribing stale...');
+      await existing.unsubscribe();
+    }
+    _pushSubscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey)
+    });
+    showToast('Push: subscribed, registering...');
+
+    var userId = currentUser ? currentUser.email : null;
+    if (!userId) { showToast('Push: no userId'); return; }
+    var regResp = await fetch(PUSH_SERVER + '/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ userId: userId, subscription: _pushSubscription.toJSON() })
+    });
+    if (regResp.ok) {
+      showToast('Push: ready ✓');
+    } else {
+      showToast('Push: server reg failed ' + regResp.status);
+    }
+  } catch(e) {
+    showToast('Push error: ' + e.message);
+    console.warn('[LIFT] Push subscription failed:', e.message);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var rawData = atob(base64);
+  var arr = new Uint8Array(rawData.length);
+  for (var i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+  return arr;
+}
+
+async function serverScheduleNotification(title, body, delaySeconds) {
+  if (!currentUser || !_pushSubscription) return false;
+  try {
+    var resp = await fetch(PUSH_SERVER + '/schedule', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        userId: currentUser.email,
+        delayMs: delaySeconds * 1000,
+        title: title,
+        body: body
+      })
+    });
+    return resp.ok;
+  } catch(e) {
+    console.warn('[LIFT] Server schedule failed:', e.message);
+    return false;
+  }
+}
+
+async function serverCancelNotification() {
+  if (!currentUser || !_pushSubscription) return;
+  try {
+    await fetch(PUSH_SERVER + '/cancel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ userId: currentUser.email })
+    });
+  } catch(e) {
+    console.warn('[LIFT] Server cancel failed:', e.message);
+  }
+} // bump to force cache clear
 
 // Clear stale cache on version mismatch
 (function() {
@@ -477,6 +620,7 @@ function isValidResultRow(r) {
 function getLocalResults() {
   var rows = lsGet(LS_RESULTS) || [];
   var result = [];
+  var seen = {};
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
     if (!r || !r[0]) continue;
@@ -486,7 +630,11 @@ function getLocalResults() {
     if (typeof r[0] === 'string' && r[0].indexOf('@') >= 0) {
       r = r.slice(1);
     }
-    if (isValidResultRow(r)) result.push(r);
+    if (!isValidResultRow(r)) continue;
+    // Deduplicate by ResultID — keep first occurrence
+    if (seen[r[0]]) continue;
+    seen[r[0]] = true;
+    result.push(r);
   }
   return result;
 }
@@ -530,7 +678,8 @@ var workouts = [];
 var allExercises = [];
 var session = null;
 var sessionTimerInterval = null;
-var rtPreset = 90, rtRemaining = 90, rtRunning = false, rtInterval = null;
+var _savedPreset = parseInt(localStorage.getItem('lift_last_preset')) || 90;
+var rtPreset = _savedPreset, rtRemaining = _savedPreset, rtRunning = false, rtInterval = null;
 var pbCache = {};
 var shFilter = 'all', shRows = [], ehRows = [];
 
@@ -571,12 +720,12 @@ function signIn() {
           } catch(e) {
             currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
           }
-          // If we had local offline data, merge it into Sheets first
-          var hadOfflineData = lsGet(LS_MODE) === 'offline' && (getLocalResults()).length > 0;
+          // Always merge local rows to Sheets on sign-in — catches any unsynced local data
           lsSet(LS_MODE, 'google');
-          if (hadOfflineData) {
+          var localPending = getLocalResults().length > 0;
+          if (localPending) {
             showScreen('loading-screen');
-            setLoadingMsg('Merging local data to Sheets...');
+            setLoadingMsg('Syncing local data to Sheets...');
             try { await mergeLocalToSheets(); } catch(e) { console.warn('Merge failed:', e); }
           }
           initApp();
@@ -588,6 +737,41 @@ function signIn() {
     tokenClient.requestAccessToken();
   } catch(e) {
     showError('Sign in error: ' + e.message);
+  }
+}
+
+async function forceSyncToSheets() {
+  if (offlineMode || !accessToken) { showToast('Not signed in'); return; }
+  setSyncStatus('syncing');
+  showToast('Syncing all local data...');
+  try {
+    var localRows = getLocalResults();
+    var email = currentUser ? currentUser.email : 'unknown';
+    // Read sheet once to build ResultID -> rowNumber map
+    var raw = await readSheet('Results');
+    var sheetIdMap = {};
+    raw.forEach(function(r, i) { if (i > 0 && r[1]) sheetIdMap[r[1]] = i + 1; });
+    var toUpdate = []; // {rowNum, values} — rows that already exist in sheet
+    var toAppendRows = []; // rows to safely append via API
+    localRows.forEach(function(row) {
+      if (!row[0] || row[0] === '__DELETED__') return;
+      var sheetRow = [email].concat(row);
+      var existingRowNum = sheetIdMap[row[0]];
+      if (existingRowNum) {
+        toUpdate.push({ rowNum: existingRowNum, values: sheetRow });
+      } else {
+        toAppendRows.push(sheetRow);
+      }
+    });
+    // Batch update existing rows — one API call
+    if (toUpdate.length) await batchWriteRows('Results', toUpdate);
+    // Append new rows via safe append endpoint — never risks overwriting
+    if (toAppendRows.length) await safeAppendRows('Results', toAppendRows);
+    setSyncStatus('saved');
+    showToast('Synced: ' + toUpdate.length + ' updated, ' + toAppendRows.length + ' added');
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Sync failed: ' + e.message);
   }
 }
 
@@ -713,6 +897,28 @@ function writeRow(tab, rowNum, values) {
   return xhrRequest('PUT', url, {values: [values]});
 }
 
+async function batchWriteRows(tab, rowDataArray) {
+  // rowDataArray: [{rowNum, values}, ...] — writes all in a single API call
+  if (!rowDataArray.length) return;
+  var data = rowDataArray.map(function(item) {
+    var cols = String.fromCharCode(64 + Math.min(item.values.length, 26));
+    return {
+      range: tab + '!A' + item.rowNum + ':' + cols + item.rowNum,
+      values: [item.values]
+    };
+  });
+  var url = BASE_URL + '/values:batchUpdate';
+  return xhrRequest('POST', url, { valueInputOption: 'RAW', data: data });
+}
+
+async function safeAppendRows(tab, rows) {
+  // Uses Sheets append API — finds first empty row automatically, never overwrites
+  if (!rows.length) return;
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID +
+    '/values/' + enc(tab) + '!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS';
+  return xhrRequest('POST', url, { values: rows });
+}
+
 async function appendRows(tab, rows) {
   var existing = await readSheet(tab);
   var nextRow = existing.length + 1;
@@ -734,6 +940,7 @@ async function deleteSheetRow(tab, rowNum) {
 // INIT
 async function initApp() {
   showScreen('loading-screen');
+  loadPushServerUrl();
   try {
     if (offlineMode) {
       setLoadingMsg('Loading local data...');
@@ -765,6 +972,9 @@ async function initApp() {
     renderWorkoutsScreen();
     // Flush any queued offline writes
     setTimeout(flushSyncQueue, 1000);
+    // Request notification permission then init push subscription
+    await requestNotifPermission();
+    initPushSubscription();
     showScreen('app');
   } catch(e) {
     showError('Error: ' + e.message);
@@ -876,8 +1086,12 @@ async function updateResultInSheets(row, set) {
   }
   try {
     setSyncStatus('syncing');
-    if (set.sheetRow) await updateSheetRow('Results', set.sheetRow, sheetRow);
-    else set.sheetRow = await appendRows('Results', [sheetRow]);
+    if (set.sheetRow) {
+      await updateSheetRow('Results', set.sheetRow, sheetRow);
+    } else {
+      // No sheet index yet — just append. ResultID deduplication handles any dupes on read.
+      set.sheetRow = await appendRows('Results', [sheetRow]);
+    }
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
@@ -921,7 +1135,12 @@ async function flushSyncQueue() {
       if (op.type === 'append') {
         await appendRows('Results', [op.row]);
       } else if (op.type === 'update') {
-        await appendRows('Results', [op.row]);
+        // Try to find existing row by ResultID (op.row[1] after UserID prepend)
+        var localId = op.localId || (op.row && op.row[1]);
+        var raw = await readSheet('Results');
+        var existingIdx = raw.findIndex(function(r) { return r[1] === localId; });
+        if (existingIdx > 0) await updateSheetRow('Results', existingIdx + 1, op.row);
+        else await appendRows('Results', [op.row]);
       } else if (op.type === 'delete' && op.sheetRow) {
         await deleteSheetRow('Results', op.sheetRow);
       } else if (op.type === 'workout-save') {
@@ -951,21 +1170,24 @@ async function flushSyncQueue() {
 // Merge local data into Sheets (when offline user signs in)
 async function mergeLocalToSheets() {
   var localResults = getLocalResults();
-  var sheetResults = await readSheet('Results');
+  var rawMerge = await readUserRows('Results');
+  var sheetResults = rawMerge.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
   var sheetIds = new Set(sheetResults.map(function(r) { return r[0]; }));
   var toUpload = localResults.filter(function(r) {
     return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !sheetIds.has(r[0]);
   });
   if (toUpload.length > 0) {
     setLoadingMsg('Merging ' + toUpload.length + ' local sets to Sheets...');
+    var mergeEmail = currentUser ? currentUser.email : 'unknown';
     for (var i = 0; i < toUpload.length; i++) {
-      await appendRows('Results', [toUpload[i]]);
+      await appendRows('Results', [[mergeEmail].concat(toUpload[i])]);
     }
   }
 }
 
 // NAV
 function goScreen(name) {
+  if (name === 'workouts') { setTimeout(loadPushServerUrl, 50); }
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('screen-' + name).classList.add('active');
@@ -1004,6 +1226,45 @@ function startSession() {
   showToast('Session started!'); requestNotifPermission();
 }
 
+function resumeSession(wid, date) {
+  if (session && !confirm('End current session and resume this one?')) return;
+  var workout = workouts.find(function(w) { return w.id === wid; });
+  if (!workout) { showToast('Workout not found'); return; }
+  if (session) clearInterval(sessionTimerInterval);
+
+  // Rebuild sets from stored rows
+  var rows = getLocalResults().filter(function(r) { return r[2] === wid && r[9] === date; });
+  var sets = {};
+  workout.exercises.forEach(function(ex) { sets[ex] = []; });
+  var sorted = rows.slice().sort(function(a,b) { return parseInt(a[6]||0) - parseInt(b[6]||0); });
+  sorted.forEach(function(r) {
+    var ex = r[5]; if (!sets[ex]) sets[ex] = [];
+    sets[ex].push({weight:r[7], reps:r[8], timestamp:r[1], _localId:r[0], sheetRow:null});
+  });
+
+  // Use earliest timestamp as start time
+  var ts = rows.map(function(r){return r[1];}).filter(Boolean).sort();
+  var startTime = ts.length ? new Date(ts[0]) : new Date();
+  session = {workoutId:workout.id, workoutName:workout.name, startTime:startTime, sets:sets};
+
+  clearInterval(sessionTimerInterval);
+  sessionTimerInterval = setInterval(function() {
+    var elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+    var m = Math.floor(elapsed/60), s = elapsed%60;
+    document.getElementById('session-timer').textContent = m+':'+(s<10?'0':'')+s;
+    document.getElementById('session-meta').textContent = workout.name+'\n'+new Date().toLocaleDateString('en-GB');
+  }, 1000);
+
+  document.getElementById('session-info').classList.add('active');
+  document.getElementById('session-actions').classList.add('active');
+  document.getElementById('rest-timer').classList.add('visible');
+  document.getElementById('workout-select').value = wid;
+  loadPBs();
+  renderLogExercises();
+  goScreen('log');
+  showToast('Session resumed');
+}
+
 function sid(n) { return n.replace(/[^a-zA-Z0-9]/g,'_'); }
 function nameFromSid(id) {
   if (!session) return id;
@@ -1038,13 +1299,40 @@ function logSetHTML(exName, i, s) {
   var t = s.timestamp ? new Date(s.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
   return '<div class="set-row" id="setrow-' + sid(exName) + '-' + i + '">' +
     '<span class="set-num">' + (i+1) + '</span>' +
-    '<input class="set-input" type="number" inputmode="decimal" placeholder="0" value="' + (s.weight||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'weight\',this.value)">' +
-    '<input class="set-input" type="number" inputmode="numeric" placeholder="0" value="' + (s.reps||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'reps\',this.value)">' +
+    '<input class="set-input" type="number" inputmode="decimal" placeholder="0" value="' + (s.weight||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'weight\',this.value)" oninput="previewLogSet(\'' + sid(exName) + '\',' + i + ')">' +
+    '<input class="set-input" type="number" inputmode="numeric" placeholder="0" value="' + (s.reps||'') + '" onchange="updateLogSet(\'' + sid(exName) + '\',' + i + ',\'reps\',this.value)" oninput="previewLogSet(\'' + sid(exName) + '\',' + i + ')">' +
     '<span class="set-time' + (s.timestamp ? ' logged' : '') + '">' + t + '</span>' +
     '<button class="remove-btn" onclick="removeLogSet(\'' + sid(exName) + '\',' + i + ')">&#215;</button></div>';
 }
 
 var currentExLogName = null;
+
+function getPrevSessionWeight(exName, setIndex) {
+  // Returns weight for the corresponding set number from the previous session
+  // Falls back to max weight from previous session, then 0
+  var today = new Date().toLocaleDateString('en-GB');
+  var source = shRows.length > 0 ? shRows : [];
+  // Group by date, excluding today
+  var byDate = {};
+  source.filter(function(r) {
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && r[7] && r[9] && r[9] !== today;
+  }).forEach(function(r) {
+    var d = r[9];
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push({ set: parseInt(r[6])||1, weight: parseFloat(r[7])||0 });
+  });
+  var dates = Object.keys(byDate).sort(function(a,b) {
+    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
+    return p(b).localeCompare(p(a));
+  });
+  if (!dates.length) return 0;
+  var prevSets = byDate[dates[0]];
+  // Try to find matching set number (1-indexed)
+  var match = prevSets.find(function(s) { return s.set === setIndex + 1; });
+  if (match) return match.weight;
+  // Fall back to max weight from that session
+  return Math.max.apply(null, prevSets.map(function(s) { return s.weight; })) || 0;
+}
 
 function getLastSessionWeight(exName) {
   // Find the most recent session date for this exercise and return max weight used
@@ -1154,35 +1442,107 @@ function renderEldSets() {
   if (!currentExLogName || !session) return;
   var sets = session.sets[currentExLogName] || [];
   var list = document.getElementById('eld-sets-list');
+  // Render committed sets as tappable rows
   if (!sets.length) {
-    list.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:12px;">No sets logged yet. Tap Add Set below.</div>';
-    return;
+    list.innerHTML = '';
+  } else {
+    list.innerHTML = '<div class="sets-hdr"><span>#</span><span>KG</span><span>REPS</span><span>Time</span><span></span></div>' +
+      sets.map(function(s, i) { return eldCommittedRowHTML(currentExLogName, i, s); }).join('');
   }
-  list.innerHTML = '<div class="sets-hdr"><span>#</span><span>KG</span><span>REPS</span><span>Time</span><span></span></div>' +
-    sets.map(function(s, i) { return logSetHTML(currentExLogName, i, s); }).join('');
+  // Update input row set number and pre-fill weight
+  var nextIdx = sets.length;
+  var numEl = document.getElementById('eld-input-setnum');
+  if (numEl) numEl.textContent = nextIdx + 1;
+  var wInput = document.getElementById('eld-input-weight');
+  var rInput = document.getElementById('eld-input-reps');
+  if (wInput && !wInput._userEdited) {
+    var prefill = getPrevSessionWeight(currentExLogName, nextIdx);
+    wInput.value = prefill || '';
+  }
+  if (rInput) rInput.value = '';
 }
 
-function addLogSetFromDetail() {
+function eldCommittedRowHTML(exName, i, s) {
+  var t = s.timestamp ? new Date(s.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+  var exId = sid(exName);
+  return '<div class="eld-committed-row" id="setrow-' + exId + '-' + i + '">' +
+    '<span class="set-num">' + (i+1) + '</span>' +
+    '<span class="eld-committed-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'weight\',' + (s.weight||0) + ')">' + (s.weight||'—') + '</span>' +
+    '<span class="eld-committed-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'reps\',' + (s.reps||0) + ')">' + (s.reps||'—') + '</span>' +
+    '<span class="eld-committed-time">' + t + '</span>' +
+    '<button class="remove-btn" onclick="removeLogSet(\'' + exId + '\',' + i + ')">&#215;</button>' +
+    '</div>';
+}
+
+function eldInlineEdit(exId, i, field, currentVal) {
+  var exName = nameFromSid(exId);
+  var row = document.getElementById('setrow-' + exId + '-' + i);
+  if (!row) return;
+  var spans = row.querySelectorAll('.eld-committed-val');
+  var span = field === 'weight' ? spans[0] : spans[1];
+  var input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'eld-committed-val editing';
+  input.value = currentVal || '';
+  input.inputMode = field === 'weight' ? 'decimal' : 'numeric';
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+  function commit() {
+    updateLogSet(exId, i, field, input.value);
+    renderEldSets();
+  }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { input.blur(); } });
+}
+
+function eldPreviewInput() {
+  // Live preview stats while typing in input row
+  var exName = currentExLogName;
+  if (!exName || !session) return;
+  var wInput = document.getElementById('eld-input-weight');
+  var rInput = document.getElementById('eld-input-reps');
+  if (!wInput || !rInput) return;
+  var w = parseFloat(wInput.value) || 0;
+  var r = parseInt(rInput.value) || 0;
+  if (!w && !r) return;
+  // Temporarily add to session for stats preview
+  var sets = session.sets[exName] || [];
+  var tempSet = {weight: w, reps: r, timestamp: new Date().toISOString()};
+  var tempSets = sets.concat([tempSet]);
+  var saved = session.sets[exName];
+  session.sets[exName] = tempSets;
+  updateEldStatsStrip(exName);
+  session.sets[exName] = saved;
+}
+
+function eldCommitSet() {
   if (!currentExLogName || !session) return;
   var exName = currentExLogName;
+  var wInput = document.getElementById('eld-input-weight');
+  var rInput = document.getElementById('eld-input-reps');
+  if (!wInput || !rInput) return;
+  var weight = parseFloat(wInput.value) || 0;
+  var reps = parseInt(rInput.value) || 0;
+  // Mark weight input as user-edited so pre-fill doesn't overwrite on next render
+  wInput._userEdited = false;
   var sets = session.sets[exName] || [];
-  var lastWeight = sets.length > 0
-    ? sets[sets.length-1].weight
-    : getLastSessionWeight(exName);
-  var newSet = {weight:lastWeight, reps:'', timestamp:new Date().toISOString(), sheetRow:null};
+  var newSet = {weight: weight, reps: reps, timestamp: new Date().toISOString(), sheetRow: null};
   sets.push(newSet); session.sets[exName] = sets;
   renderEldSets();
-  // Focus reps input synchronously (must happen in same call stack as tap for iOS keyboard)
-  var inputs = document.querySelectorAll('#eld-sets-list .set-input');
-  if (inputs.length) inputs[inputs.length-1].focus();
   rtQuickStart();
-  // Save locally first, then sync to Sheets
+  // Focus reps input for fast next set entry
+  var rIn = document.getElementById('eld-input-reps');
+  if (rIn) setTimeout(function() { rIn.focus(); }, 50);
+  // Save and sync
   var today = new Date().toLocaleDateString('en-GB');
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
+  var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, weight, reps, today];
   saveResultLocally(syncRow);
   syncResultToSheets(syncRow, newSet);
 }
+
+function addLogSetFromDetail() { eldCommitSet(); }
 
 async function addLogSet(exId) {
   if (!session) return;
@@ -1196,10 +1556,31 @@ async function addLogSet(exId) {
   if (list) list.insertAdjacentHTML('beforeend', logSetHTML(exName, newIdx, newSet));
   var today = new Date().toLocaleDateString('en-GB');
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  var row = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, newIdx+1, lastWeight, '', today];
+  var exIdReal = (exercises.find(function(e){return e.name===exName;})||{}).id || sid(exName);
+  var row = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, exIdReal, exName, newIdx+1, lastWeight, '', today];
   saveResultLocally(row);
   syncResultToSheets(row, newSet);
   rtQuickStart();
+}
+
+function previewLogSet(exId, setIdx) {
+  // Update stats strip live as user types without triggering save/sync
+  var exName = nameFromSid(exId);
+  var row = document.getElementById('setrow-' + exId + '-' + setIdx);
+  if (!row || !session) return;
+  var inputs = row.querySelectorAll('.set-input');
+  var weight = inputs[0] ? inputs[0].value : '';
+  var reps = inputs[1] ? inputs[1].value : '';
+  // Temporarily update session in memory for strip calculation only
+  var sets = session.sets[exName];
+  if (sets && sets[setIdx]) {
+    var prev = {weight: sets[setIdx].weight, reps: sets[setIdx].reps};
+    sets[setIdx].weight = weight;
+    sets[setIdx].reps = reps;
+    if (currentExLogName === exName) updateEldStatsStrip(exName);
+    sets[setIdx].weight = prev.weight;
+    sets[setIdx].reps = prev.reps;
+  }
 }
 
 async function updateLogSet(exId, setIdx, field, value) {
@@ -1212,13 +1593,14 @@ async function updateLogSet(exId, setIdx, field, value) {
   if (!set.timestamp) set.timestamp = new Date().toISOString();
   var today = new Date().toLocaleDateString('en-GB');
   if (!set._localId) set._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  var row = [set._localId, set.timestamp, session.workoutId, session.workoutName, sid(exName), exName, setIdx+1, set.weight||'', set.reps||'', today];
+  var exIdReal2 = (exercises.find(function(e){return e.name===exName;})||{}).id || sid(exName);
+  var row = [set._localId, set.timestamp, session.workoutId, session.workoutName, exIdReal2, exName, setIdx+1, set.weight||'', set.reps||'', today];
   saveResultLocally(row);
   updateResultInSheets(row, set);
   var timeEl = document.querySelector('#setrow-' + exId + '-' + setIdx + ' .set-time');
   if (timeEl && set.timestamp) { timeEl.textContent = new Date(set.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); timeEl.classList.add('logged'); }
   if (field === 'weight') { var w = parseFloat(value); if (!isNaN(w) && (!pbCache[exName] || w > pbCache[exName])) { pbCache[exName] = w; } }
-  if (currentExLogName === exName) { renderEldSets(); } else { renderLogExercises(); }
+  if (currentExLogName === exName) { renderEldSets(); updateEldStatsStrip(exName); } else { renderLogExercises(); }
 }
 
 async function removeLogSet(exId, setIdx) {
@@ -1284,17 +1666,19 @@ function loadSessionHistory() {
   shRows = getLocalResults();
   ehRows = shRows;
   renderSessionFilters(); renderSessionList();
-  // Background refresh from Sheets if online
+  // Background refresh from Sheets — display only, NEVER writes back to localStorage
   if (!offlineMode && accessToken) {
     readUserRows('Results').then(function(rawResults) {
       var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
       var localRows = getLocalResults();
       var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+      // Merge in memory for display only — local always wins, no localStorage write
       var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
-      shRows = localRows.concat(sheetsOnly);
-      ehRows = shRows;
-      lsSet(LS_RESULTS, shRows);
-      renderSessionFilters(); renderSessionList();
+      if (sheetsOnly.length > 0) {
+        shRows = localRows.concat(sheetsOnly);
+        ehRows = shRows;
+        renderSessionFilters(); renderSessionList();
+      }
     }).catch(function() {});
   }
 }
@@ -1310,24 +1694,39 @@ async function deleteSession(date, wid) {
   if (!confirm('Delete this entire session? This cannot be undone.')) return;
   setSyncStatus('syncing');
   try {
-    var toDelete = [];
-    for (var i = 0; i < shRows.length; i++) {
-      var r = shRows[i];
-      if (r[9] === date && r[2] === wid && r[0] !== 'ResultID' && r[0] !== '__DELETED__') {
-        toDelete.push(i + 1); // 1-indexed sheet row
-      }
-    }
-    for (var j = 0; j < toDelete.length; j++) {
-      await deleteSheetRow('Results', toDelete[j]);
-    }
-    shRows = await readSheet('Results');
-    setSyncStatus('saved');
-    renderSessionFilters();
-    renderSessionList();
+    // Remove from local immediately — source of truth
+    var localRows = getLocalResults();
+    var toKeep = localRows.filter(function(r) { return !(r[9] === date && r[2] === wid); });
+    lsSet(LS_RESULTS, toKeep);
+    shRows = toKeep; ehRows = toKeep;
+    renderSessionFilters(); renderSessionList();
     showToast('Session deleted');
+    setSyncStatus('saved');
+    // Delete from Sheets in background — find rows by ResultID not index
+    // (index-based row numbers break if sheet has gaps)
+    var deletedIds = localRows
+      .filter(function(r) { return r[9] === date && r[2] === wid; })
+      .map(function(r) { return r[0]; });
+    if (deletedIds.length && !offlineMode && accessToken) {
+      deleteSessionFromSheets(deletedIds).catch(function() {
+        setSyncStatus('error');
+      });
+    }
   } catch(e) {
     setSyncStatus('error');
     showToast('Delete failed');
+  }
+}
+
+async function deleteSessionFromSheets(resultIds) {
+  // Read current sheet to find row numbers by ResultID
+  var raw = await readSheet('Results');
+  // raw[0] is header, raw[1+] are data rows with UserID in col 0
+  for (var i = 1; i < raw.length; i++) {
+    var rowId = raw[i][1]; // col 1 = ResultID (after UserID in col 0)
+    if (resultIds.indexOf(rowId) >= 0) {
+      await deleteSheetRow('Results', i + 1); // +1 for 1-indexed
+    }
   }
 }
 
@@ -1347,36 +1746,77 @@ function renderSessionList() {
   });
   if (!sorted.length) { wrap.innerHTML = '<div class="empty-state">No sessions logged yet.</div>'; return; }
   wrap.innerHTML = '';
+  var today = new Date().toLocaleDateString('en-GB');
   sorted.slice(0, 30).forEach(function(s) {
     var card = document.createElement('div'); card.className = 'session-card';
-    // onclick handled per-element above
-    var sDate = s.date, sWid = s.wid;
-    card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"><div class="session-date">' + s.date + '</div><div class="session-workout">' + s.wname + '</div></div>' +
-      '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
-      '<button class="session-delete-btn" onclick="deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">f5d1</button></div>' +
-      '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + s.wname.replace(/'/g,"\\'" ) + '\')"> ' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
+    var isToday = s.date === today;
+    var wnameSafe = s.wname.replace(/'/g,"\\'");
+    var resumeBtn = isToday ? '<button class="session-resume-btn" onclick="event.stopPropagation();resumeSession(\'' + s.wid + '\',\'' + s.date + '\')">&rsaquo; Resume</button>' : '';
+    var todayLabel = isToday ? ' <span style="font-size:9px;color:var(--acid);letter-spacing:2px;">TODAY</span>' : '';
+    card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"><div class="session-date">' + s.date + todayLabel + '</div><div class="session-workout">' + s.wname + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' + resumeBtn +
+      '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
+      '<button class="session-delete-btn" onclick="event.stopPropagation();deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">&times;</button></div></div>' +
+      '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
     wrap.appendChild(card);
   });
 }
 function openSessionDetail(date, wid, wname) {
   var rows = shRows.filter(function(r) { return r[9] === date && r[2] === wid && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; });
   var byEx = {};
-  rows.forEach(function(r) { var ex = r[5]; if (!byEx[ex]) byEx[ex] = []; byEx[ex].push({set:parseInt(r[6]),weight:r[7],reps:r[8],ts:r[1]}); });
+  rows.forEach(function(r) { var ex = r[5]; if (!byEx[ex]) byEx[ex] = []; byEx[ex].push({resultId:r[0],set:parseInt(r[6]),weight:r[7],reps:r[8],ts:r[1]}); });
   Object.keys(byEx).forEach(function(k) { byEx[k].sort(function(a,b) { return a.set-b.set; }); });
   document.getElementById('sd-title').textContent = date + ' \u2014 ' + wname.split('\u2014')[0].trim();
   var content = document.getElementById('sd-content'); content.innerHTML = '';
   Object.entries(byEx).forEach(function(entry) {
     var ex = entry[0], sets = entry[1];
     var div = document.createElement('div'); div.className = 'sd-ex';
-    div.innerHTML = '<div class="sd-ex-name">' + ex + '</div>' + sets.map(function(s, i) {
+    var html = '<div class="sd-ex-name">' + ex + '</div>';
+    sets.forEach(function(s, i) {
       var rest = i > 0 && s.ts && sets[i-1].ts ? restStr(sets[i-1].ts, s.ts) : '';
-      return (rest ? '<div class="sd-rest">&#8627; rest ' + rest + '</div>' : '') +
-        '<div class="sd-set-row"><span class="sd-set-num">' + s.set + '</span><span class="sd-set-val">' + (s.weight||'\u2014') + 'kg</span><span class="sd-set-val">' + (s.reps||'\u2014') + ' reps</span><span class="sd-set-time">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + '</span></div>';
-    }).join('');
+      if (rest) html += '<div class="sd-rest">&#8627; rest ' + rest + '</div>';
+      html += '<div class="sd-set-row" id="sdrow-' + s.resultId + '">' +
+        '<span class="sd-set-num">' + s.set + '</span>' +
+        '<input class="sd-edit-input" type="number" inputmode="decimal" value="' + (s.weight||'') + '" placeholder="kg" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'weight\',this.value)">' +
+        '<input class="sd-edit-input" type="number" inputmode="numeric" value="' + (s.reps||'') + '" placeholder="reps" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'reps\',this.value)">' +
+        '<span class="sd-set-time">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + '</span>' +
+        '</div>';
+    });
+    div.innerHTML = html;
     content.appendChild(div);
   });
   document.getElementById('session-detail').classList.add('visible');
 }
+
+async function updateHistoricalSet(resultId, field, value) {
+  // Update in localStorage
+  var results = getLocalResults();
+  var idx = results.findIndex(function(r) { return r[0] === resultId; });
+  if (idx < 0) return;
+  var row = results[idx].slice();
+  if (field === 'weight') row[7] = value;
+  if (field === 'reps') row[8] = value;
+  results[idx] = row;
+  lsSet(LS_RESULTS, results);
+  shRows = results; ehRows = results;
+  // Sync to Sheets — find by ResultID
+  setSyncStatus('syncing');
+  try {
+    var email = currentUser ? currentUser.email : 'unknown';
+    var sheetRow = [email].concat(row);
+    var raw = await readSheet('Results');
+    var existingIdx = raw.findIndex(function(r) { return r[1] === resultId; });
+    if (existingIdx > 0) {
+      await updateSheetRow('Results', existingIdx + 1, sheetRow);
+    } else {
+      await appendRows('Results', [sheetRow]);
+    }
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
 function closeSessionDetail() { document.getElementById('session-detail').classList.remove('visible'); }
 function restStr(ts1, ts2) {
   var d = Math.round((new Date(ts2) - new Date(ts1)) / 1000);
@@ -1459,7 +1899,7 @@ function renderWorkoutsScreen() {
           '</div>';
       }).join('') +
       '<div class="workout-add-ex"><select class="ex-sel" id="ex-sel-' + wi + '">' +
-      allExercises.map(function(e) { return '<option>' + e + '</option>'; }).join('') +
+      allExercises.slice().sort(function(a,b){return a.localeCompare(b);}).map(function(e) { return '<option>' + e + '</option>'; }).join('') +
       '<option value="__new__">+ New exercise...</option></select>' +
       '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div>' +
       '</div>';
@@ -1493,6 +1933,12 @@ async function addExToWorkout(wi) {
   workouts[wi].exercises.push(exName);
   await saveWorkoutToSheet(wi);
   renderWorkoutsScreen(); renderWorkoutPicker();
+  setTimeout(function() {
+    var b = document.getElementById('wbody-' + wi);
+    var e = document.getElementById('wexp-' + wi);
+    if (b) b.classList.add('open');
+    if (e) e.classList.add('open');
+  }, 10);
   showToast('Exercise added');
 }
 async function moveEx(wi, ei, dir) {
@@ -1514,6 +1960,12 @@ async function removeExFromWorkout(wi, ei) {
   workouts[wi].exercises.splice(ei, 1);
   await saveWorkoutToSheet(wi);
   renderWorkoutsScreen(); renderWorkoutPicker();
+  setTimeout(function() {
+    var b = document.getElementById('wbody-' + wi);
+    var e = document.getElementById('wexp-' + wi);
+    if (b) b.classList.add('open');
+    if (e) e.classList.add('open');
+  }, 10);
 }
 async function saveWorkoutToSheet(wi) {
   lsSet(LS_WORKOUTS, workouts);
@@ -1627,6 +2079,7 @@ async function deleteGlobalExercise(name) {
 // REST TIMER
 function rtSetPreset(s) {
   rtPreset = s; rtRemaining = s; rtStop(); rtUpdateDisplay();
+  localStorage.setItem('lift_last_preset', s);
   document.querySelectorAll('.rt-preset').forEach(function(b) {
     b.classList.toggle('active', b.textContent === s+'s' || (s===120 && b.textContent==='2m') || (s===180 && b.textContent==='3m'));
   });
@@ -1635,7 +2088,12 @@ function rtQuickStart() {
   document.getElementById('rest-timer').classList.add('visible');
   var eldBar = document.getElementById('eld-rest-bar');
   if (eldBar) eldBar.style.display = 'flex';
-  rtRemaining = rtPreset; rtStop(); rtStart();
+  // Stop local interval and reset remaining, but only cancel server timer if
+  // we're actually restarting (not first start) — avoids instant cancel race
+  rtRunning = false;
+  clearInterval(rtInterval);
+  rtRemaining = rtPreset;
+  rtStart();
 }
 function rtToggle() { rtRunning ? rtStop() : rtStart(); }
 function rtStart() {
@@ -2088,7 +2546,14 @@ async function retryFailedSyncs() {
   } else {
     setSyncStatus('saved');
     showToast('\u2714 All synced successfully');
-    shRows = await readSheet('Results');
+    var rawFlush = await readUserRows('Results');
+    var validFlush = rawFlush.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+    var localFlush = getLocalResults();
+    var localFlushIds = new Set(localFlush.map(function(r) { return r[0]; }));
+    var sheetsFlushOnly = validFlush.filter(function(r) { return !localFlushIds.has(r[0]); });
+    shRows = localFlush.concat(sheetsFlushOnly);
+    ehRows = shRows;
+    lsSet(LS_RESULTS, shRows);
   }
 }
 function showToast(msg) {
@@ -2114,47 +2579,78 @@ window.addEventListener('online', function() {
 });
 
 // Request notification permission
-function requestNotifPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
   }
 }
 
 function sendNotification(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({type:'notify', title:title, body:body});
-    } else {
-      new Notification(title, {body:body, icon:'icon-192.png'});
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') {
+    // App is in foreground — use direct Notification, works reliably
+    new Notification(title, {body: body, icon: 'icon-192.png'});
+  } else {
+    // App is backgrounded — use SW showNotification (push-style)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(function(reg) {
+        reg.showNotification(title, {
+          body: body,
+          icon: 'icon-192.png',
+          badge: 'icon-192.png',
+          vibrate: [200, 100, 200],
+          tag: 'rest-timer'
+        });
+      }).catch(function() {
+        new Notification(title, {body: body, icon: 'icon-192.png'});
+      });
     }
   }
 }
 
 var _notifyPageTimer = null;
+var _notifyFireAt = null;
+var _notifyTitle = null;
+var _notifyBody = null;
 
 function scheduleNotification(title, body, delaySeconds) {
   cancelScheduledNotification();
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  var fireAt = Date.now() + delaySeconds * 1000;
-  // Page-level timer: works when app is open/foregrounded
+  _notifyTitle = title; _notifyBody = body;
+  _notifyFireAt = Date.now() + delaySeconds * 1000;
+  // Always set page-level timer (handles foreground + visibilitychange)
   _notifyPageTimer = setTimeout(function() {
     sendNotification(title, body);
-    _notifyPageTimer = null;
+    _notifyPageTimer = null; _notifyFireAt = null;
   }, delaySeconds * 1000);
-  // SW-level timer: may work when app is backgrounded (not reliable on locked iOS)
-  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'scheduleNotify', title: title, body: body, fireAt: fireAt
-    });
-  }
+  // Also schedule on server for reliable background/locked-screen delivery
+  serverScheduleNotification(title, body, delaySeconds);
 }
 
 function cancelScheduledNotification() {
   if (_notifyPageTimer) { clearTimeout(_notifyPageTimer); _notifyPageTimer = null; }
-  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({type: 'cancelNotify'});
+  _notifyFireAt = null; _notifyTitle = null; _notifyBody = null;
+  serverCancelNotification();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      if (reg.active) reg.active.postMessage({type: 'cancelNotify'});
+    });
   }
 }
+
+// When app returns to foreground, fire notification immediately if timer already expired
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && _notifyFireAt) {
+    var overdue = Date.now() - _notifyFireAt;
+    if (overdue >= 0) {
+      // Timer expired while backgrounded — fire immediately
+      sendNotification(_notifyTitle, _notifyBody);
+      if (_notifyPageTimer) { clearTimeout(_notifyPageTimer); _notifyPageTimer = null; }
+      _notifyFireAt = null;
+    }
+  }
+});
 
 (function waitGSI(n) {
   if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
