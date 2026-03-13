@@ -615,9 +615,8 @@ async function forceSyncToSheets() {
     var raw = await readSheet('Results');
     var sheetIdMap = {};
     raw.forEach(function(r, i) { if (i > 0 && r[1]) sheetIdMap[r[1]] = i + 1; });
-    var nextRow = raw.length + 1;
-    var toUpdate = []; // {rowNum, values}
-    var toAppend = []; // {values} — new rows
+    var toUpdate = []; // {rowNum, values} — rows that already exist in sheet
+    var toAppendRows = []; // rows to safely append via API
     localRows.forEach(function(row) {
       if (!row[0] || row[0] === '__DELETED__') return;
       var sheetRow = [email].concat(row);
@@ -625,15 +624,15 @@ async function forceSyncToSheets() {
       if (existingRowNum) {
         toUpdate.push({ rowNum: existingRowNum, values: sheetRow });
       } else {
-        toAppend.push({ rowNum: nextRow++, values: sheetRow });
+        toAppendRows.push(sheetRow);
       }
     });
-    // Write updates in one batch call
+    // Batch update existing rows — one API call
     if (toUpdate.length) await batchWriteRows('Results', toUpdate);
-    // Write new rows in one batch call
-    if (toAppend.length) await batchWriteRows('Results', toAppend);
+    // Append new rows via safe append endpoint — never risks overwriting
+    if (toAppendRows.length) await safeAppendRows('Results', toAppendRows);
     setSyncStatus('saved');
-    showToast('Synced: ' + toUpdate.length + ' updated, ' + toAppend.length + ' added');
+    showToast('Synced: ' + toUpdate.length + ' updated, ' + toAppendRows.length + ' added');
   } catch(e) {
     setSyncStatus('error');
     showToast('Sync failed: ' + e.message);
@@ -774,6 +773,14 @@ async function batchWriteRows(tab, rowDataArray) {
   });
   var url = BASE_URL + '/values:batchUpdate';
   return xhrRequest('POST', url, { valueInputOption: 'RAW', data: data });
+}
+
+async function safeAppendRows(tab, rows) {
+  // Uses Sheets append API — finds first empty row automatically, never overwrites
+  if (!rows.length) return;
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID +
+    '/values/' + enc(tab) + '!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS';
+  return xhrRequest('POST', url, { values: rows });
 }
 
 async function appendRows(tab, rows) {
@@ -1419,18 +1426,17 @@ function loadSessionHistory() {
   shRows = getLocalResults();
   ehRows = shRows;
   renderSessionFilters(); renderSessionList();
-  // Background refresh from Sheets if online — local always wins, Sheets only fills gaps
+  // Background refresh from Sheets — display only, NEVER writes back to localStorage
   if (!offlineMode && accessToken) {
     readUserRows('Results').then(function(rawResults) {
       var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
       var localRows = getLocalResults();
       var localIds = new Set(localRows.map(function(r) { return r[0]; }));
-      // Only add rows from Sheets that don't exist locally — never overwrite local data
+      // Merge in memory for display only — local always wins, no localStorage write
       var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
       if (sheetsOnly.length > 0) {
         shRows = localRows.concat(sheetsOnly);
         ehRows = shRows;
-        lsSet(LS_RESULTS, shRows);
         renderSessionFilters(); renderSessionList();
       }
     }).catch(function() {});
