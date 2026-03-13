@@ -487,7 +487,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev31';
+var CURRENT_VERSION = 'dev32';
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
 function savePushServerUrl() {
@@ -1318,13 +1318,17 @@ var currentExLogName = null;
 
 function getPrevSessionWeight(exName, setIndex) {
   // Returns weight for the corresponding set number from the previous session
-  // Falls back to max weight from previous session, then 0
-  var today = new Date().toLocaleDateString('en-GB');
+  // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions)
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
+    });
+  }
   var source = shRows.length > 0 ? shRows : [];
-  // Group by date, excluding today
   var byDate = {};
   source.filter(function(r) {
-    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && r[7] && r[9] && r[9] !== today;
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && r[7] && r[9] && !currentIds.has(r[0]);
   }).forEach(function(r) {
     var d = r[9];
     if (!byDate[d]) byDate[d] = [];
@@ -1336,10 +1340,8 @@ function getPrevSessionWeight(exName, setIndex) {
   });
   if (!dates.length) return 0;
   var prevSets = byDate[dates[0]];
-  // Try to find matching set number (1-indexed)
   var match = prevSets.find(function(s) { return s.set === setIndex + 1; });
   if (match) return match.weight;
-  // Fall back to max weight from that session
   return Math.max.apply(null, prevSets.map(function(s) { return s.weight; })) || 0;
 }
 
