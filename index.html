@@ -165,10 +165,12 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #sd-content{padding:14px 16px 0;}
 .sd-ex{margin-bottom:18px;}
 .sd-ex-name{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:8px;color:var(--acid);}
-.sd-set-row{display:grid;grid-template-columns:26px 80px 80px 1fr;gap:8px;margin-bottom:5px;align-items:center;}
+.sd-set-row{display:grid;grid-template-columns:26px 1fr 1fr 1fr;gap:8px;margin-bottom:5px;align-items:center;}
 .sd-set-num{font-size:12px;color:#aaa;text-align:center;}
 .sd-set-val{font-size:14px;text-align:center;}
-.sd-set-time{font-size:12px;color:#b0b0b0;}
+.sd-set-time{font-size:11px;color:#b0b0b0;text-align:right;}
+.sd-edit-input{background:#1e1e1e;border:1px solid #2e2e2e;border-radius:4px;color:#ddd;font-size:14px;width:100%;padding:4px 6px;text-align:center;-moz-appearance:textfield;box-sizing:border-box;}
+.sd-edit-input:focus{outline:none;border-color:var(--acid);}
 .sd-rest{font-size:12px;color:#4a8a00;padding-left:34px;margin-bottom:5px;}
 #eh-search-wrap{padding:12px 16px;border-bottom:1px solid var(--border);}
 #eh-search{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:15px;padding:10px 12px;}
@@ -537,7 +539,8 @@ var workouts = [];
 var allExercises = [];
 var session = null;
 var sessionTimerInterval = null;
-var rtPreset = 90, rtRemaining = 90, rtRunning = false, rtInterval = null;
+var _savedPreset = parseInt(localStorage.getItem('lift_last_preset')) || 90;
+var rtPreset = _savedPreset, rtRemaining = _savedPreset, rtRunning = false, rtInterval = null;
 var pbCache = {};
 var shFilter = 'all', shRows = [], ehRows = [];
 
@@ -1458,7 +1461,7 @@ function renderSessionList() {
     card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"><div class="session-date">' + s.date + todayLabel + '</div><div class="session-workout">' + s.wname + '</div></div>' +
       '<div style="display:flex;align-items:center;gap:8px;">' + resumeBtn +
       '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
-      '<button class="session-delete-btn" onclick="event.stopPropagation();deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">f5d1</button></div></div>' +
+      '<button class="session-delete-btn" onclick="event.stopPropagation();deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">&times;</button></div></div>' +
       '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
     wrap.appendChild(card);
   });
@@ -1466,22 +1469,59 @@ function renderSessionList() {
 function openSessionDetail(date, wid, wname) {
   var rows = shRows.filter(function(r) { return r[9] === date && r[2] === wid && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; });
   var byEx = {};
-  rows.forEach(function(r) { var ex = r[5]; if (!byEx[ex]) byEx[ex] = []; byEx[ex].push({set:parseInt(r[6]),weight:r[7],reps:r[8],ts:r[1]}); });
+  rows.forEach(function(r) { var ex = r[5]; if (!byEx[ex]) byEx[ex] = []; byEx[ex].push({resultId:r[0],set:parseInt(r[6]),weight:r[7],reps:r[8],ts:r[1]}); });
   Object.keys(byEx).forEach(function(k) { byEx[k].sort(function(a,b) { return a.set-b.set; }); });
   document.getElementById('sd-title').textContent = date + ' \u2014 ' + wname.split('\u2014')[0].trim();
   var content = document.getElementById('sd-content'); content.innerHTML = '';
   Object.entries(byEx).forEach(function(entry) {
     var ex = entry[0], sets = entry[1];
     var div = document.createElement('div'); div.className = 'sd-ex';
-    div.innerHTML = '<div class="sd-ex-name">' + ex + '</div>' + sets.map(function(s, i) {
+    var html = '<div class="sd-ex-name">' + ex + '</div>';
+    sets.forEach(function(s, i) {
       var rest = i > 0 && s.ts && sets[i-1].ts ? restStr(sets[i-1].ts, s.ts) : '';
-      return (rest ? '<div class="sd-rest">&#8627; rest ' + rest + '</div>' : '') +
-        '<div class="sd-set-row"><span class="sd-set-num">' + s.set + '</span><span class="sd-set-val">' + (s.weight||'\u2014') + 'kg</span><span class="sd-set-val">' + (s.reps||'\u2014') + ' reps</span><span class="sd-set-time">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + '</span></div>';
-    }).join('');
+      if (rest) html += '<div class="sd-rest">&#8627; rest ' + rest + '</div>';
+      html += '<div class="sd-set-row" id="sdrow-' + s.resultId + '">' +
+        '<span class="sd-set-num">' + s.set + '</span>' +
+        '<input class="sd-edit-input" type="number" inputmode="decimal" value="' + (s.weight||'') + '" placeholder="kg" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'weight\',this.value)">' +
+        '<input class="sd-edit-input" type="number" inputmode="numeric" value="' + (s.reps||'') + '" placeholder="reps" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'reps\',this.value)">' +
+        '<span class="sd-set-time">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + '</span>' +
+        '</div>';
+    });
+    div.innerHTML = html;
     content.appendChild(div);
   });
   document.getElementById('session-detail').classList.add('visible');
 }
+
+async function updateHistoricalSet(resultId, field, value) {
+  // Update in localStorage
+  var results = getLocalResults();
+  var idx = results.findIndex(function(r) { return r[0] === resultId; });
+  if (idx < 0) return;
+  var row = results[idx].slice();
+  if (field === 'weight') row[7] = value;
+  if (field === 'reps') row[8] = value;
+  results[idx] = row;
+  lsSet(LS_RESULTS, results);
+  shRows = results; ehRows = results;
+  // Sync to Sheets — find by ResultID
+  setSyncStatus('syncing');
+  try {
+    var email = currentUser ? currentUser.email : 'unknown';
+    var sheetRow = [email].concat(row);
+    var raw = await readSheet('Results');
+    var existingIdx = raw.findIndex(function(r) { return r[1] === resultId; });
+    if (existingIdx > 0) {
+      await updateSheetRow('Results', existingIdx + 1, sheetRow);
+    } else {
+      await appendRows('Results', [sheetRow]);
+    }
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
 function closeSessionDetail() { document.getElementById('session-detail').classList.remove('visible'); }
 function restStr(ts1, ts2) {
   var d = Math.round((new Date(ts2) - new Date(ts1)) / 1000);
@@ -1564,7 +1604,7 @@ function renderWorkoutsScreen() {
           '</div>';
       }).join('') +
       '<div class="workout-add-ex"><select class="ex-sel" id="ex-sel-' + wi + '">' +
-      allExercises.map(function(e) { return '<option>' + e + '</option>'; }).join('') +
+      allExercises.slice().sort(function(a,b){return a.localeCompare(b);}).map(function(e) { return '<option>' + e + '</option>'; }).join('') +
       '<option value="__new__">+ New exercise...</option></select>' +
       '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div>' +
       '</div>';
@@ -1598,6 +1638,12 @@ async function addExToWorkout(wi) {
   workouts[wi].exercises.push(exName);
   await saveWorkoutToSheet(wi);
   renderWorkoutsScreen(); renderWorkoutPicker();
+  setTimeout(function() {
+    var b = document.getElementById('wbody-' + wi);
+    var e = document.getElementById('wexp-' + wi);
+    if (b) b.classList.add('open');
+    if (e) e.classList.add('open');
+  }, 10);
   showToast('Exercise added');
 }
 async function moveEx(wi, ei, dir) {
@@ -1619,6 +1665,12 @@ async function removeExFromWorkout(wi, ei) {
   workouts[wi].exercises.splice(ei, 1);
   await saveWorkoutToSheet(wi);
   renderWorkoutsScreen(); renderWorkoutPicker();
+  setTimeout(function() {
+    var b = document.getElementById('wbody-' + wi);
+    var e = document.getElementById('wexp-' + wi);
+    if (b) b.classList.add('open');
+    if (e) e.classList.add('open');
+  }, 10);
 }
 async function saveWorkoutToSheet(wi) {
   lsSet(LS_WORKOUTS, workouts);
@@ -1732,6 +1784,7 @@ async function deleteGlobalExercise(name) {
 // REST TIMER
 function rtSetPreset(s) {
   rtPreset = s; rtRemaining = s; rtStop(); rtUpdateDisplay();
+  localStorage.setItem('lift_last_preset', s);
   document.querySelectorAll('.rt-preset').forEach(function(b) {
     b.classList.toggle('active', b.textContent === s+'s' || (s===120 && b.textContent==='2m') || (s===180 && b.textContent==='3m'));
   });
@@ -2254,22 +2307,27 @@ function sendNotification(title, body) {
 }
 
 var _notifyPageTimer = null;
+var _notifyFireAt = null;
+var _notifyTitle = null;
+var _notifyBody = null;
 
 function scheduleNotification(title, body, delaySeconds) {
   cancelScheduledNotification();
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  // Page-level timer — fires via SW registration for reliability
+  _notifyTitle = title; _notifyBody = body;
+  _notifyFireAt = Date.now() + delaySeconds * 1000;
+  // Page-level timer
   _notifyPageTimer = setTimeout(function() {
     sendNotification(title, body);
-    _notifyPageTimer = null;
+    _notifyPageTimer = null; _notifyFireAt = null;
   }, delaySeconds * 1000);
-  // Also tell SW in case page timer is throttled when backgrounded
+  // SW fallback for when page is backgrounded
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(function(reg) {
       if (reg.active) {
         reg.active.postMessage({
           type: 'scheduleNotify', title: title, body: body,
-          fireAt: Date.now() + delaySeconds * 1000
+          fireAt: _notifyFireAt
         });
       }
     });
@@ -2278,12 +2336,26 @@ function scheduleNotification(title, body, delaySeconds) {
 
 function cancelScheduledNotification() {
   if (_notifyPageTimer) { clearTimeout(_notifyPageTimer); _notifyPageTimer = null; }
+  _notifyFireAt = null; _notifyTitle = null; _notifyBody = null;
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(function(reg) {
       if (reg.active) reg.active.postMessage({type: 'cancelNotify'});
     });
   }
 }
+
+// When app returns to foreground, fire notification immediately if timer already expired
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && _notifyFireAt) {
+    var overdue = Date.now() - _notifyFireAt;
+    if (overdue >= 0) {
+      // Timer expired while backgrounded — fire immediately
+      sendNotification(_notifyTitle, _notifyBody);
+      if (_notifyPageTimer) { clearTimeout(_notifyPageTimer); _notifyPageTimer = null; }
+      _notifyFireAt = null;
+    }
+  }
+});
 
 (function waitGSI(n) {
   if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
