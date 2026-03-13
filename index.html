@@ -448,7 +448,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = '7'; // bump to force cache clear
+var CURRENT_VERSION = '8'; // bump to force cache clear
 
 // Clear stale cache on version mismatch
 (function() {
@@ -611,27 +611,29 @@ async function forceSyncToSheets() {
   try {
     var localRows = getLocalResults();
     var email = currentUser ? currentUser.email : 'unknown';
-    // Read current sheet once to build ID index
+    // Read sheet once to build ResultID -> rowNumber map
     var raw = await readSheet('Results');
-    var sheetIdMap = {}; // resultId -> rowNumber
+    var sheetIdMap = {};
     raw.forEach(function(r, i) { if (i > 0 && r[1]) sheetIdMap[r[1]] = i + 1; });
-    var appended = 0, updated = 0;
-    for (var i = 0; i < localRows.length; i++) {
-      var row = localRows[i];
-      if (!row[0] || row[0] === '__DELETED__') continue;
+    var nextRow = raw.length + 1;
+    var toUpdate = []; // {rowNum, values}
+    var toAppend = []; // {values} — new rows
+    localRows.forEach(function(row) {
+      if (!row[0] || row[0] === '__DELETED__') return;
       var sheetRow = [email].concat(row);
       var existingRowNum = sheetIdMap[row[0]];
       if (existingRowNum) {
-        await updateSheetRow('Results', existingRowNum, sheetRow);
-        updated++;
+        toUpdate.push({ rowNum: existingRowNum, values: sheetRow });
       } else {
-        var newRowNum = await appendRows('Results', [sheetRow]);
-        sheetIdMap[row[0]] = newRowNum;
-        appended++;
+        toAppend.push({ rowNum: nextRow++, values: sheetRow });
       }
-    }
+    });
+    // Write updates in one batch call
+    if (toUpdate.length) await batchWriteRows('Results', toUpdate);
+    // Write new rows in one batch call
+    if (toAppend.length) await batchWriteRows('Results', toAppend);
     setSyncStatus('saved');
-    showToast('Synced: ' + updated + ' updated, ' + appended + ' added');
+    showToast('Synced: ' + toUpdate.length + ' updated, ' + toAppend.length + ' added');
   } catch(e) {
     setSyncStatus('error');
     showToast('Sync failed: ' + e.message);
@@ -758,6 +760,20 @@ function writeRow(tab, rowNum, values) {
   var cols = String.fromCharCode(64 + Math.min(values.length, 26));
   var url = BASE_URL + '/values/' + enc(tab) + '!A' + rowNum + ':' + cols + rowNum + '?valueInputOption=RAW';
   return xhrRequest('PUT', url, {values: [values]});
+}
+
+async function batchWriteRows(tab, rowDataArray) {
+  // rowDataArray: [{rowNum, values}, ...] — writes all in a single API call
+  if (!rowDataArray.length) return;
+  var data = rowDataArray.map(function(item) {
+    var cols = String.fromCharCode(64 + Math.min(item.values.length, 26));
+    return {
+      range: tab + '!A' + item.rowNum + ':' + cols + item.rowNum,
+      values: [item.values]
+    };
+  });
+  var url = BASE_URL + '/values:batchUpdate';
+  return xhrRequest('POST', url, { valueInputOption: 'RAW', data: data });
 }
 
 async function appendRows(tab, rows) {
