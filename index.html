@@ -889,15 +889,8 @@ async function updateResultInSheets(row, set) {
     if (set.sheetRow) {
       await updateSheetRow('Results', set.sheetRow, sheetRow);
     } else {
-      // No sheetRow index — find by ResultID to avoid duplicating
-      var raw = await readSheet('Results');
-      var existingIdx = raw.findIndex(function(r) { return r[1] === row[0]; });
-      if (existingIdx > 0) {
-        set.sheetRow = existingIdx + 1;
-        await updateSheetRow('Results', set.sheetRow, sheetRow);
-      } else {
-        set.sheetRow = await appendRows('Results', [sheetRow]);
-      }
+      // No sheet index yet — just append. ResultID deduplication handles any dupes on read.
+      set.sheetRow = await appendRows('Results', [sheetRow]);
     }
     setSyncStatus('saved');
   } catch(e) {
@@ -1373,17 +1366,20 @@ function loadSessionHistory() {
   shRows = getLocalResults();
   ehRows = shRows;
   renderSessionFilters(); renderSessionList();
-  // Background refresh from Sheets if online
+  // Background refresh from Sheets if online — local always wins, Sheets only fills gaps
   if (!offlineMode && accessToken) {
     readUserRows('Results').then(function(rawResults) {
       var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
       var localRows = getLocalResults();
       var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+      // Only add rows from Sheets that don't exist locally — never overwrite local data
       var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
-      shRows = localRows.concat(sheetsOnly);
-      ehRows = shRows;
-      lsSet(LS_RESULTS, shRows);
-      renderSessionFilters(); renderSessionList();
+      if (sheetsOnly.length > 0) {
+        shRows = localRows.concat(sheetsOnly);
+        ehRows = shRows;
+        lsSet(LS_RESULTS, shRows);
+        renderSessionFilters(); renderSessionList();
+      }
     }).catch(function() {});
   }
 }
@@ -2287,22 +2283,24 @@ function requestNotifPermission() {
 
 function sendNotification(title, body) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  // Use SW registration directly — more reliable than postMessage
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(function(reg) {
-      reg.showNotification(title, {
-        body: body,
-        icon: 'icon-192.png',
-        badge: 'icon-192.png',
-        vibrate: [200, 100, 200],
-        tag: 'rest-timer'
-      });
-    }).catch(function() {
-      // Fallback for when SW isn't available
-      new Notification(title, {body: body, icon: 'icon-192.png'});
-    });
-  } else {
+  if (document.visibilityState === 'visible') {
+    // App is in foreground — use direct Notification, works reliably
     new Notification(title, {body: body, icon: 'icon-192.png'});
+  } else {
+    // App is backgrounded — use SW showNotification (push-style)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(function(reg) {
+        reg.showNotification(title, {
+          body: body,
+          icon: 'icon-192.png',
+          badge: 'icon-192.png',
+          vibrate: [200, 100, 200],
+          tag: 'rest-timer'
+        });
+      }).catch(function() {
+        new Notification(title, {body: body, icon: 'icon-192.png'});
+      });
+    }
   }
 }
 
