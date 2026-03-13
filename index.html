@@ -252,7 +252,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div class="screen-header">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div><div class="screen-title">LOG</div><div id="sync-row"><span id="sync-dot"></span><span id="sync-label">synced</span></div></div>
-          <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;margin-top:4px;">Sign out</button>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <button onclick="forceSyncToSheets()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Force sync</button>
+            <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Sign out</button>
+          </div>
         </div>
       </div>
       <div id="workout-picker"><select id="workout-select"></select><button id="start-session-btn" onclick="startSession()">Start</button></div>
@@ -598,6 +601,40 @@ function signIn() {
     tokenClient.requestAccessToken();
   } catch(e) {
     showError('Sign in error: ' + e.message);
+  }
+}
+
+async function forceSyncToSheets() {
+  if (offlineMode || !accessToken) { showToast('Not signed in'); return; }
+  setSyncStatus('syncing');
+  showToast('Syncing all local data...');
+  try {
+    var localRows = getLocalResults();
+    var email = currentUser ? currentUser.email : 'unknown';
+    // Read current sheet once to build ID index
+    var raw = await readSheet('Results');
+    var sheetIdMap = {}; // resultId -> rowNumber
+    raw.forEach(function(r, i) { if (i > 0 && r[1]) sheetIdMap[r[1]] = i + 1; });
+    var appended = 0, updated = 0;
+    for (var i = 0; i < localRows.length; i++) {
+      var row = localRows[i];
+      if (!row[0] || row[0] === '__DELETED__') continue;
+      var sheetRow = [email].concat(row);
+      var existingRowNum = sheetIdMap[row[0]];
+      if (existingRowNum) {
+        await updateSheetRow('Results', existingRowNum, sheetRow);
+        updated++;
+      } else {
+        var newRowNum = await appendRows('Results', [sheetRow]);
+        sheetIdMap[row[0]] = newRowNum;
+        appended++;
+      }
+    }
+    setSyncStatus('saved');
+    showToast('Synced: ' + updated + ' updated, ' + appended + ' added');
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Sync failed: ' + e.message);
   }
 }
 
