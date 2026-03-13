@@ -1940,7 +1940,12 @@ function rtQuickStart() {
   document.getElementById('rest-timer').classList.add('visible');
   var eldBar = document.getElementById('eld-rest-bar');
   if (eldBar) eldBar.style.display = 'flex';
-  rtRemaining = rtPreset; rtStop(); rtStart();
+  // Stop local interval and reset remaining, but only cancel server timer if
+  // we're actually restarting (not first start) — avoids instant cancel race
+  rtRunning = false;
+  clearInterval(rtInterval);
+  rtRemaining = rtPreset;
+  rtStart();
 }
 function rtToggle() { rtRunning ? rtStop() : rtStart(); }
 function rtStart() {
