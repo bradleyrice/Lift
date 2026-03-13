@@ -80,9 +80,12 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #eld-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
 #eld-title{font-family:var(--display);font-size:22px;font-weight:900;flex:1;}
 #eld-pb{font-size:10px;color:var(--acid);letter-spacing:1px;}
-#eld-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 24px;}
-.eld-history{margin-bottom:20px;}
+#eld-body{flex:1;display:flex;gap:0;overflow:hidden;min-height:0;}
+#eld-col-history{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 10px 12px 16px;border-right:1px solid #1a1a1a;}
+#eld-col-today{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 12px 10px;}
+.eld-history{margin-bottom:0;}
 .eld-history-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+#eld-input-fixed{padding:10px 16px;background:var(--bg);border-top:1px solid #222;flex-shrink:0;}
 .eld-hist-session{margin-bottom:12px;}
 .eld-hist-date{font-size:12px;color:#b0b0b0;letter-spacing:1px;margin-bottom:5px;}
 .eld-hist-row{display:grid;grid-template-columns:22px 64px 64px;gap:6px;margin-bottom:4px;font-size:15px;align-items:center;}
@@ -90,6 +93,17 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-hist-val{text-align:center;}
 .eld-hist-pb{color:var(--acid);}
 .eld-sets-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.eld-committed-row{display:grid;grid-template-columns:24px 1fr 1fr 60px 28px;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #181818;}
+.eld-committed-row .set-num{font-family:var(--mono);font-size:11px;color:#555;text-align:center;}
+.eld-committed-val{font-family:var(--mono);font-size:14px;color:#e0e0e0;text-align:center;cursor:pointer;padding:4px 6px;border-radius:3px;border:1px solid transparent;}
+.eld-committed-val:hover{border-color:#2e2e2e;background:#111;}
+.eld-committed-val.editing{border-color:var(--acid);background:#111;outline:none;width:100%;color:#e0e0e0;}
+.eld-committed-time{font-family:var(--mono);font-size:10px;color:#444;text-align:center;}
+.eld-input-row{display:grid;grid-template-columns:24px 1fr 1fr 60px 28px;align-items:center;gap:6px;padding:4px 0;}
+.eld-input-row .set-num{font-family:var(--mono);font-size:11px;color:var(--acid);text-align:center;}
+.eld-quick-input{background:#111;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:15px;text-align:center;padding:7px 4px;width:100%;outline:none;}
+.eld-quick-input:focus{border-color:var(--acid);}
+.eld-commit-btn{background:var(--acid);color:var(--bg);border:none;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:900;cursor:pointer;padding:7px 0;width:100%;grid-column:span 1;}
 #eld-footer{padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;}
 .add-set-btn:active{border-color:var(--acid);color:var(--acid);}
 #session-actions{margin:12px 0 0;display:none!important;}
@@ -296,6 +310,18 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
         <button onclick="addWorkout()" style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:7px 12px;border-radius:4px;cursor:pointer;margin-top:4px;">+ NEW</button>
       </div>
       <div style="height:12px;"></div><div id="workouts-list"></div>
+      <div style="margin:24px 0 8px;padding:16px;background:#111;border-radius:8px;border:1px solid #1e1e1e;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:10px;">Push Server</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="push-server-input" type="url" placeholder="https://your-tunnel.trycloudflare.com"
+            style="flex:1;background:#0a0a0a;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:11px;padding:8px 10px;outline:none;"
+            oninput="this.style.borderColor='#2e2e2e'"
+            value="">
+          <button onclick="savePushServerUrl()"
+            style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:10px;letter-spacing:2px;padding:8px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;">SAVE</button>
+        </div>
+        <div id="push-server-status" style="font-family:var(--mono);font-size:10px;color:#555;margin-top:6px;"></div>
+      </div>
     </div>
   </div>
   <div id="nav">
@@ -331,13 +357,25 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     </div>
   </div>
   <div id="eld-body">
-    <div class="eld-history">
-      <div class="eld-history-title">Previous Sessions</div>
-      <div id="eld-history-content"></div>
+    <div id="eld-col-history">
+      <div class="eld-history">
+        <div class="eld-history-title">Previous</div>
+        <div id="eld-history-content"></div>
+      </div>
     </div>
-    <div class="eld-sets-title">Today's Sets</div>
-    <div id="eld-sets-list"></div>
-    <button id="add-set-detail-btn" class="add-set-btn" onclick="addLogSetFromDetail()" style="margin-top:8px;">+ Add Set</button>
+    <div id="eld-col-today">
+      <div class="eld-sets-title">Today</div>
+      <div id="eld-sets-list"></div>
+    </div>
+  </div>
+  <div id="eld-input-fixed">
+    <div class="eld-input-row" id="eld-input-row">
+      <span class="set-num" id="eld-input-setnum">1</span>
+      <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
+      <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
+      <span class="eld-committed-time"></span>
+      <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
+    </div>
   </div>
   <div id="eld-stats-strip">
     <div class="eld-strip-inner">
@@ -444,6 +482,7 @@ var DEFAULT_WORKOUTS = [
 var LS_WORKOUTS = 'lift_workouts';
 var LS_EXERCISES = 'lift_exercises';
 var LS_RESULTS = 'lift_results';
+var LS_PUSH_SERVER = 'lift_push_server';
 var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
@@ -451,6 +490,23 @@ var LS_VERSION = 'lift_version';
 var CURRENT_VERSION = '8';
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
+function savePushServerUrl() {
+  var input = document.getElementById('push-server-input');
+  var val = (input.value || '').trim().replace(/\/+$/, '');
+  if (!val) { document.getElementById('push-server-status').textContent = 'Enter a URL first'; return; }
+  PUSH_SERVER = val;
+  lsSet(LS_PUSH_SERVER, val);
+  document.getElementById('push-server-status').textContent = 'Saved. Sign out and back in to reconnect.';
+  input.style.borderColor = 'var(--acid)';
+}
+
+function loadPushServerUrl() {
+  var saved = lsGet(LS_PUSH_SERVER);
+  if (saved) PUSH_SERVER = saved;
+  var input = document.getElementById('push-server-input');
+  if (input) input.value = PUSH_SERVER;
+}
+
 var PUSH_SERVER = 'https://replica-scheme-advisory-flowers.trycloudflare.com';
 var _pushSubscription = null;
 
@@ -893,6 +949,7 @@ async function deleteSheetRow(tab, rowNum) {
 // INIT
 async function initApp() {
   showScreen('loading-screen');
+  loadPushServerUrl();
   try {
     if (offlineMode) {
       setLoadingMsg('Loading local data...');
@@ -1139,6 +1196,7 @@ async function mergeLocalToSheets() {
 
 // NAV
 function goScreen(name) {
+  if (name === 'workouts') { setTimeout(loadPushServerUrl, 50); }
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('screen-' + name).classList.add('active');
@@ -1258,6 +1316,35 @@ function logSetHTML(exName, i, s) {
 
 var currentExLogName = null;
 
+function getPrevSessionWeight(exName, setIndex) {
+  // Returns weight for the corresponding set number from the previous session
+  // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions)
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
+    });
+  }
+  var source = shRows.length > 0 ? shRows : [];
+  var byDate = {};
+  source.filter(function(r) {
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && r[7] && r[9] && !currentIds.has(r[0]);
+  }).forEach(function(r) {
+    var d = r[9];
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push({ set: parseInt(r[6])||1, weight: parseFloat(r[7])||0 });
+  });
+  var dates = Object.keys(byDate).sort(function(a,b) {
+    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
+    return p(b).localeCompare(p(a));
+  });
+  if (!dates.length) return 0;
+  var prevSets = byDate[dates[0]];
+  var match = prevSets.find(function(s) { return s.set === setIndex + 1; });
+  if (match) return match.weight;
+  return Math.max.apply(null, prevSets.map(function(s) { return s.weight; })) || 0;
+}
+
 function getLastSessionWeight(exName) {
   // Find the most recent session date for this exercise and return max weight used
   // Includes today so weight pre-fills correctly on first log of the day
@@ -1366,35 +1453,106 @@ function renderEldSets() {
   if (!currentExLogName || !session) return;
   var sets = session.sets[currentExLogName] || [];
   var list = document.getElementById('eld-sets-list');
+  // Render committed sets as tappable rows
   if (!sets.length) {
-    list.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:12px;">No sets logged yet. Tap Add Set below.</div>';
-    return;
+    list.innerHTML = '';
+  } else {
+    list.innerHTML = sets.map(function(s, i) { return eldCommittedRowHTML(currentExLogName, i, s); }).join('');
   }
-  list.innerHTML = '<div class="sets-hdr"><span>#</span><span>KG</span><span>REPS</span><span>Time</span><span></span></div>' +
-    sets.map(function(s, i) { return logSetHTML(currentExLogName, i, s); }).join('');
+  // Update input row set number and pre-fill weight
+  var nextIdx = sets.length;
+  var numEl = document.getElementById('eld-input-setnum');
+  if (numEl) numEl.textContent = nextIdx + 1;
+  var wInput = document.getElementById('eld-input-weight');
+  var rInput = document.getElementById('eld-input-reps');
+  if (wInput && !wInput._userEdited) {
+    var prefill = getPrevSessionWeight(currentExLogName, nextIdx);
+    wInput.value = prefill || '';
+  }
+  if (rInput) rInput.value = '';
 }
 
-function addLogSetFromDetail() {
+function eldCommittedRowHTML(exName, i, s) {
+  var t = s.timestamp ? new Date(s.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+  var exId = sid(exName);
+  return '<div class="eld-committed-row" id="setrow-' + exId + '-' + i + '">' +
+    '<span class="set-num">' + (i+1) + '</span>' +
+    '<span class="eld-committed-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'weight\',' + (s.weight||0) + ')">' + (s.weight||'—') + '</span>' +
+    '<span class="eld-committed-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'reps\',' + (s.reps||0) + ')">' + (s.reps||'—') + '</span>' +
+    '<span class="eld-committed-time">' + t + '</span>' +
+    '<button class="remove-btn" onclick="removeLogSet(\'' + exId + '\',' + i + ')">&#215;</button>' +
+    '</div>';
+}
+
+function eldInlineEdit(exId, i, field, currentVal) {
+  var exName = nameFromSid(exId);
+  var row = document.getElementById('setrow-' + exId + '-' + i);
+  if (!row) return;
+  var spans = row.querySelectorAll('.eld-committed-val');
+  var span = field === 'weight' ? spans[0] : spans[1];
+  var input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'eld-committed-val editing';
+  input.value = currentVal || '';
+  input.inputMode = field === 'weight' ? 'decimal' : 'numeric';
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+  function commit() {
+    updateLogSet(exId, i, field, input.value);
+    renderEldSets();
+  }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { input.blur(); } });
+}
+
+function eldPreviewInput() {
+  // Live preview stats while typing in input row
+  var exName = currentExLogName;
+  if (!exName || !session) return;
+  var wInput = document.getElementById('eld-input-weight');
+  var rInput = document.getElementById('eld-input-reps');
+  if (!wInput || !rInput) return;
+  var w = parseFloat(wInput.value) || 0;
+  var r = parseInt(rInput.value) || 0;
+  if (!w && !r) return;
+  // Temporarily add to session for stats preview
+  var sets = session.sets[exName] || [];
+  var tempSet = {weight: w, reps: r, timestamp: new Date().toISOString()};
+  var tempSets = sets.concat([tempSet]);
+  var saved = session.sets[exName];
+  session.sets[exName] = tempSets;
+  updateEldStatsStrip(exName);
+  session.sets[exName] = saved;
+}
+
+function eldCommitSet() {
   if (!currentExLogName || !session) return;
   var exName = currentExLogName;
+  var wInput = document.getElementById('eld-input-weight');
+  var rInput = document.getElementById('eld-input-reps');
+  if (!wInput || !rInput) return;
+  var weight = parseFloat(wInput.value) || 0;
+  var reps = parseInt(rInput.value) || 0;
+  // Mark weight input as user-edited so pre-fill doesn't overwrite on next render
+  wInput._userEdited = false;
   var sets = session.sets[exName] || [];
-  var lastWeight = sets.length > 0
-    ? sets[sets.length-1].weight
-    : getLastSessionWeight(exName);
-  var newSet = {weight:lastWeight, reps:'', timestamp:new Date().toISOString(), sheetRow:null};
+  var newSet = {weight: weight, reps: reps, timestamp: new Date().toISOString(), sheetRow: null};
   sets.push(newSet); session.sets[exName] = sets;
   renderEldSets();
-  // Focus reps input synchronously (must happen in same call stack as tap for iOS keyboard)
-  var inputs = document.querySelectorAll('#eld-sets-list .set-input');
-  if (inputs.length) inputs[inputs.length-1].focus();
   rtQuickStart();
-  // Save locally first, then sync to Sheets
+  // Focus reps input for fast next set entry
+  var rIn = document.getElementById('eld-input-reps');
+  if (rIn) setTimeout(function() { rIn.focus(); }, 50);
+  // Save and sync
   var today = new Date().toLocaleDateString('en-GB');
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, lastWeight, '', today];
+  var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, weight, reps, today];
   saveResultLocally(syncRow);
   syncResultToSheets(syncRow, newSet);
 }
+
+function addLogSetFromDetail() { eldCommitSet(); }
 
 async function addLogSet(exId) {
   if (!session) return;
