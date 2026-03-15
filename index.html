@@ -93,13 +93,9 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-hist-val{text-align:center;}
 .eld-hist-pb{color:var(--acid);}
 .eld-sets-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-.eld-committed-row{display:grid;grid-template-columns:24px 1fr 1fr 60px 28px;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #181818;}
-.eld-committed-row .set-num{font-family:var(--mono);font-size:11px;color:#555;text-align:center;}
-.eld-committed-val{font-family:var(--mono);font-size:14px;color:#e0e0e0;text-align:center;cursor:pointer;padding:4px 6px;border-radius:3px;border:1px solid transparent;}
-.eld-committed-val:hover{border-color:#2e2e2e;background:#111;}
-.eld-committed-val.editing{border-color:var(--acid);background:#111;outline:none;width:100%;color:#e0e0e0;}
-.eld-committed-time{font-family:var(--mono);font-size:10px;color:#444;text-align:center;}
-.eld-input-row{display:grid;grid-template-columns:24px 1fr 1fr 60px 28px;align-items:center;gap:6px;padding:4px 0;}
+.eld-committed-row{display:grid;grid-template-columns:24px 1fr 1fr 28px;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #181818;}
+.eld-committed-val.editing{border:1px solid var(--acid);background:#111;outline:none;border-radius:3px;padding:2px 4px;color:#e0e0e0;font-family:var(--mono);font-size:13px;width:100%;}
+.eld-input-row{display:grid;grid-template-columns:24px 1fr 1fr 44px;align-items:center;gap:6px;padding:4px 0;}
 .eld-input-row .set-num{font-family:var(--mono);font-size:11px;color:var(--acid);text-align:center;}
 .eld-quick-input{background:#111;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:15px;text-align:center;padding:7px 4px;width:100%;outline:none;}
 .eld-quick-input:focus{border-color:var(--acid);}
@@ -134,7 +130,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .stats-section-title{font-size:10px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .stats-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
 .stats-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center;}
-.stats-card-val{font-family:var(--display);font-size:18px;font-weight:900;color:var(--acid);}
+.stats-card-val{font-family:var(--display);font-size:18px;font-weight:500;color:var(--acid);}
 .stats-card-lbl{font-size:9px;color:#999;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
 .stats-chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;}
 .stats-chart-title{font-size:10px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
@@ -143,7 +139,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #eld-stats-strip{background:#131313;border-top:1px solid var(--border);padding:10px 16px;display:none;flex-shrink:0;}
 .eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
 .eld-strip-card{text-align:center;}
-.eld-strip-val{font-family:var(--display);font-size:14px;font-weight:900;color:var(--acid);line-height:1;}
+.eld-strip-val{font-family:var(--display);font-size:14px;font-weight:500;color:var(--acid);line-height:1;}
 .eld-strip-lbl{font-size:8px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
 .eld-strip-vs{font-size:8px;color:#888;margin-top:2px;height:10px;}
 .eld-gauge-wrap{height:3px;background:#2a2a2a;border-radius:2px;margin-top:4px;overflow:hidden;}
@@ -152,7 +148,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #eld-vol-row{border-top:1px solid var(--border);margin-top:8px;padding-top:8px;}
 #eld-vol-row .eld-gauge-wrap{height:5px;margin-top:6px;}
 .eld-vol-numbers{display:flex;justify-content:space-between;align-items:baseline;}
-.eld-vol-fraction{font-family:var(--display);font-size:15px;font-weight:900;color:var(--acid);}
+.eld-vol-fraction{font-family:var(--display);font-size:15px;font-weight:500;color:var(--acid);}
 .eld-vol-remaining{font-size:9px;color:#888;letter-spacing:1px;}
 #sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
 #sh-filters{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;}
@@ -373,7 +369,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <span class="set-num" id="eld-input-setnum">1</span>
       <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
       <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
-      <span class="eld-committed-time"></span>
       <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
     </div>
   </div>
@@ -962,20 +957,41 @@ async function initApp() {
       showError('No valid token. Please sign out and sign in again.');
       return;
     }
-    setLoadingMsg('Loading workouts...');
-    await loadWorkoutsAndExercises();
-    setLoadingMsg('Loading history...');
-    var rawResults = await readUserRows('Results');
-    // rawResults cols: [UserID, ResultID, Timestamp, WorkoutID, WorkoutName, ExerciseID, ExerciseName, Set, Weight, Reps, SessionDate]
-    // Convert to legacy format (drop UserID) for internal use
-    var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
-    // Merge: local rows take priority, add any Sheets rows not already local
-    var localRows = getLocalResults();
-    var localIds = new Set(localRows.map(function(r) { return r[0]; }));
-    var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
-    shRows = localRows.concat(sheetsOnly);
-    ehRows = shRows;
-    lsSet(LS_RESULTS, shRows);
+    // Wrap all Sheets calls in a timeout — fall back to local data if network is slow/absent
+    var initTimeout = new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error('TIMEOUT')); }, 8000);
+    });
+    try {
+      await Promise.race([initTimeout, (async function() {
+        setLoadingMsg('Loading workouts...');
+        await loadWorkoutsAndExercises();
+        setLoadingMsg('Loading history...');
+        var rawResults = await readUserRows('Results');
+        var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+        var localRows = getLocalResults();
+        var localIds = new Set(localRows.map(function(r) { return r[0]; }));
+        var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
+        shRows = localRows.concat(sheetsOnly);
+        ehRows = shRows;
+        lsSet(LS_RESULTS, shRows);
+      })()]);
+    } catch(e) {
+      if (e.message === 'TIMEOUT') {
+        // Network too slow — load from local and continue
+        setLoadingMsg('Loading local data...');
+        await loadFromLocal();
+        showToast('Loaded from local — syncing in background');
+        await loadPBs();
+        renderWorkoutPicker();
+        renderWorkoutsScreen();
+        setTimeout(flushSyncQueue, 1000);
+        await requestNotifPermission();
+        initPushSubscription();
+        showScreen('app');
+        return;
+      }
+      throw e;
+    }
     await loadPBs();
     renderWorkoutPicker();
     renderWorkoutsScreen();
@@ -1425,8 +1441,10 @@ function openExLogDetail(exName) {
     histEl.innerHTML = '<div style="font-size:12px;color:#b0b0b0;">No previous sessions yet.</div>';
   } else {
     histEl.innerHTML = hist.map(function(session_hist) {
+      var pbShown = false;
       var rows = session_hist.sets.map(function(s) {
-        var isPB = pb !== null && parseFloat(s.weight) === pb;
+        var isPB = pb !== null && parseFloat(s.weight) >= pb && !pbShown;
+        if (isPB) pbShown = true;
         return '<div class="eld-hist-row' + (isPB ? ' eld-hist-pb' : '') + '">' +
           '<span class="eld-hist-num">' + s.set + '</span>' +
           '<span class="eld-hist-val">' + (s.weight||'—') + 'kg</span>' +
@@ -1453,11 +1471,12 @@ function renderEldSets() {
   if (!currentExLogName || !session) return;
   var sets = session.sets[currentExLogName] || [];
   var list = document.getElementById('eld-sets-list');
-  // Render committed sets as tappable rows
+  // Render committed sets — spacer matches eld-hist-date height for row alignment
   if (!sets.length) {
-    list.innerHTML = '';
+    list.innerHTML = '<div class="eld-hist-date" style="visibility:hidden;">00/00/0000</div>';
   } else {
-    list.innerHTML = sets.map(function(s, i) { return eldCommittedRowHTML(currentExLogName, i, s); }).join('');
+    list.innerHTML = '<div class="eld-hist-date" style="visibility:hidden;">00/00/0000</div>' +
+      sets.map(function(s, i) { return eldCommittedRowHTML(currentExLogName, i, s); }).join('');
   }
   // Update input row set number and pre-fill weight
   var nextIdx = sets.length;
@@ -1473,13 +1492,11 @@ function renderEldSets() {
 }
 
 function eldCommittedRowHTML(exName, i, s) {
-  var t = s.timestamp ? new Date(s.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
   var exId = sid(exName);
   return '<div class="eld-committed-row" id="setrow-' + exId + '-' + i + '">' +
-    '<span class="set-num">' + (i+1) + '</span>' +
-    '<span class="eld-committed-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'weight\',' + (s.weight||0) + ')">' + (s.weight||'—') + '</span>' +
-    '<span class="eld-committed-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'reps\',' + (s.reps||0) + ')">' + (s.reps||'—') + '</span>' +
-    '<span class="eld-committed-time">' + t + '</span>' +
+    '<span class="eld-hist-num">' + (i+1) + '</span>' +
+    '<span class="eld-hist-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'weight\',' + (s.weight||0) + ')">' + (s.weight||'—') + 'kg</span>' +
+    '<span class="eld-hist-val" onclick="eldInlineEdit(\'' + exId + '\',' + i + ',\'reps\',' + (s.reps||0) + ')">' + (s.reps||'—') + ' reps</span>' +
     '<button class="remove-btn" onclick="removeLogSet(\'' + exId + '\',' + i + ')">&#215;</button>' +
     '</div>';
 }
@@ -2088,8 +2105,10 @@ async function deleteGlobalExercise(name) {
 
 // REST TIMER
 function rtSetPreset(s) {
-  rtPreset = s; rtRemaining = s; rtStop(); rtUpdateDisplay();
+  rtPreset = s;
   localStorage.setItem('lift_last_preset', s);
+  // Only reset remaining if timer is not currently running
+  if (!rtRunning) { rtRemaining = s; rtUpdateDisplay(); }
   document.querySelectorAll('.rt-preset').forEach(function(b) {
     b.classList.toggle('active', b.textContent === s+'s' || (s===120 && b.textContent==='2m') || (s===180 && b.textContent==='3m'));
   });
