@@ -410,7 +410,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   </div>
 </div>
 <div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn" onclick="closeSessionDetail()">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
-<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div id="exd-name"></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
+<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div id="exd-name" onclick="editExerciseName()" style="cursor:pointer;border-bottom:1px dashed #333;display:inline-block;" title="Tap to rename"></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
 <div id="stats-screen">
   <div id="stats-header">
     <button class="back-btn" onclick="closeStats()">&#8592; Back</button>
@@ -1906,6 +1906,73 @@ function openExDetail(exName) {
 }
 function closeExDetail() { document.getElementById('ex-detail').classList.remove('visible'); }
 
+async function editExerciseName() {
+  var nameEl = document.getElementById('exd-name');
+  var oldName = nameEl.textContent;
+  var newName = prompt('Rename exercise:', oldName);
+  if (!newName || newName.trim() === oldName) return;
+  newName = newName.trim();
+
+  // Update localStorage results — all rows referencing old name
+  var results = getLocalResults();
+  results.forEach(function(r) {
+    if (r[5] === oldName) { r[5] = newName; }  // ExerciseName col
+  });
+  lsSet(LS_RESULTS, results);
+
+  // Update exercises list in localStorage
+  var exList = lsGet(LS_EXERCISES) || [];
+  exList.forEach(function(e) { if (e.name === oldName) e.name = newName; });
+  lsSet(LS_EXERCISES, exList);
+  exercises = exList;
+
+  // Update workout exercise lists
+  var wkList = lsGet(LS_WORKOUTS) || [];
+  wkList.forEach(function(w) {
+    w.exercises = w.exercises.map(function(e) { return e === oldName ? newName : e; });
+  });
+  lsSet(LS_WORKOUTS, wkList);
+  workouts = wkList;
+
+  // Update Sheets Exercises tab
+  if (!offlineMode && accessToken) {
+    try {
+      var rawEx = await readSheet('Exercises');
+      var email = currentUser ? currentUser.email : '';
+      var updates = [];
+      rawEx.forEach(function(r, i) {
+        if (r[0] === email && r[2] === oldName) {
+          updates.push({ rowNum: i + 1, values: [email, r[1], newName] });
+        }
+      });
+      if (updates.length) await batchWriteRows('Exercises', updates);
+
+      // Update Sheets Results tab — all rows with old exercise name
+      var rawRes = await readSheet('Results');
+      var resUpdates = [];
+      rawRes.forEach(function(r, i) {
+        if (r[0] === email && r[6] === oldName) {
+          var updated = r.slice();
+          updated[5] = newName.replace(/\s+/g, '_'); // ExerciseID
+          updated[6] = newName;                       // ExerciseName
+          resUpdates.push({ rowNum: i + 1, values: updated });
+        }
+      });
+      if (resUpdates.length) await batchWriteRows('Results', resUpdates);
+    } catch(e) {
+      showToast('Renamed locally — Sheets sync failed');
+    }
+  }
+
+  // Refresh UI
+  nameEl.textContent = newName;
+  shRows = getLocalResults();
+  ehRows = shRows;
+  await loadPBs();
+  renderExercisesScreen();
+  showToast('Renamed to ' + newName);
+}
+
 // WORKOUTS SCREEN
 function renderWorkoutsScreen() {
   var wrap = document.getElementById('workouts-list'); wrap.innerHTML = '';
@@ -2112,7 +2179,7 @@ function rtSetPreset(s) {
   rtPreset = s;
   localStorage.setItem('lift_last_preset', s);
   // Only reset remaining if timer is not currently running
-  if (!rtRunning) { rtRemaining = s; rtUpdateDisplay(); }
+  if (!rtRunning) { rtRemaining = s; rtStartPreset = s; rtUpdateDisplay(); }
   document.querySelectorAll('.rt-preset').forEach(function(b) {
     b.classList.toggle('active', b.textContent === s+'s' || (s===120 && b.textContent==='2m') || (s===180 && b.textContent==='3m'));
   });
@@ -2160,13 +2227,15 @@ function rtUpdateDisplay() {
   var m = Math.floor(rtRemaining/60), s = rtRemaining % 60;
   var timeStr = m + ':' + (s < 10 ? '0' : '') + s;
   var color = rtRemaining <= 0 ? '#ff4747' : rtRemaining < 20 ? '#ff9900' : '#e8ff47';
+  // Ring ratio: full (1) when stopped, countdown from rtStartPreset when running
+  var ratio = rtRunning ? (1 - Math.max(0, rtRemaining) / rtStartPreset) : 0;
   // Main bar
   var disp = document.getElementById('rt-display'), ring = document.getElementById('rt-ring-fg');
   if (disp && ring) {
     disp.textContent = timeStr;
     var circ = 2 * Math.PI * 22;
     ring.style.strokeDasharray = circ;
-    ring.style.strokeDashoffset = circ * (1 - Math.max(0, rtRemaining) / rtStartPreset);
+    ring.style.strokeDashoffset = circ * ratio;
     ring.style.stroke = color;
     disp.style.color = rtRemaining < 20 ? color : '#f0f0f0';
   }
@@ -2176,7 +2245,7 @@ function rtUpdateDisplay() {
     eldDisp.textContent = timeStr;
     var eldCirc = 2 * Math.PI * 18;
     eldRing.style.strokeDasharray = eldCirc;
-    eldRing.style.strokeDashoffset = eldCirc * (1 - Math.max(0, rtRemaining) / rtStartPreset);
+    eldRing.style.strokeDashoffset = eldCirc * ratio;
     eldRing.style.stroke = color;
     eldDisp.style.color = rtRemaining < 20 ? color : '#f0f0f0';
   }
