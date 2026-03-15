@@ -556,27 +556,38 @@ function urlBase64ToUint8Array(base64String) {
   return arr;
 }
 
+var _serverScheduleTimer = null;
+
 async function serverScheduleNotification(title, body, delaySeconds) {
   if (!currentUser || !_pushSubscription) return false;
-  try {
-    var resp = await fetch(PUSH_SERVER + '/schedule', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        userId: currentUser.email,
-        delayMs: delaySeconds * 1000,
-        title: title,
-        body: body
-      })
-    });
-    return resp.ok;
-  } catch(e) {
-    console.warn('[LIFT] Server schedule failed:', e.message);
-    return false;
-  }
+  // Debounce — if called again within 300ms, cancel previous and use latest
+  if (_serverScheduleTimer) { clearTimeout(_serverScheduleTimer); _serverScheduleTimer = null; }
+  return new Promise(function(resolve) {
+    _serverScheduleTimer = setTimeout(async function() {
+      _serverScheduleTimer = null;
+      try {
+        var resp = await fetch(PUSH_SERVER + '/schedule', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            userId: currentUser.email,
+            delayMs: delaySeconds * 1000,
+            title: title,
+            body: body
+          })
+        });
+        resolve(resp.ok);
+      } catch(e) {
+        console.warn('[LIFT] Server schedule failed:', e.message);
+        resolve(false);
+      }
+    }, 300);
+  });
 }
 
 async function serverCancelNotification() {
+  // Clear any pending debounced schedule first
+  if (_serverScheduleTimer) { clearTimeout(_serverScheduleTimer); _serverScheduleTimer = null; }
   if (!currentUser || !_pushSubscription) return;
   try {
     await fetch(PUSH_SERVER + '/cancel', {
@@ -2217,6 +2228,7 @@ function rtStart() {
 function rtStop() {
   rtRunning = false; clearInterval(rtInterval);
   cancelScheduledNotification();
+  serverCancelNotification(); // explicit cancel when user manually stops timer
   var b = document.getElementById('rt-play');
   if (b) { b.innerHTML = '&#9654;'; b.classList.remove('running'); }
   var eldPlay = document.getElementById('eld-rt-play');
@@ -2732,9 +2744,11 @@ function scheduleNotification(title, body, delaySeconds) {
 }
 
 function cancelScheduledNotification() {
+  if (_serverScheduleTimer) { clearTimeout(_serverScheduleTimer); _serverScheduleTimer = null; }
   if (_notifyPageTimer) { clearTimeout(_notifyPageTimer); _notifyPageTimer = null; }
   _notifyFireAt = null; _notifyTitle = null; _notifyBody = null;
-  serverCancelNotification();
+  // Server cancel NOT sent here — server auto-cancels on new /schedule request
+  // Explicit server cancel only happens in rtStop (manual timer stop)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(function(reg) {
       if (reg.active) reg.active.postMessage({type: 'cancelNotify'});
