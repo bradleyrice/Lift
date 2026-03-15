@@ -686,6 +686,7 @@ var rtPreset = _savedPreset, rtRemaining = _savedPreset, rtRunning = false, rtIn
 var rtStartPreset = _savedPreset; // preset at time timer was started — used for ring display
 var pbCache = {};
 var shFilter = 'all', shRows = [], ehRows = [];
+var _deletedResultIds = new Set(); // tracks deleted IDs so background Sheets refresh can't resurrect them
 
 // SCREEN MANAGEMENT
 function showScreen(id) {
@@ -1658,10 +1659,11 @@ async function cancelSession() {
         if (s.sheetRow) sheetRows.push(s.sheetRow);
       });
     });
-    // Remove from localStorage immediately
+    // Remove from localStorage immediately and track in memory
     if (localIds.length) {
       var existing = getLocalResults();
       var idSet = new Set(localIds);
+      localIds.forEach(function(id) { _deletedResultIds.add(id); });
       lsSet(LS_RESULTS, existing.filter(function(r) { return !idSet.has(r[0]); }));
     }
     // Delete from Sheets in background
@@ -1709,21 +1711,7 @@ function loadSessionHistory() {
   shRows = getLocalResults();
   ehRows = shRows;
   renderSessionFilters(); renderSessionList();
-  // Background refresh from Sheets — display only, NEVER writes back to localStorage
-  if (!offlineMode && accessToken) {
-    readUserRows('Results').then(function(rawResults) {
-      var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
-      var localRows = getLocalResults();
-      var localIds = new Set(localRows.map(function(r) { return r[0]; }));
-      // Merge in memory for display only — local always wins, no localStorage write
-      var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
-      if (sheetsOnly.length > 0) {
-        shRows = localRows.concat(sheetsOnly);
-        ehRows = shRows;
-        renderSessionFilters(); renderSessionList();
-      }
-    }).catch(function() {});
-  }
+  // Local is source of truth — no background Sheets refresh needed here
 }
 function renderSessionFilters() {
   var names = ['All'].concat(workouts.map(function(w) { return w.name.split('\u2014')[0].trim(); }));
