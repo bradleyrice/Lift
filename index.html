@@ -967,8 +967,13 @@ async function initApp() {
         await loadWorkoutsAndExercises();
         setLoadingMsg('Loading history...');
         var rawResults = await readUserRows('Results');
-        var sheetsRows = rawResults.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
-        var localRows = getLocalResults();
+        var allSheetsRows = rawResults.map(function(r) { return r.slice(1); });
+        // Collect deleted IDs from Sheets (tombstones)
+        var deletedIds = new Set(allSheetsRows.filter(function(r) { return r[0] === '__DELETED__'; }).map(function(r) { return r[1]; }));
+        var sheetsRows = allSheetsRows.filter(isValidResultRow);
+        var localRows = getLocalResults().filter(function(r) { return !deletedIds.has(r[0]); });
+        // Persist cleaned local (removes any rows deleted on another device)
+        lsSet(LS_RESULTS, localRows);
         var localIds = new Set(localRows.map(function(r) { return r[0]; }));
         var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
         shRows = localRows.concat(sheetsOnly);
@@ -1643,16 +1648,27 @@ async function removeLogSet(exId, setIdx) {
 
 async function cancelSession() {
   if (!confirm('Cancel this session? No data will be saved.')) return;
-  // Delete any rows already written for this session
   if (session) {
+    // Collect all localIds for this session
+    var localIds = [];
+    var sheetRows = [];
+    Object.values(session.sets).forEach(function(sets) {
+      sets.forEach(function(s) {
+        if (s._localId) localIds.push(s._localId);
+        if (s.sheetRow) sheetRows.push(s.sheetRow);
+      });
+    });
+    // Remove from localStorage immediately
+    if (localIds.length) {
+      var existing = getLocalResults();
+      var idSet = new Set(localIds);
+      lsSet(LS_RESULTS, existing.filter(function(r) { return !idSet.has(r[0]); }));
+    }
+    // Delete from Sheets in background
     setSyncStatus('syncing');
     try {
-      var allSets = [];
-      Object.values(session.sets).forEach(function(sets) {
-        sets.forEach(function(s) { if (s.sheetRow) allSets.push(s.sheetRow); });
-      });
-      for (var i = 0; i < allSets.length; i++) {
-        await deleteSheetRow('Results', allSets[i]);
+      for (var i = 0; i < sheetRows.length; i++) {
+        await deleteSheetRow('Results', sheetRows[i]);
       }
       setSyncStatus('saved');
     } catch(e) { setSyncStatus('error'); }
