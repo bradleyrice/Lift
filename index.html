@@ -95,7 +95,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-sets-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .comment-btn{background:transparent;border:none;cursor:pointer;padding:2px 5px;font-size:13px;color:#555;flex-shrink:0;}
 .comment-btn.has-comment{color:var(--acid);}
-.comment-indicator{font-size:10px;color:var(--acid);cursor:pointer;margin-left:4px;vertical-align:middle;}
+.comment-indicator{font-size:16px;color:var(--acid);cursor:pointer;margin-left:6px;vertical-align:middle;display:inline-block;padding:2px;}
 .comment-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:400;display:flex;align-items:flex-end;padding:0;}
 .comment-modal-inner{background:#161616;border-top:1px solid #2e2e2e;border-radius:12px 12px 0 0;padding:20px 16px 32px;width:100%;max-width:100%;}
 .comment-modal-title{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:12px;}
@@ -442,7 +442,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   </div>
 </div>
 <div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn" onclick="closeSessionDetail()">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
-<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div style="display:flex;align-items:center;gap:8px;"><div id="exd-name"></div><button onclick="editExerciseName()" style="background:transparent;border:none;color:#555;font-size:14px;cursor:pointer;padding:2px 4px;flex-shrink:0;" title="Rename">&#9998;</button><button id="exd-comment-btn" class="comment-btn" onclick="openExerciseComment(document.getElementById('exd-name').textContent,false)" title="Add note">&#128172;</button></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
+<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div style="display:flex;align-items:center;gap:8px;"><div id="exd-name"></div><button onclick="editExerciseName()" style="background:transparent;border:none;color:#b0b0b0;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;" title="Rename">&#9998;</button><button id="exd-comment-btn" class="comment-btn" onclick="openExerciseComment(document.getElementById('exd-name').textContent,false)" title="Add note">&#128172;</button></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
 <div id="stats-screen">
   <div id="stats-header">
     <button class="back-btn" onclick="closeStats()">&#8592; Back</button>
@@ -884,7 +884,7 @@ function saveCurrentComment() {
   var text = document.getElementById('comment-textarea').value.trim();
   var ctx = _commentContext;
   if (ctx.type === 'workout') { setWorkoutComment(ctx.wid, text); renderWorkoutsScreen(); }
-  else if (ctx.type === 'exercise') { setExerciseComment(ctx.exName, text); renderExercisesScreen(); }
+  else if (ctx.type === 'exercise') { setExerciseComment(ctx.exName, text); renderExerciseHistory(); }
   else if (ctx.type === 'sessionEx') { setSessionExComment(ctx.date, ctx.wid, ctx.exName, text); updateEldCommentBtn(); }
   if (session) renderLogExercises();
   closeCommentModal();
@@ -1622,15 +1622,11 @@ function openExLogDetail(exName) {
     histEl.innerHTML = '<div style="font-size:12px;color:#b0b0b0;">No previous sessions yet.</div>';
   } else {
     histEl.innerHTML = hist.map(function(session_hist) {
-      var pbShown = false;
       var rows = session_hist.sets.map(function(s) {
-        var isPB = pb !== null && parseFloat(s.weight) >= pb && !pbShown;
-        if (isPB) pbShown = true;
-        return '<div class="eld-hist-row' + (isPB ? ' eld-hist-pb' : '') + '">' +
+        return '<div class="eld-hist-row">' +
           '<span class="eld-hist-num">' + s.set + '</span>' +
           '<span class="eld-hist-val">' + (s.weight||'—') + 'kg</span>' +
           '<span class="eld-hist-val">' + (s.reps||'—') + ' reps</span>' +
-          (isPB ? ' <span style="font-size:10px;">&#127942;</span>' : '') +
           '</div>';
       }).join('');
       var histWid = session && session.workoutId ? session.workoutId : '';
@@ -2041,7 +2037,8 @@ function restStr(ts1, ts2) {
 // EXERCISE HISTORY
 function renderExerciseHistory() {
   ehRows = getLocalResults();
-  var query = document.getElementById('eh-search').value.toLowerCase();
+  var searchEl = document.getElementById('eh-search');
+  var query = searchEl ? searchEl.value.toLowerCase() : '';
   var exSet = {};
   ehRows.filter(function(r) { return r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) { exSet[r[5]] = true; });
   workouts.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
@@ -2153,12 +2150,13 @@ async function editExerciseName() {
     }
   }
 
-  // Refresh UI
+  // Refresh UI immediately
   nameEl.textContent = newName;
   shRows = getLocalResults();
   ehRows = shRows;
   await loadPBs();
-  renderExercisesScreen();
+  renderExerciseHistory();
+  renderWorkoutsScreen();
   showToast('Renamed to ' + newName);
 }
 
@@ -2187,7 +2185,13 @@ function renderWorkoutsScreen() {
           '</div>';
       }).join('') +
       '<div class="workout-add-ex"><select class="ex-sel" id="ex-sel-' + wi + '">' +
-      allExercises.slice().sort(function(a,b){return a.localeCompare(b);}).map(function(e) { return '<option>' + e + '</option>'; }).join('') +
+      (function() {
+        var exSet = {};
+        allExercises.forEach(function(e) { exSet[e] = true; });
+        workouts.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
+        ehRows.forEach(function(r) { if (r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__') exSet[r[5]] = true; });
+        return Object.keys(exSet).sort(function(a,b){return a.localeCompare(b);}).map(function(e) { return '<option>' + e + '</option>'; }).join('');
+      })() +
       '<option value="__new__">+ New exercise...</option></select>' +
       '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div>' +
       '</div>';
