@@ -296,7 +296,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div id="exercises-list"><div class="empty-state">Select a workout above and tap Start to begin logging.</div></div>
       <div id="session-actions" style="display:none;padding:0 16px 8px;gap:8px;">
   <button id="finish-btn" onclick="finishSession()" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:16px 0;font-family:var(--display);font-size:18px;font-weight:900;letter-spacing:4px;text-transform:uppercase;cursor:pointer;">Finish</button>
-  <button id="cancel-btn" onclick="cancelSession()" style="background:transparent;border:1px solid #444;color:#999;border-radius:6px;padding:16px 20px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">Cancel</button>
+  <button onclick="addAdHocExercise()" style="background:transparent;border:1px solid #444;color:#999;border-radius:6px;padding:16px 14px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;" title="Add exercise">+</button>
+  <button id="cancel-btn" onclick="cancelSession()" style="background:transparent;border:1px solid #444;color:#999;border-radius:6px;padding:16px 14px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">&#215;</button>
 </div>
     </div>
     <div class="screen" id="screen-sessions">
@@ -328,6 +329,18 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
             style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:10px;letter-spacing:2px;padding:8px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;">SAVE</button>
         </div>
         <div id="push-server-status" style="font-family:var(--mono);font-size:10px;color:#555;margin-top:6px;"></div>
+      </div>
+    </div>
+  </div>
+  <div id="adhoc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:400;display:none;align-items:flex-end;" onclick="if(event.target===this)closeAdHocModal()">
+    <div style="background:#161616;border-top:1px solid #2e2e2e;border-radius:12px 12px 0 0;padding:20px 16px 32px;width:100%;box-sizing:border-box;">
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:12px;">Add Exercise to Session</div>
+      <input id="adhoc-search" type="search" placeholder="Search or type new name..." oninput="renderAdHocList()"
+        style="width:100%;background:#0a0a0a;border:1px solid #2e2e2e;border-radius:6px;color:#e0e0e0;font-family:var(--mono);font-size:13px;padding:10px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+      <div id="adhoc-list" style="max-height:240px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button onclick="closeAdHocModal()" style="background:transparent;border:1px solid #2e2e2e;color:#888;border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;cursor:pointer;">Cancel</button>
+        <button onclick="addAdHocBySearch()" id="adhoc-add-btn" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:12px 0;font-family:var(--mono);font-size:12px;letter-spacing:2px;font-weight:700;cursor:pointer;">Add</button>
       </div>
     </div>
   </div>
@@ -442,7 +455,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   </div>
 </div>
 <div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn" onclick="closeSessionDetail()">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
-<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div style="display:flex;align-items:center;gap:8px;"><div id="exd-name"></div><button onclick="editExerciseName()" style="background:transparent;border:none;color:#b0b0b0;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;" title="Rename">&#9998;</button><button id="exd-comment-btn" class="comment-btn" onclick="openExerciseComment(document.getElementById('exd-name').textContent,false)" title="Add note">&#128172;</button></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
+<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div style="display:flex;align-items:center;gap:8px;"><div id="exd-name"></div><button onclick="editExerciseName()" style="background:transparent;border:none;color:#c0c0c0;font-size:22px;cursor:pointer;padding:6px 12px;flex-shrink:0;" title="Rename">&#9998;</button><button id="exd-comment-btn" class="comment-btn" onclick="openExerciseComment(document.getElementById('exd-name').textContent,false)" title="Add note" style="font-size:20px;padding:6px 8px;">&#128172;</button></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
 <div id="stats-screen">
   <div id="stats-header">
     <button class="back-btn" onclick="closeStats()">&#8592; Back</button>
@@ -942,6 +955,74 @@ function updateEldCommentBtn() {
   var text = getSessionExComment(today, session.workoutId, currentExLogName);
   btn.classList.toggle('has-comment', !!text);
   btn.title = text ? 'Edit session note' : 'Add session note';
+}
+
+function addAdHocExercise() {
+  if (!session) return;
+  var modal = document.getElementById('adhoc-modal');
+  modal.style.display = 'flex';
+  var searchEl = document.getElementById('adhoc-search');
+  searchEl.value = '';
+  renderAdHocList();
+  setTimeout(function() { searchEl.focus(); }, 100);
+}
+
+function closeAdHocModal() {
+  document.getElementById('adhoc-modal').style.display = 'none';
+}
+
+function renderAdHocList() {
+  var query = (document.getElementById('adhoc-search').value || '').toLowerCase().trim();
+  // Build full exercise list
+  var exSet = {};
+  allExercises.forEach(function(e) { exSet[e] = true; });
+  workouts.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
+  ehRows.forEach(function(r) { if (r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__') exSet[r[5]] = true; });
+  // Exclude already-in-session exercises
+  if (session) Object.keys(session.sets).forEach(function(e) { delete exSet[e]; });
+  var list = Object.keys(exSet).sort(function(a,b) { return a.localeCompare(b); });
+  if (query) list = list.filter(function(e) { return e.toLowerCase().indexOf(query) >= 0; });
+  var wrap = document.getElementById('adhoc-list');
+  if (!list.length && !query) { wrap.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:#666;padding:8px 0;">All exercises already added.</div>'; return; }
+  wrap.innerHTML = list.slice(0, 20).map(function(e) {
+    return '<div onclick="confirmAdHocExercise(\'' + e.replace(/'/g, "\'") + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:#e0e0e0;cursor:pointer;">' + e + '</div>';
+  }).join('');
+  // Show "create new" option if query doesn't exactly match
+  var exactMatch = exSet[query] || list.some(function(e) { return e.toLowerCase() === query; });
+  if (query && !exactMatch) {
+    wrap.innerHTML += '<div onclick="confirmAdHocExercise(\'' + query.replace(/'/g, "\'") + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:var(--acid);cursor:pointer;">+ Add \"' + query + '\" as new exercise</div>';
+  }
+}
+
+function addAdHocBySearch() {
+  var query = (document.getElementById('adhoc-search').value || '').trim();
+  if (query) confirmAdHocExercise(query);
+}
+
+function confirmAdHocExercise(exName) {
+  if (!session || !exName) return;
+  // Capitalise first letter of each word if it's a new name
+  var exSet = {};
+  allExercises.forEach(function(e) { exSet[e] = true; });
+  workouts.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
+  ehRows.forEach(function(r) { if (r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__') exSet[r[5]] = true; });
+  if (!exSet[exName]) {
+    // New exercise — add to allExercises and Exercises sheet
+    allExercises.push(exName);
+    lsSet(LS_EXERCISES, allExercises);
+    if (!offlineMode && accessToken && currentUser) {
+      var email = currentUser.email;
+      var newId = exName.replace(/\s+/g, '_');
+      appendRows('Exercises', [[email, newId, exName]]).catch(function() {});
+    }
+  }
+  // Add to session (not to workout template)
+  if (!session.sets[exName]) session.sets[exName] = [];
+  if (!session.adHocExercises) session.adHocExercises = [];
+  if (session.adHocExercises.indexOf(exName) < 0) session.adHocExercises.push(exName);
+  closeAdHocModal();
+  renderLogExercises();
+  showToast(exName + ' added');
 }
 
 function signOut() {
@@ -1481,7 +1562,13 @@ function renderLogExercises() {
   if (!session) { wrap.innerHTML = '<div class="empty-state">Select a workout above and tap Start to begin logging.</div>'; return; }
   var workout = workouts.find(function(w) { return w.id === session.workoutId; });
   if (!workout) return;
-  workout.exercises.forEach(function(exName) {
+  var allSessionExercises = workout.exercises.slice();
+  if (session.adHocExercises) {
+    session.adHocExercises.forEach(function(e) {
+      if (allSessionExercises.indexOf(e) < 0) allSessionExercises.push(e);
+    });
+  }
+  allSessionExercises.forEach(function(exName) {
     if (!session.sets[exName]) session.sets[exName] = [];
     var sets = session.sets[exName];
     var logged = sets.filter(function(s) { return s.weight || s.reps; });
@@ -1669,7 +1756,11 @@ function renderEldSets() {
   var wInput = document.getElementById('eld-input-weight');
   var rInput = document.getElementById('eld-input-reps');
   if (wInput && !wInput._userEdited) {
-    var prefill = getPrevSessionWeight(currentExLogName, nextIdx);
+    var prevWeight = getPrevSessionWeight(currentExLogName, nextIdx);
+    // Also check current session weights — use higher of prev session or current session max
+    var currentSets = session && session.sets[currentExLogName] ? session.sets[currentExLogName] : [];
+    var currentMax = currentSets.reduce(function(max, s) { return Math.max(max, parseFloat(s.weight)||0); }, 0);
+    var prefill = Math.max(prevWeight, currentMax);
     wInput.value = prefill || '';
   }
   if (rInput) rInput.value = '';
