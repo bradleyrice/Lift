@@ -91,9 +91,13 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-hist-row{display:grid;grid-template-columns:22px 64px 64px;gap:6px;margin-bottom:4px;font-size:15px;align-items:center;}
 .eld-hist-num{font-size:12px;color:#999;text-align:center;}
 .eld-hist-val{text-align:center;}
-.eld-hist-target{background:#1a1f00;border-radius:4px;} /* next set target highlight */
-.eld-hist-warmup .eld-hist-val,.eld-hist-warmup .eld-hist-num{color:#444!important;} /* warm-up dimmed */
-.eld-today-warmup .set-input{opacity:0.4;} /* today's warm-up inputs dimmed */
+.eld-hist-target{background:#e8ff4722;border-radius:4px;} /* next set target — acid tint */
+.eld-hist-target .eld-hist-val,.eld-hist-target .eld-hist-num{color:#e8ff47!important;} /* target text bright */
+.eld-hist-warmup{background:#1c1c1c;border-radius:4px;} /* warm-up row — slightly lighter bg */
+.eld-hist-warmup .eld-hist-val,.eld-hist-warmup .eld-hist-num{color:#3a3a3a!important;} /* warm-up text dark */
+.eld-hist-warmup.eld-hist-target{background:#e8ff4722!important;} /* target overrides warmup */
+.eld-hist-warmup.eld-hist-target .eld-hist-val,.eld-hist-warmup.eld-hist-target .eld-hist-num{color:#e8ff47!important;}
+.eld-today-warmup .set-input{opacity:0.35;} /* today's warm-up inputs dimmed */
 .eld-sets-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .comment-btn{background:transparent;border:none;cursor:pointer;padding:2px 5px;font-size:13px;color:#555;flex-shrink:0;}
 .comment-btn.has-comment{color:var(--acid);}
