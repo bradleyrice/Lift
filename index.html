@@ -91,7 +91,9 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-hist-row{display:grid;grid-template-columns:22px 64px 64px;gap:6px;margin-bottom:4px;font-size:15px;align-items:center;}
 .eld-hist-num{font-size:12px;color:#999;text-align:center;}
 .eld-hist-val{text-align:center;}
-.eld-hist-pb{color:var(--acid);}
+.eld-hist-target{background:#1a1f00;border-radius:4px;} /* next set target highlight */
+.eld-hist-warmup .eld-hist-val,.eld-hist-warmup .eld-hist-num{color:#444!important;} /* warm-up dimmed */
+.eld-today-warmup .set-input{opacity:0.4;} /* today's warm-up inputs dimmed */
 .eld-sets-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .comment-btn{background:transparent;border:none;cursor:pointer;padding:2px 5px;font-size:13px;color:#555;flex-shrink:0;}
 .comment-btn.has-comment{color:var(--acid);}
@@ -1600,6 +1602,39 @@ function logSetHTML(exName, i, s) {
 
 var currentExLogName = null;
 
+function detectWarmupSets(sets) {
+  // Returns a Set of indices that are warm-up sets
+  // A set is a warm-up if its weight is <= 70% of the session max weight
+  // Only flags if there's a meaningful weight gap (max > 0 and at least one set above threshold)
+  var warmups = new Set();
+  if (!sets || sets.length < 2) return warmups;
+  var maxWeight = sets.reduce(function(m, s) { return Math.max(m, parseFloat(s.weight)||0); }, 0);
+  if (!maxWeight) return warmups;
+  var threshold = maxWeight * 0.70;
+  sets.forEach(function(s, i) {
+    var w = parseFloat(s.weight) || 0;
+    if (w > 0 && w <= threshold) warmups.add(i);
+  });
+  // Only apply if at least one set is above threshold (genuine working sets exist)
+  var hasWorkingSets = sets.some(function(s, i) { return !warmups.has(i) && (parseFloat(s.weight)||0) > 0; });
+  return hasWorkingSets ? warmups : new Set();
+}
+
+function detectWarmupSetsFromRaw(rawSets) {
+  // rawSets: [{set, weight, reps}] from history
+  var warmups = new Set();
+  if (!rawSets || rawSets.length < 2) return warmups;
+  var maxWeight = rawSets.reduce(function(m, s) { return Math.max(m, parseFloat(s.weight)||0); }, 0);
+  if (!maxWeight) return warmups;
+  var threshold = maxWeight * 0.70;
+  rawSets.forEach(function(s, i) {
+    var w = parseFloat(s.weight) || 0;
+    if (w > 0 && w <= threshold) warmups.add(i);
+  });
+  var hasWorkingSets = rawSets.some(function(s, i) { return !warmups.has(i) && (parseFloat(s.weight)||0) > 0; });
+  return hasWorkingSets ? warmups : new Set();
+}
+
 function getPrevSessionWeight(exName, setIndex) {
   // Returns weight for the corresponding set number from the previous session
   // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions)
@@ -1708,9 +1743,15 @@ function openExLogDetail(exName) {
   if (!hist.length) {
     histEl.innerHTML = '<div style="font-size:12px;color:#b0b0b0;">No previous sessions yet.</div>';
   } else {
-    histEl.innerHTML = hist.map(function(session_hist) {
-      var rows = session_hist.sets.map(function(s) {
-        return '<div class="eld-hist-row">' +
+    var todaySets = session && session.sets[exName] ? session.sets[exName] : [];
+    var nextSetNum = todaySets.length + 1; // 1-indexed next set to log
+    histEl.innerHTML = hist.map(function(session_hist, histIdx) {
+      var warmups = detectWarmupSetsFromRaw(session_hist.sets);
+      var rows = session_hist.sets.map(function(s, i) {
+        var isTarget = histIdx === 0 && s.set === nextSetNum;
+        var isWarmup = warmups.has(i);
+        var cls = 'eld-hist-row' + (isTarget ? ' eld-hist-target' : '') + (isWarmup ? ' eld-hist-warmup' : '');
+        return '<div class="' + cls + '">' +
           '<span class="eld-hist-num">' + s.set + '</span>' +
           '<span class="eld-hist-val">' + (s.weight||'—') + 'kg</span>' +
           '<span class="eld-hist-val">' + (s.reps||'—') + ' reps</span>' +
@@ -1741,13 +1782,43 @@ function renderEldSets() {
   if (currentExLogName) updateEldStatsStrip(currentExLogName);
   if (!currentExLogName || !session) return;
   var sets = session.sets[currentExLogName] || [];
+  // Re-render history to update target highlight when set count changes
+  var exName = currentExLogName;
+  var hist = getExHistory(exName);
+  var histEl = document.getElementById('eld-history-content');
+  if (histEl && hist.length) {
+    var todaySets = sets;
+    var nextSetNum = todaySets.length + 1;
+    var pb = pbCache[exName] !== undefined ? pbCache[exName] : null;
+    histEl.innerHTML = hist.map(function(session_hist, histIdx) {
+      var warmups = detectWarmupSetsFromRaw(session_hist.sets);
+      var rows = session_hist.sets.map(function(s, i) {
+        var isTarget = histIdx === 0 && s.set === nextSetNum;
+        var isWarmup = warmups.has(i);
+        var cls = 'eld-hist-row' + (isTarget ? ' eld-hist-target' : '') + (isWarmup ? ' eld-hist-warmup' : '');
+        return '<div class="' + cls + '">' +
+          '<span class="eld-hist-num">' + s.set + '</span>' +
+          '<span class="eld-hist-val">' + (s.weight||'—') + 'kg</span>' +
+          '<span class="eld-hist-val">' + (s.reps||'—') + ' reps</span>' +
+          '</div>';
+      }).join('');
+      var histWid = session && session.workoutId ? session.workoutId : '';
+      var histCmt = getSessionExComment(session_hist.date, histWid, exName);
+      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-');
+      var dateRow = '<div class="eld-hist-date">' + session_hist.date +
+        (histCmt ? ' <span class="comment-indicator" onclick="openHistSessionComment(\'' + histDateId + '\')" title="View session note">&#128172;</span>' : '') +
+        '</div>';
+      return '<div class="eld-hist-session" data-date="' + session_hist.date + '" data-wid="' + histWid + '">' + dateRow + rows + '</div>';
+    }).join('');
+  }
   var list = document.getElementById('eld-sets-list');
   // Render committed sets — spacer matches eld-hist-date height for row alignment
+  var warmupIndices = detectWarmupSets(sets);
   if (!sets.length) {
     list.innerHTML = '<div class="eld-hist-date" style="visibility:hidden;">00/00/0000</div>';
   } else {
     list.innerHTML = '<div class="eld-hist-date" style="visibility:hidden;">00/00/0000</div>' +
-      sets.map(function(s, i) { return eldCommittedRowHTML(currentExLogName, i, s); }).join('');
+      sets.map(function(s, i) { return eldCommittedRowHTML(currentExLogName, i, s, warmupIndices.has(i)); }).join('');
   }
   // Update input row set number and pre-fill weight
   var nextIdx = sets.length;
@@ -1766,9 +1837,9 @@ function renderEldSets() {
   if (rInput) rInput.value = '';
 }
 
-function eldCommittedRowHTML(exName, i, s) {
+function eldCommittedRowHTML(exName, i, s, isWarmup) {
   var exId = sid(exName);
-  return '<div class="eld-committed-row" id="setrow-' + exId + '-' + i + '">' +
+  return '<div class="eld-committed-row' + (isWarmup ? ' eld-today-warmup' : '') + '" id="setrow-' + exId + '-' + i + '">' +
     '<span class="eld-hist-num">' + (i+1) + '</span>' +
     '<input class="set-input" type="number" inputmode="decimal" placeholder="0" value="' + (s.weight||'') + '" onchange="updateLogSet(\'' + exId + '\',' + i + ',\'weight\',this.value)" oninput="previewLogSet(\'' + exId + '\',' + i + ')">' +
     '<input class="set-input" type="number" inputmode="numeric" placeholder="0" value="' + (s.reps||'') + '" onchange="updateLogSet(\'' + exId + '\',' + i + ',\'reps\',this.value)" oninput="previewLogSet(\'' + exId + '\',' + i + ')">' +
