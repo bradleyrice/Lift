@@ -414,8 +414,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div id="eld-input-fixed">
     <div class="eld-input-row" id="eld-input-row">
       <span class="set-num" id="eld-input-setnum">1</span>
-      <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
-      <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
+      <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()" onfocus="eldKeyboardOpen()" onblur="eldKeyboardClose()">
+      <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()" onfocus="eldKeyboardOpen()" onblur="eldKeyboardClose()">
       <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
     </div>
   </div>
@@ -952,6 +952,24 @@ function openHistSessionComment(histDateId) {
       return;
     }
   }
+}
+
+var _eldKeyboardBlurTimer = null;
+
+function eldKeyboardOpen() {
+  // Hide stats strip so timer and history are visible above keyboard
+  if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
+  var strip = document.getElementById('eld-stats-strip');
+  if (strip) strip.style.display = 'none';
+}
+
+function eldKeyboardClose() {
+  // Small delay before restoring — prevents flicker when tabbing between inputs
+  _eldKeyboardBlurTimer = setTimeout(function() {
+    _eldKeyboardBlurTimer = null;
+    var strip = document.getElementById('eld-stats-strip');
+    if (strip && strip.getAttribute('data-visible') === 'true') strip.style.display = 'block';
+  }, 200);
 }
 
 function updateEldCommentBtn() {
@@ -1777,6 +1795,8 @@ function openExLogDetail(exName) {
 }
 
 function closeExLogDetail() {
+  var strip = document.getElementById('eld-stats-strip');
+  if (strip) strip.removeAttribute('data-visible');
   document.getElementById('ex-log-detail').classList.remove('visible');
   currentExLogName = null;
   renderLogExercises();
@@ -2881,6 +2901,7 @@ function updateEldStatsStrip(exName) {
   var strip = document.getElementById('eld-stats-strip');
   if (!strip) return;
   strip.style.display = 'block';
+  strip.setAttribute('data-visible', 'true');
 
   var rows = getLocalResults();
   // Exclude current session rows for historical comparison
