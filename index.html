@@ -2914,8 +2914,11 @@ function vsLabel(current, last) {
 function updateEldStatsStrip(exName) {
   var strip = document.getElementById('eld-stats-strip');
   if (!strip) return;
-  strip.style.display = 'block';
   strip.setAttribute('data-visible', 'true');
+  // Don't show strip if an ELD input is currently focused (keyboard open)
+  var active = document.activeElement;
+  var eldInputFocused = active && (active.id === 'eld-input-reps' || active.id === 'eld-input-weight');
+  if (!eldInputFocused) strip.style.display = 'block';
 
   var rows = getLocalResults();
   // Exclude current session rows for historical comparison
