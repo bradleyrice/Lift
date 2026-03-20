@@ -982,8 +982,16 @@ function eldResizeToViewport() {
   var eld = document.getElementById('ex-log-detail');
   if (!eld || !eld.classList.contains('visible')) return;
   var vv = window.visualViewport;
-  eld.style.top = vv.offsetTop + 'px';
-  eld.style.height = vv.height + 'px';
+  // Only resize if viewport is meaningfully smaller than window (keyboard is open)
+  // Use window.innerHeight as reference — if viewport is >90% of window height keyboard probably isn't open
+  var keyboardOpen = vv.height < window.innerHeight * 0.85;
+  if (keyboardOpen) {
+    eld.style.top = '0px'; // always anchor to top, never shift down
+    eld.style.height = vv.height + 'px';
+  } else {
+    eld.style.top = '';
+    eld.style.height = '';
+  }
 }
 
 function updateEldCommentBtn() {
@@ -3162,6 +3170,16 @@ if (window.visualViewport) {
 }
 
 document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    // Reset ELD dimensions on foreground — keyboard state may have changed
+    var eld = document.getElementById('ex-log-detail');
+    if (eld) { eld.style.top = ''; eld.style.height = ''; }
+    // Re-apply if input still focused
+    var active = document.activeElement;
+    if (active && (active.id === 'eld-input-reps' || active.id === 'eld-input-weight')) {
+      setTimeout(eldResizeToViewport, 100);
+    }
+  }
   if (document.visibilityState === 'visible' && _notifyFireAt) {
     var overdue = Date.now() - _notifyFireAt;
     if (overdue >= 0) {
