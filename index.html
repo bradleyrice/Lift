@@ -957,19 +957,33 @@ function openHistSessionComment(histDateId) {
 var _eldKeyboardBlurTimer = null;
 
 function eldKeyboardOpen() {
-  // Hide stats strip so timer and history are visible above keyboard
   if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
+  // Hide stats strip
   var strip = document.getElementById('eld-stats-strip');
   if (strip) strip.style.display = 'none';
+  // Resize ELD to visual viewport so content sits above keyboard
+  eldResizeToViewport();
 }
 
 function eldKeyboardClose() {
-  // Small delay before restoring — prevents flicker when tabbing between inputs
   _eldKeyboardBlurTimer = setTimeout(function() {
     _eldKeyboardBlurTimer = null;
+    // Restore stats strip
     var strip = document.getElementById('eld-stats-strip');
     if (strip && strip.getAttribute('data-visible') === 'true') strip.style.display = 'block';
+    // Restore ELD to full screen
+    var eld = document.getElementById('ex-log-detail');
+    if (eld) { eld.style.height = ''; eld.style.top = ''; }
   }, 200);
+}
+
+function eldResizeToViewport() {
+  if (!window.visualViewport) return;
+  var eld = document.getElementById('ex-log-detail');
+  if (!eld || !eld.classList.contains('visible')) return;
+  var vv = window.visualViewport;
+  eld.style.top = vv.offsetTop + 'px';
+  eld.style.height = vv.height + 'px';
 }
 
 function updateEldCommentBtn() {
@@ -3127,6 +3141,23 @@ function cancelScheduledNotification() {
 }
 
 // When app returns to foreground, fire notification immediately if timer already expired
+// Resize ELD when visual viewport changes (keyboard appears/disappears)
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    var eld = document.getElementById('ex-log-detail');
+    if (!eld || !eld.classList.contains('visible')) return;
+    // Check if any ELD input is focused
+    var active = document.activeElement;
+    var isEldInput = active && (active.id === 'eld-input-reps' || active.id === 'eld-input-weight');
+    if (isEldInput) {
+      eldResizeToViewport();
+    } else {
+      eld.style.height = '';
+      eld.style.top = '';
+    }
+  });
+}
+
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible' && _notifyFireAt) {
     var overdue = Date.now() - _notifyFireAt;
