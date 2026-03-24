@@ -414,8 +414,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div id="eld-input-fixed">
     <div class="eld-input-row" id="eld-input-row">
       <span class="set-num" id="eld-input-setnum">1</span>
-      <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()" onfocus="eldKeyboardOpen()" onblur="eldKeyboardClose()">
-      <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()" onfocus="eldKeyboardOpen()" onblur="eldKeyboardClose()">
+      <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
+      <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
       <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
     </div>
   </div>
@@ -956,15 +956,32 @@ function openHistSessionComment(histDateId) {
 
 var _eldKeyboardBlurTimer = null;
 
+var _eldInputFocused = false;
+
 function eldKeyboardOpen() {
   if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
-  // Scroll stats into view in the today column when keyboard opens
-  var stats = document.getElementById('eld-stats-strip');
-  if (stats) stats.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  _eldInputFocused = true;
+  var strip = document.getElementById('eld-stats-strip');
+  var footer = document.getElementById('eld-footer');
+  if (strip) strip.style.setProperty('display', 'none', 'important');
+  if (footer) footer.style.setProperty('display', 'none', 'important');
 }
 
 function eldKeyboardClose() {
-  // Nothing needed — stats strip is always visible in scroll
+  _eldInputFocused = false;
+  _eldKeyboardBlurTimer = setTimeout(function() {
+    _eldKeyboardBlurTimer = null;
+    if (_eldInputFocused) return; // another input grabbed focus
+    var strip = document.getElementById('eld-stats-strip');
+    var footer = document.getElementById('eld-footer');
+    if (strip && strip.getAttribute('data-visible') === 'true') {
+      strip.style.removeProperty('display');
+      strip.style.display = 'block';
+    }
+    if (footer) {
+      footer.style.removeProperty('display');
+    }
+  }, 150);
 }
 
 function updateEldCommentBtn() {
@@ -2894,7 +2911,7 @@ function updateEldStatsStrip(exName) {
   var strip = document.getElementById('eld-stats-strip');
   if (!strip) return;
   strip.setAttribute('data-visible', 'true');
-  strip.style.display = 'block';
+  if (!_eldInputFocused) strip.style.display = 'block';
 
   var rows = getLocalResults();
   // Exclude current session rows for historical comparison
@@ -3120,6 +3137,18 @@ function cancelScheduledNotification() {
 }
 
 // When app returns to foreground, fire notification immediately if timer already expired
+// Document-level focus tracking for ELD inputs — more reliable than onfocus on iOS
+document.addEventListener('focusin', function(e) {
+  if (e.target && (e.target.id === 'eld-input-reps' || e.target.id === 'eld-input-weight')) {
+    eldKeyboardOpen();
+  }
+});
+document.addEventListener('focusout', function(e) {
+  if (e.target && (e.target.id === 'eld-input-reps' || e.target.id === 'eld-input-weight')) {
+    eldKeyboardClose();
+  }
+});
+
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible' && _notifyFireAt) {
     var overdue = Date.now() - _notifyFireAt;
