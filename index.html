@@ -961,6 +961,10 @@ var _eldInputFocused = false;
 function eldKeyboardOpen() {
   if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
   _eldInputFocused = true;
+  // Scroll history to TOP so timer and most recent sets are visible
+  var histCol = document.getElementById('eld-col-history');
+  if (histCol) histCol.scrollTop = 0;
+  // Hide stats and footer to reclaim space
   var strip = document.getElementById('eld-stats-strip');
   var footer = document.getElementById('eld-footer');
   if (strip) strip.style.setProperty('display', 'none', 'important');
@@ -971,16 +975,15 @@ function eldKeyboardClose() {
   _eldInputFocused = false;
   _eldKeyboardBlurTimer = setTimeout(function() {
     _eldKeyboardBlurTimer = null;
-    if (_eldInputFocused) return; // another input grabbed focus
+    if (_eldInputFocused) return;
     var strip = document.getElementById('eld-stats-strip');
     var footer = document.getElementById('eld-footer');
-    if (strip && strip.getAttribute('data-visible') === 'true') {
+    // Always restore — don't rely on data-visible
+    if (strip) {
       strip.style.removeProperty('display');
-      strip.style.display = 'block';
+      if (strip.getAttribute('data-visible') === 'true') strip.style.display = 'block';
     }
-    if (footer) {
-      footer.style.removeProperty('display');
-    }
+    if (footer) footer.style.removeProperty('display');
   }, 150);
 }
 
