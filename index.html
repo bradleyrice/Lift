@@ -965,11 +965,11 @@ function eldKeyboardOpen() {
   var footer = document.getElementById('eld-footer');
   if (strip) strip.style.setProperty('display', 'none', 'important');
   if (footer) footer.style.setProperty('display', 'none', 'important');
-  // Delay scroll to let keyboard animation finish first
+  // Delay scroll until after keyboard animation and iOS auto-scroll settle
   setTimeout(function() {
     var histCol = document.getElementById('eld-col-history');
     if (histCol) histCol.scrollTop = 0;
-  }, 300);
+  }, 500);
 }
 
 function eldKeyboardClose() {
@@ -1941,9 +1941,18 @@ function eldCommitSet() {
   sets.push(newSet); session.sets[exName] = sets;
   renderEldSets();
   rtQuickStart();
-  // Focus reps input for fast next set entry
-  var rIn = document.getElementById('eld-input-reps');
-  if (rIn) setTimeout(function() { rIn.focus(); }, 50);
+  // Restore stats/footer after commit (keyboard dismissed)
+  _eldInputFocused = false;
+  if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
+  var strip = document.getElementById('eld-stats-strip');
+  var footer = document.getElementById('eld-footer');
+  if (strip && strip.getAttribute('data-visible') === 'true') { strip.style.removeProperty('display'); strip.style.display = 'block'; }
+  if (footer) footer.style.removeProperty('display');
+  // Re-focus reps for next set — but scroll history to top first
+  setTimeout(function() {
+    var histCol = document.getElementById('eld-col-history');
+    if (histCol) histCol.scrollTop = 0;
+  }, 50);
   // Save and sync
   var today = new Date().toLocaleDateString('en-GB');
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
