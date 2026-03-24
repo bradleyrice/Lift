@@ -965,11 +965,12 @@ function eldKeyboardOpen() {
   var footer = document.getElementById('eld-footer');
   if (strip) strip.style.setProperty('display', 'none', 'important');
   if (footer) footer.style.setProperty('display', 'none', 'important');
-  // Delay scroll until after keyboard animation and iOS auto-scroll settle
-  setTimeout(function() {
-    var histCol = document.getElementById('eld-col-history');
-    if (histCol) histCol.scrollTop = 0;
-  }, 500);
+  // Scroll history to top — fire multiple times to override iOS auto-scroll
+  var histCol = document.getElementById('eld-col-history');
+  if (histCol) histCol.scrollTop = 0;
+  setTimeout(function() { var h = document.getElementById('eld-col-history'); if (h) h.scrollTop = 0; }, 100);
+  setTimeout(function() { var h = document.getElementById('eld-col-history'); if (h) h.scrollTop = 0; }, 400);
+  setTimeout(function() { var h = document.getElementById('eld-col-history'); if (h) h.scrollTop = 0; }, 700);
 }
 
 function eldKeyboardClose() {
