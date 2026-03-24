@@ -75,7 +75,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .ex-list-name{font-family:var(--display);font-size:18px;font-weight:700;}
 .ex-list-meta{font-size:12px;color:#b0b0b0;text-align:right;line-height:1.6;}
 .ex-list-arrow{color:#b0b0b0;font-size:14px;margin-left:10px;}
-#ex-log-detail{position:fixed;inset:0;background:var(--bg);z-index:150;display:none;flex-direction:column;}
+#ex-log-detail{position:fixed;top:0;left:0;right:0;bottom:0;height:100%;background:var(--bg);z-index:150;display:none;flex-direction:column;}
+@supports (height: 100dvh) {
+  #ex-log-detail { height: 100dvh; bottom: unset; }
+}
 #ex-log-detail.visible{display:flex;}
 #eld-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
 #eld-title{font-family:var(--display);font-size:22px;font-weight:900;flex:1;}
@@ -965,12 +968,6 @@ function eldKeyboardOpen() {
   var footer = document.getElementById('eld-footer');
   if (strip) strip.style.setProperty('display', 'none', 'important');
   if (footer) footer.style.setProperty('display', 'none', 'important');
-  // Scroll history to top — fire multiple times to override iOS auto-scroll
-  var histCol = document.getElementById('eld-col-history');
-  if (histCol) histCol.scrollTop = 0;
-  setTimeout(function() { var h = document.getElementById('eld-col-history'); if (h) h.scrollTop = 0; }, 100);
-  setTimeout(function() { var h = document.getElementById('eld-col-history'); if (h) h.scrollTop = 0; }, 400);
-  setTimeout(function() { var h = document.getElementById('eld-col-history'); if (h) h.scrollTop = 0; }, 700);
 }
 
 function eldKeyboardClose() {
