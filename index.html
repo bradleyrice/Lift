@@ -961,14 +961,15 @@ var _eldInputFocused = false;
 function eldKeyboardOpen() {
   if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
   _eldInputFocused = true;
-  // Scroll history to TOP so timer and most recent sets are visible
-  var histCol = document.getElementById('eld-col-history');
-  if (histCol) histCol.scrollTop = 0;
-  // Hide stats and footer to reclaim space
   var strip = document.getElementById('eld-stats-strip');
   var footer = document.getElementById('eld-footer');
   if (strip) strip.style.setProperty('display', 'none', 'important');
   if (footer) footer.style.setProperty('display', 'none', 'important');
+  // Delay scroll to let keyboard animation finish first
+  setTimeout(function() {
+    var histCol = document.getElementById('eld-col-history');
+    if (histCol) histCol.scrollTop = 0;
+  }, 300);
 }
 
 function eldKeyboardClose() {
@@ -978,10 +979,9 @@ function eldKeyboardClose() {
     if (_eldInputFocused) return;
     var strip = document.getElementById('eld-stats-strip');
     var footer = document.getElementById('eld-footer');
-    // Always restore — don't rely on data-visible
     if (strip) {
       strip.style.removeProperty('display');
-      if (strip.getAttribute('data-visible') === 'true') strip.style.display = 'block';
+      strip.style.display = 'block';
     }
     if (footer) footer.style.removeProperty('display');
   }, 150);
@@ -2914,7 +2914,7 @@ function updateEldStatsStrip(exName) {
   var strip = document.getElementById('eld-stats-strip');
   if (!strip) return;
   strip.setAttribute('data-visible', 'true');
-  if (!_eldInputFocused) strip.style.display = 'block';
+  strip.style.display = 'block';
 
   var rows = getLocalResults();
   // Exclude current session rows for historical comparison
