@@ -75,12 +75,12 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .ex-list-name{font-family:var(--display);font-size:18px;font-weight:700;}
 .ex-list-meta{font-size:12px;color:#b0b0b0;text-align:right;line-height:1.6;}
 .ex-list-arrow{color:#b0b0b0;font-size:14px;margin-left:10px;}
-#ex-log-detail{position:fixed;top:0;left:0;right:0;height:100dvh;background:var(--bg);z-index:150;display:none;flex-direction:column;overflow:hidden;}
+#ex-log-detail{position:fixed;top:0;left:0;right:0;bottom:118px;background:var(--bg);z-index:150;display:none;flex-direction:column;overflow:hidden;}
 #ex-log-detail.visible{display:flex;}
 #eld-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
 #eld-title{font-family:var(--display);font-size:22px;font-weight:900;flex:1;}
 #eld-pb{font-size:10px;color:var(--acid);letter-spacing:1px;}
-#eld-body{flex:1;display:flex;gap:0;overflow:hidden;min-height:0;margin-bottom:118px;}
+#eld-body{flex:1;display:flex;gap:0;overflow:hidden;min-height:0;}
 #eld-col-history{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 10px 12px 16px;border-right:1px solid #1a1a1a;}
 #eld-col-today{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 12px 10px;}
 .eld-history{margin-bottom:0;}
@@ -422,7 +422,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div id="eld-sets-list"></div>
     </div>
   </div>
-  <div id="eld-stats-strip">
+</div>
+<div id="eld-stats-strip">
     <div class="eld-strip-inner">
       <div class="eld-strip-card">
         <div class="eld-strip-val" id="eld-strip-int">—</div>
@@ -456,12 +457,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       </div>
       <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-vol" style="width:0%"></div></div>
     </div>
-  </div>
-  <div id="eld-footer">
+</div>
+<div id="eld-footer">
     <div id="session-actions-detail" style="display:flex;gap:8px;">
       <button id="eld-done-btn" onclick="closeExLogDetail()" style="flex:1;background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:14px 0;font-family:var(--display);font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer;">Done</button>
     </div>
-  </div>
 </div>
 <div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn" onclick="closeSessionDetail()">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
 <div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div style="display:flex;align-items:center;gap:8px;"><div id="exd-name"></div><button onclick="editExerciseName()" style="background:transparent;border:none;color:#c0c0c0;font-size:22px;cursor:pointer;padding:6px 12px;flex-shrink:0;" title="Rename">&#9998;</button><button id="exd-comment-btn" class="comment-btn" onclick="openExerciseComment(document.getElementById('exd-name').textContent,false)" title="Add note" style="font-size:20px;padding:6px 8px;">&#128172;</button></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
