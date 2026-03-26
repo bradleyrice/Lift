@@ -80,7 +80,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #eld-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
 #eld-title{font-family:var(--display);font-size:22px;font-weight:900;flex:1;}
 #eld-pb{font-size:10px;color:var(--acid);letter-spacing:1px;}
-#eld-body{flex:1;display:flex;gap:0;overflow:hidden;min-height:0;}
+#eld-body{flex:1;display:flex;gap:0;overflow:hidden;min-height:0;margin-bottom:118px;}
 #eld-col-history{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 10px 12px 16px;border-right:1px solid #1a1a1a;}
 #eld-col-today{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 12px 10px;}
 .eld-history{margin-bottom:0;}
@@ -118,7 +118,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-quick-input{background:#111;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:15px;text-align:center;padding:7px 4px;width:100%;outline:none;}
 .eld-quick-input:focus{border-color:var(--acid);}
 .eld-commit-btn{background:var(--acid);color:var(--bg);border:none;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:900;cursor:pointer;padding:7px 0;width:100%;grid-column:span 1;}
-#eld-footer{padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;}
+
 .add-set-btn:active{border-color:var(--acid);color:var(--acid);}
 #session-actions{margin:12px 0 0;display:none!important;}
 #session-actions.active{display:flex!important;}
@@ -154,8 +154,9 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .stats-chart-title{font-size:10px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
 .stats-chart{width:100%;height:110px;display:block;}
 /* ELD summary strip */
-#eld-stats-strip{background:#131313;border-top:1px solid var(--border);padding:10px 16px;display:none;flex-shrink:0;}
-#eld-footer{padding-bottom:calc(12px + env(safe-area-inset-bottom));}
+#eld-stats-strip{background:#131313;border-top:1px solid var(--border);padding:10px 16px;display:none;position:fixed;bottom:118px;left:0;right:0;z-index:160;}
+#eld-footer{padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);position:fixed;bottom:58px;left:0;right:0;z-index:160;display:none;}
+#eld-footer.active{display:block;}
 .eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
 .eld-strip-card{text-align:center;}
 .eld-strip-val{font-family:var(--display);font-size:14px;font-weight:500;color:var(--acid);line-height:1;}
@@ -1805,10 +1806,12 @@ function openExLogDetail(exName) {
   updateEldCommentBtn();
   document.getElementById('ex-log-detail').classList.add('visible');
   document.getElementById('eld-input-fixed').classList.add('active');
+  document.getElementById('eld-footer').classList.add('active');
 }
 
 function closeExLogDetail() {
   document.getElementById('eld-input-fixed').classList.remove('active');
+  document.getElementById('eld-footer').classList.remove('active');
   document.getElementById('ex-log-detail').classList.remove('visible');
   currentExLogName = null;
   renderLogExercises();
