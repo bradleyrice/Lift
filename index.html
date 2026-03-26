@@ -85,7 +85,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #eld-col-today{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 12px 10px;}
 .eld-history{margin-bottom:0;}
 .eld-history-title{font-size:11px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-#eld-input-fixed{padding:10px 16px;background:var(--bg);border-top:1px solid #222;flex-shrink:0;}
+#eld-input-fixed{padding:10px 16px;background:var(--bg);border-top:1px solid #222;position:fixed;bottom:0;left:0;right:0;z-index:160;display:none;}
+#eld-input-fixed.active{display:block;}
 .eld-hist-session{margin-bottom:12px;}
 .eld-hist-date{font-size:12px;color:#b0b0b0;letter-spacing:1px;margin-bottom:5px;}
 .eld-hist-row{display:grid;grid-template-columns:22px 64px 64px;gap:6px;margin-bottom:4px;font-size:15px;align-items:center;}
@@ -154,6 +155,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .stats-chart{width:100%;height:110px;display:block;}
 /* ELD summary strip */
 #eld-stats-strip{background:#131313;border-top:1px solid var(--border);padding:10px 16px;display:none;flex-shrink:0;}
+#eld-footer{padding-bottom:calc(12px + env(safe-area-inset-bottom));}
 .eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
 .eld-strip-card{text-align:center;}
 .eld-strip-val{font-family:var(--display);font-size:14px;font-weight:500;color:var(--acid);line-height:1;}
@@ -367,6 +369,14 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       </div>
     </div>
   </div>
+<div id="eld-input-fixed">
+  <div class="eld-input-row" id="eld-input-row">
+    <span class="set-num" id="eld-input-setnum">1</span>
+    <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
+    <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
+    <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
+  </div>
+</div>
   <div id="nav">
     <button class="nav-btn active" onclick="goScreen('log')" id="nav-log"><span class="nav-icon">&#9675;</span><span class="nav-label">Log</span></button>
     <button class="nav-btn" onclick="goScreen('sessions')" id="nav-sessions"><span class="nav-icon">&#9776;</span><span class="nav-label">Sessions</span></button>
@@ -409,14 +419,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     <div id="eld-col-today">
       <div class="eld-sets-title">Today</div>
       <div id="eld-sets-list"></div>
-    </div>
-  </div>
-  <div id="eld-input-fixed">
-    <div class="eld-input-row" id="eld-input-row">
-      <span class="set-num" id="eld-input-setnum">1</span>
-      <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
-      <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
-      <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
     </div>
   </div>
   <div id="eld-stats-strip">
@@ -1802,9 +1804,11 @@ function openExLogDetail(exName) {
   renderEldSets();
   updateEldCommentBtn();
   document.getElementById('ex-log-detail').classList.add('visible');
+  document.getElementById('eld-input-fixed').classList.add('active');
 }
 
 function closeExLogDetail() {
+  document.getElementById('eld-input-fixed').classList.remove('active');
   document.getElementById('ex-log-detail').classList.remove('visible');
   currentExLogName = null;
   renderLogExercises();
