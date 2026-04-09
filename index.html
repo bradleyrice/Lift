@@ -112,11 +112,19 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .comment-cancel-btn{background:transparent;border:1px solid #2e2e2e;color:#888;border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;cursor:pointer;}
 .comment-delete-btn{background:transparent;border:1px solid #2e2e2e;color:#666;border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;cursor:pointer;}
 .eld-committed-row{display:grid;grid-template-columns:24px 1fr 1fr 28px;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #181818;}
-.eld-input-row{display:grid;grid-template-columns:24px 1fr 1fr 44px;align-items:center;gap:6px;padding:4px 0;}
+.eld-input-row{display:grid;grid-template-columns:24px 1fr 1fr;align-items:center;gap:6px;padding:4px 0;}
 .eld-input-row .set-num{font-family:var(--mono);font-size:11px;color:var(--acid);text-align:center;}
 .eld-quick-input{background:#111;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:15px;text-align:center;padding:7px 4px;width:100%;outline:none;}
 .eld-quick-input:focus{border-color:var(--acid);}
-.eld-commit-btn{background:var(--acid);color:var(--bg);border:none;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:900;cursor:pointer;padding:7px 0;width:100%;grid-column:span 1;}
+.eld-commit-btn{background:var(--acid);color:var(--bg);border:none;border-radius:8px;font-family:var(--mono);font-size:22px;font-weight:900;cursor:pointer;padding:14px 0;width:100%;display:none;margin-top:8px;}
+.eld-commit-btn.visible{display:block;}
+/* Timer bar — enlarged when running */
+#eld-rest-bar.running{padding:16px;}
+#eld-rest-bar.running .eld-rt-ring-wrap{width:72px!important;height:72px!important;}
+#eld-rest-bar.running .eld-rt-ring-wrap svg{width:72px!important;height:72px!important;}
+#eld-rest-bar.running #eld-rt-display{font-size:18px!important;}
+#eld-rest-bar.running .rt-preset{font-size:14px;padding:6px 12px;}
+#eld-rest-bar.running .rt-btn{font-size:16px;padding:12px 18px;}
 
 .add-set-btn:active{border-color:var(--acid);color:var(--acid);}
 #session-actions{margin:12px 0 0;display:none!important;}
@@ -381,9 +389,9 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     <button onclick="openStatsFromEld()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-size:16px;padding:6px 11px;border-radius:4px;cursor:pointer;" title="Stats">&#9650;&#9650;</button>
   </div>
   <div id="eld-rest-bar" style="display:none;background:#131313;border-bottom:1px solid var(--border);padding:10px 16px;flex-shrink:0;align-items:center;gap:14px;">
-    <div style="position:relative;width:44px;height:44px;flex-shrink:0;">
-      <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(-90deg);"><circle cx="22" cy="22" r="18" fill="none" stroke="#1e1e1e" stroke-width="3"/><circle id="eld-rt-ring" cx="22" cy="22" r="18" fill="none" stroke="var(--acid)" stroke-width="3" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="0" style="transition:stroke-dashoffset 0.9s linear,stroke 0.3s;"/></svg>
-      <div id="eld-rt-display" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:bold;">0:00</div>
+    <div class="eld-rt-ring-wrap" style="position:relative;width:44px;height:44px;flex-shrink:0;transition:width 0.2s,height 0.2s;">
+      <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(-90deg);width:100%;height:100%;"><circle cx="22" cy="22" r="18" fill="none" stroke="#1e1e1e" stroke-width="3"/><circle id="eld-rt-ring" cx="22" cy="22" r="18" fill="none" stroke="var(--acid)" stroke-width="3" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="0" style="transition:stroke-dashoffset 0.9s linear,stroke 0.3s;"/></svg>
+      <div id="eld-rt-display" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:bold;transition:font-size 0.2s;">0:00</div>
     </div>
     <div style="flex:1;">
       <div style="font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;">Rest Timer</div>
@@ -439,8 +447,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <span class="set-num" id="eld-input-setnum">1</span>
       <input class="eld-quick-input" id="eld-input-weight" type="number" inputmode="decimal" placeholder="kg" oninput="eldPreviewInput()">
       <input class="eld-quick-input" id="eld-input-reps" type="number" inputmode="numeric" placeholder="reps" oninput="eldPreviewInput()">
-      <button class="eld-commit-btn" onclick="eldCommitSet()">+</button>
     </div>
+    <button class="eld-commit-btn" id="eld-commit-btn" onclick="eldCommitSet()">+</button>
   </div>
   <div id="eld-body">
     <div id="eld-col-history">
@@ -957,9 +965,10 @@ function eldKeyboardOpen() {
   if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
   _eldInputFocused = true;
   var strip = document.getElementById('eld-stats-strip');
-  var footer = document.getElementById('eld-footer');
   if (strip) strip.style.setProperty('display', 'none', 'important');
-  if (footer) footer.style.setProperty('display', 'none', 'important');
+  // Show large commit button
+  var btn = document.getElementById('eld-commit-btn');
+  if (btn) btn.classList.add('visible');
 }
 
 function eldKeyboardClose() {
@@ -967,13 +976,15 @@ function eldKeyboardClose() {
   _eldKeyboardBlurTimer = setTimeout(function() {
     _eldKeyboardBlurTimer = null;
     if (_eldInputFocused) return;
+    // Hide commit button
+    var btn = document.getElementById('eld-commit-btn');
+    if (btn) btn.classList.remove('visible');
+    // Restore stats strip
     var strip = document.getElementById('eld-stats-strip');
-    var footer = document.getElementById('eld-footer');
     if (strip) {
       strip.style.removeProperty('display');
-      strip.style.display = 'block';
+      if (strip.getAttribute('data-visible') === 'true') strip.style.display = 'block';
     }
-    if (footer) footer.style.removeProperty('display');
   }, 150);
 }
 
@@ -1933,18 +1944,13 @@ function eldCommitSet() {
   sets.push(newSet); session.sets[exName] = sets;
   renderEldSets();
   rtQuickStart();
-  // Restore stats/footer after commit (keyboard dismissed)
+  // Restore UI after commit
   _eldInputFocused = false;
   if (_eldKeyboardBlurTimer) { clearTimeout(_eldKeyboardBlurTimer); _eldKeyboardBlurTimer = null; }
+  var btn = document.getElementById('eld-commit-btn');
+  if (btn) btn.classList.remove('visible');
   var strip = document.getElementById('eld-stats-strip');
-  var footer = document.getElementById('eld-footer');
   if (strip && strip.getAttribute('data-visible') === 'true') { strip.style.removeProperty('display'); strip.style.display = 'block'; }
-  if (footer) footer.style.removeProperty('display');
-  // Re-focus reps for next set — but scroll history to top first
-  setTimeout(function() {
-    var histCol = document.getElementById('eld-col-history');
-    if (histCol) histCol.scrollTop = 0;
-  }, 50);
   // Save and sync
   var today = new Date().toLocaleDateString('en-GB');
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
@@ -2598,7 +2604,7 @@ function rtStart() {
   document.getElementById('rt-play').innerHTML = '&#9646;&#9646;';
   document.getElementById('rt-play').classList.add('running');
   var eldBar = document.getElementById('eld-rest-bar');
-  if (eldBar) { eldBar.style.display = 'flex'; }
+  if (eldBar) { eldBar.style.display = 'flex'; eldBar.classList.add('running'); }
   var eldPlay = document.getElementById('eld-rt-play');
   if (eldPlay) { eldPlay.innerHTML = '&#9646;&#9646;'; }
   scheduleNotification('Rest Complete ⏱', 'Time to lift!', rtRemaining);
@@ -2614,6 +2620,8 @@ function rtStop() {
   serverCancelNotification(); // explicit cancel when user manually stops timer
   var b = document.getElementById('rt-play');
   if (b) { b.innerHTML = '&#9654;'; b.classList.remove('running'); }
+  var eldBar = document.getElementById('eld-rest-bar');
+  if (eldBar) eldBar.classList.remove('running');
   var eldPlay = document.getElementById('eld-rt-play');
   if (eldPlay) { eldPlay.innerHTML = '&#9654;'; }
 }
