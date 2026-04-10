@@ -1240,12 +1240,35 @@ async function initApp() {
     }
     setLoadingMsg('Connecting...');
     if (!accessToken || accessToken.length < 10) {
-      showError('No valid token. Please sign out and sign in again.');
-      return;
+      // Try silent token refresh before giving up
+      if (tokenClient) {
+        try {
+          await ensureFreshToken();
+        } catch(e) {
+          // Silent refresh failed — load from local and continue
+          setLoadingMsg('Loading local data...');
+          await loadFromLocal();
+          showToast('Working offline');
+          await loadPBs();
+          renderWorkoutPicker();
+          renderWorkoutsScreen();
+          showScreen('app');
+          return;
+        }
+      } else {
+        // No token client — load local and show app without signing out
+        setLoadingMsg('Loading local data...');
+        await loadFromLocal();
+        await loadPBs();
+        renderWorkoutPicker();
+        renderWorkoutsScreen();
+        showScreen('app');
+        return;
+      }
     }
     // Wrap all Sheets calls in a timeout — fall back to local data if network is slow/absent
     var initTimeout = new Promise(function(_, reject) {
-      setTimeout(function() { reject(new Error('TIMEOUT')); }, 8000);
+      setTimeout(function() { reject(new Error('TIMEOUT')); }, 15000);
     });
     try {
       await Promise.race([initTimeout, (async function() {
