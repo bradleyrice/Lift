@@ -462,8 +462,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-vol" style="width:0%"></div></div>
     </div>
   </div>
-  <!-- Numpad overlay — covers body from header down when open -->
-  <div id="eld-numpad-overlay" style="display:none;flex-direction:column;flex:1;background:var(--bg);padding:16px 16px 24px;gap:12px;overflow:hidden;">
+  <!-- Numpad overlay — absolutely positioned, covers body area -->
+  <div id="eld-numpad-overlay" style="display:none;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:20;padding:16px 16px 24px;gap:12px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
       <span class="set-num" id="eld-input-setnum-overlay">1</span>
       <div class="eld-display-field eld-quick-input" id="eld-overlay-weight" onclick="eldFocusField('weight')" style="flex:1;">
@@ -607,7 +607,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev76';
+var CURRENT_VERSION = 'dev77';
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
 function savePushServerUrl() {
@@ -1047,12 +1047,13 @@ function eldFocusField(field) {
   // Highlight active field in overlay
   document.getElementById('eld-overlay-weight').classList.toggle('active', field === 'weight');
   document.getElementById('eld-overlay-reps').classList.toggle('active', field === 'reps');
-  // Show overlay (covers body)
+  // Position overlay below the header + rest bar
   var overlay = document.getElementById('eld-numpad-overlay');
+  var header = document.getElementById('eld-header');
+  var restBar = document.getElementById('eld-rest-bar');
+  var topOffset = (header ? header.offsetHeight : 0) + (restBar ? restBar.offsetHeight : 0);
+  overlay.style.top = topOffset + 'px';
   overlay.style.display = 'flex';
-  // Hide stats
-  var strip = document.getElementById('eld-stats-strip');
-  if (strip) strip.style.setProperty('display', 'none', 'important');
 }
 
 function eldNumpadPress(key) {
