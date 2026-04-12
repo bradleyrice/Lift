@@ -311,12 +311,18 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div id="workout-picker"><select id="workout-select"></select><button id="start-session-btn" onclick="startSession()">Start</button></div>
       <div id="rest-timer">
         <div id="rest-inner">
-          <div id="rt-ring-wrap">
+          <div id="rt-ring-wrap" onclick="eldEditTimer()" style="cursor:pointer;">
             <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="22" fill="none" stroke="#1e1e1e" stroke-width="3.5"/><circle id="rt-ring-fg" cx="26" cy="26" r="22"/></svg>
             <div id="rt-display">0:00</div>
           </div>
-          <div style="flex:1;"><div style="font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Rest Timer</div>
-            <div id="rt-presets"><button class="rt-preset" data-preset="60" onclick="rtSetPreset(60)">60s</button><button class="rt-preset" data-preset="90" onclick="rtSetPreset(90)">90s</button><button class="rt-preset" data-preset="120" onclick="rtSetPreset(120)">2m</button><button class="rt-preset" data-preset="180" onclick="rtSetPreset(180)">3m</button></div>
+          <div style="flex:1;">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;">Rest Timer</div>
+            <div id="rt-adjust-log" style="display:flex;gap:4px;">
+              <button class="rt-adj-btn" onclick="rtAdjust(-60)">−60</button>
+              <button class="rt-adj-btn" onclick="rtAdjust(-10)">−10</button>
+              <button class="rt-adj-btn" onclick="rtAdjust(10)">+10</button>
+              <button class="rt-adj-btn" onclick="rtAdjust(60)">+60</button>
+            </div>
           </div>
           <div id="rt-btns"><button class="rt-btn" id="rt-play" onclick="rtToggle()">&#9654;</button><button class="rt-btn" id="rt-reset" onclick="rtReset()" style="background:transparent;border:1px solid #2e2e2e;color:#707070;">&#8635;</button></div>
         </div>
@@ -457,7 +463,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     </div>
   </div>
   <!-- Numpad overlay — covers body from header down when open -->
-  <div id="eld-numpad-overlay" style="display:none;flex-direction:column;flex:1;background:var(--bg);padding:16px;gap:10px;">
+  <div id="eld-numpad-overlay" style="display:none;flex-direction:column;flex:1;background:var(--bg);padding:16px 16px 24px;gap:12px;overflow:hidden;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
       <span class="set-num" id="eld-input-setnum-overlay">1</span>
       <div class="eld-display-field eld-quick-input" id="eld-overlay-weight" onclick="eldFocusField('weight')" style="flex:1;">
@@ -468,7 +474,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       </div>
       <button onclick="eldCloseNumpad()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:8px 10px;border-radius:4px;cursor:pointer;flex-shrink:0;">Done</button>
     </div>
-    <div class="numpad-grid" style="flex:1;">
+    <div class="numpad-grid" style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
       <button class="numpad-btn" onclick="eldNumpadPress('1')">1</button>
       <button class="numpad-btn" onclick="eldNumpadPress('2')">2</button>
       <button class="numpad-btn" onclick="eldNumpadPress('3')">3</button>
@@ -601,7 +607,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev75';
+var CURRENT_VERSION = 'dev76';
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
 function savePushServerUrl() {
@@ -1126,9 +1132,13 @@ function eldTimerNumpad(key) {
     var secs = parseTimerInput(_timerNumpadVal);
     if (secs > 0) {
       rtPreset = secs;
-      rtStartPreset = secs;
-      if (!rtRunning) { rtRemaining = secs; rtUpdateDisplay(); }
+      if (!rtRunning) {
+        rtStartPreset = secs;
+        rtRemaining = secs;
+      }
+      // If running, rtAdjust handles the recalc; just update preset
       localStorage.setItem('lift_last_preset', secs);
+      rtUpdateDisplay();
     }
     document.getElementById('eld-timer-numpad').classList.remove('visible');
     return;
@@ -1159,8 +1169,9 @@ function parseTimerInput(val) {
 
 function rtAdjust(delta) {
   rtRemaining = Math.max(5, rtRemaining + delta);
+  // Extend the start preset so ring proportion stays sensible
+  if (rtRemaining > rtStartPreset) rtStartPreset = rtRemaining;
   if (rtRunning) {
-    // Rebuild interval with new end time
     clearInterval(rtInterval);
     var endTime = Date.now() + rtRemaining * 1000;
     scheduleNotification('Rest Complete ⏱', 'Time to lift!', rtRemaining);
@@ -2844,23 +2855,24 @@ function rtUpdateDisplay() {
   var m = Math.floor(rtRemaining/60), s = rtRemaining % 60;
   var timeStr = m + ':' + (s < 10 ? '0' : '') + s;
   var color = rtRemaining <= 0 ? '#ff4747' : rtRemaining < 20 ? '#ff9900' : '#e8ff47';
-  // Ring ratio: full (1) when stopped, countdown from rtStartPreset when running
-  var ratio = rtRunning ? (1 - Math.max(0, rtRemaining) / rtStartPreset) : 0;
-  // Main bar
+  // Ratio: 0 = full ring, show proportion remaining. Full when stopped.
+  var base = rtRunning ? rtStartPreset : (rtPreset || rtRemaining || 1);
+  var ratio = rtRunning ? (1 - Math.max(0, rtRemaining) / base) : 0;
+  // Log screen ring (r=22, circ≈138.2)
   var disp = document.getElementById('rt-display'), ring = document.getElementById('rt-ring-fg');
   if (disp && ring) {
     disp.textContent = timeStr;
-    var circ = 2 * Math.PI * 26;
+    var circ = 2 * Math.PI * 22;
     ring.style.strokeDasharray = circ;
     ring.style.strokeDashoffset = circ * ratio;
     ring.style.stroke = color;
     disp.style.color = rtRemaining < 20 ? color : '#f0f0f0';
   }
-  // ELD bar mirror
+  // ELD ring (r=26, circ≈163.4)
   var eldDisp = document.getElementById('eld-rt-display'), eldRing = document.getElementById('eld-rt-ring');
   if (eldDisp && eldRing) {
     eldDisp.textContent = timeStr;
-    var eldCirc = 2 * Math.PI * 18;
+    var eldCirc = 2 * Math.PI * 26;
     eldRing.style.strokeDasharray = eldCirc;
     eldRing.style.strokeDashoffset = eldCirc * ratio;
     eldRing.style.stroke = color;
