@@ -116,7 +116,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .eld-input-row .set-num{font-family:var(--mono);font-size:11px;color:var(--acid);text-align:center;}
 .eld-quick-input{background:#111;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:15px;text-align:center;padding:7px 4px;width:100%;outline:none;}
 .eld-quick-input:focus{border-color:var(--acid);}
-.eld-commit-btn{background:var(--acid);color:var(--bg);border:none;border-radius:8px;font-family:var(--mono);font-size:22px;font-weight:900;cursor:pointer;padding:16px 0;width:100%;display:block;margin-top:10px;}
+.eld-commit-btn{background:var(--acid);color:var(--bg);border:none;border-radius:8px;font-family:var(--mono);font-size:22px;font-weight:900;cursor:pointer;padding:16px 0;width:100%;display:block;}
 .eld-display-field{display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;user-select:none;}
 .eld-display-field.active{border-color:var(--acid);background:#0a1400;}
 .eld-field-label{font-size:11px;color:#555;font-family:var(--mono);}
@@ -324,7 +324,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
               <button class="rt-adj-btn" onclick="rtAdjust(60)">+60</button>
             </div>
           </div>
-          <div id="rt-btns"><button class="rt-btn" id="rt-play" onclick="rtToggle()">&#9654;</button><button class="rt-btn" id="rt-reset" onclick="rtReset()" style="background:transparent;border:1px solid #2e2e2e;color:#707070;">&#8635;</button></div>
+          <div id="rt-btns" style="display:flex;gap:6px;"><button class="rt-btn" id="rt-play" onclick="rtToggle()" style="background:var(--acid);color:var(--bg);flex:1;">&#9654;</button><button class="rt-btn" id="rt-reset" onclick="rtReset()" style="background:transparent;border:1px solid #2e2e2e;color:#707070;">&#8635;</button></div>
         </div>
       </div>
       <div id="session-info"><div><div style="font-size:9px;color:#b0b0b0;letter-spacing:3px;text-transform:uppercase;margin-bottom:2px;">Session Time</div><div id="session-timer">0:00</div></div><div id="session-meta"></div></div>
@@ -483,7 +483,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     </div>
   </div>
   <!-- Numpad overlay — absolutely positioned, covers body area -->
-  <div id="eld-numpad-overlay" style="display:none;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:20;padding:16px 16px 24px;gap:12px;">
+  <div id="eld-numpad-overlay" style="display:none;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:20;padding:12px 16px 16px;gap:8px;overflow:hidden;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
       <span class="set-num" id="eld-input-setnum-overlay">1</span>
       <div class="eld-display-field eld-quick-input" id="eld-overlay-weight" onclick="eldFocusField('weight')" style="flex:1;">
@@ -612,7 +612,7 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_VERSION = 'lift_version';
-var CURRENT_VERSION = 'dev78';
+var CURRENT_VERSION = 'dev79';
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
 function savePushServerUrl() {
