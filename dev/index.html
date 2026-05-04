@@ -75,6 +75,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .ex-list-name{font-family:var(--display);font-size:18px;font-weight:700;}
 .ex-list-meta{font-size:12px;color:#b0b0b0;text-align:right;line-height:1.6;}
 .ex-list-arrow{color:#b0b0b0;font-size:14px;margin-left:10px;}
+.ex-list-prev{font-size:11px;color:#8e8e8e;line-height:1.55;margin-top:6px;}
+.ex-list-prev strong{color:#b0b0b0;font-weight:400;}
 #ex-log-detail{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;background:var(--bg);z-index:150;display:none;flex-direction:column;overflow:hidden;}
 #ex-log-detail.visible{display:flex;}
 #eld-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
@@ -88,6 +90,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #eld-input-fixed{padding:10px 16px;background:var(--bg);border-top:1px solid #222;flex-shrink:0;}
 .eld-hist-session{margin-bottom:12px;}
 .eld-hist-date{font-size:12px;color:#b0b0b0;letter-spacing:1px;margin-bottom:5px;}
+.eld-hist-workout{font-size:10px;color:#666;letter-spacing:1px;margin:-2px 0 6px;text-transform:uppercase;}
 .eld-hist-row{display:grid;grid-template-columns:22px 64px 64px;gap:6px;margin-bottom:4px;font-size:15px;align-items:center;}
 .eld-hist-num{font-size:12px;color:#999;text-align:center;}
 .eld-hist-val{text-align:center;}
@@ -707,6 +710,9 @@ async function serverScheduleNotification(title, body, delaySeconds) {
             body: body
           })
         });
+        if (!resp.ok) {
+          console.warn('[LIFT] Server schedule failed:', resp.status, await resp.text());
+        }
         resolve(resp.ok);
       } catch(e) {
         console.warn('[LIFT] Server schedule failed:', e.message);
@@ -721,11 +727,14 @@ async function serverCancelNotification() {
   if (_serverScheduleTimer) { clearTimeout(_serverScheduleTimer); _serverScheduleTimer = null; }
   if (!currentUser || !_pushSubscription) return;
   try {
-    await fetch(PUSH_SERVER + '/cancel', {
+    var resp = await fetch(PUSH_SERVER + '/cancel', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ userId: currentUser.email })
     });
+    if (!resp.ok) {
+      console.warn('[LIFT] Server cancel failed:', resp.status, await resp.text());
+    }
   } catch(e) {
     console.warn('[LIFT] Server cancel failed:', e.message);
   }
@@ -743,6 +752,14 @@ async function serverCancelNotification() {
 
 function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
 function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
+function escHTML(val) {
+  return String(val == null ? '' : val).replace(/[&<>"']/g, function(ch) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+function escJS(val) {
+  return String(val == null ? '' : val).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
+}
 
 function isValidResultRow(r) {
   // A valid result row must have:
@@ -787,6 +804,32 @@ function getLocalResults() {
 function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
 function addToSyncQueue(op) { var q = getSyncQueue(); q.push(op); lsSet(LS_SYNC_QUEUE, q); }
 function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); }
+function queuedResultId(op) {
+  if (!op) return null;
+  if (op.localId) return op.localId;
+  if (op.setId) return op.setId;
+  if (op.row && op.row[1]) return op.row[1];
+  return null;
+}
+function removeQueuedResultOps(resultId) {
+  if (!resultId) return;
+  var q = getSyncQueue();
+  var next = q.filter(function(op) { return queuedResultId(op) !== resultId; });
+  if (next.length !== q.length) lsSet(LS_SYNC_QUEUE, next);
+}
+var pendingSetSyncs = [];
+function trackSetSync(promise) {
+  pendingSetSyncs.push(promise);
+  promise.finally(function() {
+    pendingSetSyncs = pendingSetSyncs.filter(function(p) { return p !== promise; });
+  });
+  return promise;
+}
+async function waitForSetSyncs() {
+  while (pendingSetSyncs.length) {
+    await Promise.allSettled(pendingSetSyncs.slice());
+  }
+}
 
 // MODE
 var offlineMode = false;
@@ -867,14 +910,14 @@ function signIn() {
           } catch(e) {
             currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
           }
-          // Always merge local rows to Sheets on sign-in — catches any unsynced local data
+          // Always reconcile queued/missing local rows on sign-in.
           lsSet(LS_MODE, 'google');
-          var localPending = getLocalResults().length > 0;
-          if (localPending) {
+          if (getSyncQueue().length > 0) {
             showScreen('loading-screen');
-            setLoadingMsg('Syncing local data to Sheets...');
-            try { await mergeLocalToSheets(); } catch(e) { console.warn('Merge failed:', e); }
+            setLoadingMsg('Syncing queued changes to Sheets...');
+            try { await flushSyncQueue(); } catch(e) { console.warn('Queue flush failed:', e); }
           }
+          try { await mergeLocalToSheets(); } catch(e) { console.warn('Merge failed:', e); }
           initApp();
         } else {
           showError('Sign in failed. Please try again.');
@@ -1016,15 +1059,12 @@ function openSessionExComment() {
 }
 
 function openHistSessionComment(histDateId) {
-  // Find the session div by its date data attribute
-  var el = document.querySelector('.eld-hist-session[data-date]');
-  // Walk through all hist sessions to find one matching
   var sessions = document.querySelectorAll('.eld-hist-session[data-date]');
   for (var i = 0; i < sessions.length; i++) {
     var s = sessions[i];
     var d = s.getAttribute('data-date');
     var w = s.getAttribute('data-wid');
-    var id = 'hd-' + d.replace(/\//g, '-');
+    var id = 'hd-' + d.replace(/\//g, '-') + '-' + w;
     if (id === histDateId) {
       var cmt = getSessionExComment(d, w, currentExLogName);
       openCommentModal({ type:'sessionEx', date:d, wid:w, exName:currentExLogName, title:'Session Note — ' + d, text:cmt, readOnly:true });
@@ -1180,7 +1220,7 @@ function rtAdjust(delta) {
     scheduleNotification('Rest Complete ⏱', 'Time to lift!', rtRemaining);
     rtInterval = setInterval(function() {
       rtRemaining = Math.round((endTime - Date.now()) / 1000);
-      if (rtRemaining <= 0) { rtRemaining = 0; rtUpdateDisplay(); rtStop(); showToast('Rest done!'); }
+      if (rtRemaining <= 0) { rtRemaining = 0; rtUpdateDisplay(); rtStop(false); showToast('Rest done!'); }
       else { rtUpdateDisplay(); }
     }, 500);
   } else {
@@ -1229,12 +1269,12 @@ function renderAdHocList() {
   var wrap = document.getElementById('adhoc-list');
   if (!list.length && !query) { wrap.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:#666;padding:8px 0;">All exercises already added.</div>'; return; }
   wrap.innerHTML = list.slice(0, 20).map(function(e) {
-    return '<div onclick="confirmAdHocExercise(\'' + e.replace(/'/g, "\'") + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:#e0e0e0;cursor:pointer;">' + e + '</div>';
+    return '<div onclick="confirmAdHocExercise(\'' + escJS(e) + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:#e0e0e0;cursor:pointer;">' + escHTML(e) + '</div>';
   }).join('');
   // Show "create new" option if query doesn't exactly match
   var exactMatch = exSet[query] || list.some(function(e) { return e.toLowerCase() === query; });
   if (query && !exactMatch) {
-    wrap.innerHTML += '<div onclick="confirmAdHocExercise(\'' + query.replace(/'/g, "\'") + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:var(--acid);cursor:pointer;">+ Add \"' + query + '\" as new exercise</div>';
+    wrap.innerHTML += '<div onclick="confirmAdHocExercise(\'' + escJS(query) + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:var(--acid);cursor:pointer;">+ Add &quot;' + escHTML(query) + '&quot; as new exercise</div>';
   }
 }
 
@@ -1319,9 +1359,6 @@ function getSheetNames() {
 function readSheet(tab) {
   return xhrRequest('GET', BASE_URL + '/values/' + enc(tab) + '!A:Z', null).then(function(r) {
     return r.values || [];
-  }).catch(function(e) {
-    console.warn('readSheet error', tab, e.message);
-    return [];
   });
 }
 
@@ -1612,11 +1649,19 @@ async function syncResultToSheets(row, set) {
   try {
     setSyncStatus('syncing');
     set.sheetRow = await appendRows('Results', [sheetRow]);
+    if (set._deleted) {
+      await deleteSheetRow('Results', set.sheetRow);
+      set.sheetRow = null;
+    }
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
-    var capturedRow = sheetRow.slice(), capturedSet = set;
-    queueFailedSync(async function() { capturedSet.sheetRow = await appendRows('Results', [capturedRow]); });
+    if (set._deleted) {
+      if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+      else removeQueuedResultOps(set._localId);
+    } else {
+      addToSyncQueue({type:'append', row:sheetRow, setId:set._localId});
+    }
   }
 }
 
@@ -1638,17 +1683,14 @@ async function updateResultInSheets(row, set) {
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
-    var capturedRow = sheetRow.slice(), capturedSet = set;
-    queueFailedSync(async function() {
-      if (capturedSet.sheetRow) await updateSheetRow('Results', capturedSet.sheetRow, capturedRow);
-      else capturedSet.sheetRow = await appendRows('Results', [capturedRow]);
-    });
+    addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
   }
 }
 
 async function deleteResultInSheets(set) {
+  if (set && set._localId) removeQueuedResultOps(set._localId);
   if (offlineMode || !accessToken) {
-    addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+    if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
     return;
   }
   if (!set.sheetRow) return;
@@ -1658,8 +1700,7 @@ async function deleteResultInSheets(set) {
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
-    var capturedRow2 = set.sheetRow;
-    queueFailedSync(async function() { await deleteSheetRow('Results', capturedRow2); });
+    addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
   }
 }
 
@@ -1724,6 +1765,7 @@ async function mergeLocalToSheets() {
     var mergeEmail = currentUser ? currentUser.email : 'unknown';
     for (var i = 0; i < toUpload.length; i++) {
       await appendRows('Results', [[mergeEmail].concat(toUpload[i])]);
+      removeQueuedResultOps(toUpload[i][0]);
     }
   }
 }
@@ -1840,15 +1882,29 @@ function renderLogExercises() {
     var sets = session.sets[exName];
     var logged = sets.filter(function(s) { return s.weight || s.reps; });
     var pb = pbCache[exName] !== undefined ? pbCache[exName] : null;
+    var lastHist = getExHistory(exName, 1)[0];
+    var prevText = '';
+    if (lastHist && lastHist.sets && lastHist.sets.length) {
+      var maxWeight = lastHist.sets.reduce(function(max, s) {
+        return Math.max(max, parseFloat(s.weight) || 0);
+      }, 0);
+      var setText = lastHist.sets.map(function(s) {
+        return (s.weight || '—') + 'x' + (s.reps || '—');
+      }).join(' · ');
+      prevText = '<div class="ex-list-prev"><strong>Last:</strong> ' + escHTML(lastHist.date) +
+        (lastHist.wname ? ' · ' + escHTML(lastHist.wname.split('\u2014')[0].trim()) : '') +
+        (maxWeight ? ' · top ' + escHTML(maxWeight) + 'kg' : '') +
+        '<br>' + escHTML(setText) + '</div>';
+    }
     var item = document.createElement('div');
     item.className = 'ex-list-item' + (logged.length > 0 ? ' has-sets' : '');
     var metaStr = logged.length > 0
       ? logged.length + ' set' + (logged.length !== 1 ? 's' : '') + (pb !== null ? ' · PB ' + pb + 'kg' : '')
       : (pb !== null ? 'PB ' + pb + 'kg' : 'Not started');
     var exCmt = getExerciseComment(exName);
-    item.innerHTML = '<div style="flex:1;"><div class="ex-list-name">' + exName +
-      (exCmt ? ' <span class="comment-indicator" onclick="event.stopPropagation();openExerciseComment(\'' + exName.replace(/'/g,"\'\'") + '\',true)" title="View exercise note">&#128172;</span>' : '') +
-      '</div><div class="ex-list-meta">' + metaStr + '</div></div>' +
+    item.innerHTML = '<div style="flex:1;"><div class="ex-list-name">' + escHTML(exName) +
+      (exCmt ? ' <span class="comment-indicator" onclick="event.stopPropagation();openExerciseComment(\'' + escJS(exName) + '\',true)" title="View exercise note">&#128172;</span>' : '') +
+      '</div><div class="ex-list-meta">' + escHTML(metaStr) + '</div>' + prevText + '</div>' +
       '<span class="ex-list-arrow">&#8250;</span>';
     item.onclick = function() { openExLogDetail(exName); };
     wrap.appendChild(item);
@@ -1900,30 +1956,52 @@ function detectWarmupSetsFromRaw(rawSets) {
   return hasWorkingSets ? warmups : new Set();
 }
 
+function dateSortKey(dateStr) {
+  var x = String(dateStr || '').split('/');
+  return x.length === 3 ? x[2] + x[1] + x[0] : String(dateStr || '');
+}
+
+function currentSessionResultIds() {
+  var ids = new Set();
+  if (!session || !session.sets) return ids;
+  Object.keys(session.sets).forEach(function(ex) {
+    session.sets[ex].forEach(function(s) { if (s._localId) ids.add(s._localId); });
+  });
+  return ids;
+}
+
+function getExerciseHistorySessions(exName, limit) {
+  var currentIds = currentSessionResultIds();
+  var bySession = {};
+  var source = shRows.length > 0 ? shRows : getLocalResults();
+  source.filter(function(r) {
+    return isValidResultRow(r) && r[5] === exName && !currentIds.has(r[0]);
+  }).forEach(function(r) {
+    var key = r[9] + '||' + r[2];
+    if (!bySession[key]) {
+      bySession[key] = {date:r[9], wid:r[2], wname:r[3] || '', sets:[]};
+    }
+    bySession[key].sets.push({set:parseInt(r[6])||0, weight:r[7], reps:r[8], ts:r[1]});
+  });
+  var sessions = Object.values(bySession).sort(function(a,b) {
+    var d = dateSortKey(b.date).localeCompare(dateSortKey(a.date));
+    if (d !== 0) return d;
+    var at = a.sets.reduce(function(min, s) { return s.ts && s.ts < min ? s.ts : min; }, '9999');
+    var bt = b.sets.reduce(function(min, s) { return s.ts && s.ts < min ? s.ts : min; }, '9999');
+    return bt.localeCompare(at);
+  });
+  sessions.forEach(function(s) { s.sets.sort(function(a,b){ return a.set-b.set; }); });
+  return limit ? sessions.slice(0, limit) : sessions;
+}
+
 function getPrevSessionWeight(exName, setIndex) {
   // Returns weight for the corresponding set number from the previous session
-  // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions)
-  var currentIds = new Set();
-  if (session) {
-    Object.keys(session.sets).forEach(function(ex) {
-      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
-    });
-  }
-  var source = shRows.length > 0 ? shRows : [];
-  var byDate = {};
-  source.filter(function(r) {
-    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && r[7] && r[9] && !currentIds.has(r[0]);
-  }).forEach(function(r) {
-    var d = r[9];
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push({ set: parseInt(r[6])||1, weight: parseFloat(r[7])||0 });
+  // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions).
+  var prev = getExerciseHistorySessions(exName, 1)[0];
+  if (!prev) return 0;
+  var prevSets = prev.sets.map(function(s) {
+    return {set:s.set, weight:parseFloat(s.weight)||0};
   });
-  var dates = Object.keys(byDate).sort(function(a,b) {
-    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
-    return p(b).localeCompare(p(a));
-  });
-  if (!dates.length) return 0;
-  var prevSets = byDate[dates[0]];
   var match = prevSets.find(function(s) { return s.set === setIndex + 1; });
   if (match) return match.weight;
   return Math.max.apply(null, prevSets.map(function(s) { return s.weight; })) || 0;
@@ -1960,31 +2038,9 @@ function getLastSessionWeight(exName) {
   return Math.max.apply(null, weights) || '';
 }
 
-function getExHistory(exName) {
-  // Get last 3 sessions for this exercise from shRows/ehRows cache
-  // Exclude rows belonging to the current live session
-  var currentIds = new Set();
-  if (session) {
-    Object.keys(session.sets).forEach(function(ex) {
-      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
-    });
-  }
-  var source = shRows.length > 0 ? shRows : [];
-  var byDate = {};
-  source.filter(function(r) {
-    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !currentIds.has(r[0]);
-  }).forEach(function(r) {
-    var d = r[9]; if (!d) return;
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push({set:parseInt(r[6])||0, weight:r[7], reps:r[8], ts:r[1]});
-  });
-  var dates = Object.keys(byDate).sort(function(a,b) {
-    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
-    return p(b).localeCompare(p(a));
-  });
-  return dates.slice(0,3).map(function(d) {
-    return {date:d, sets:byDate[d].sort(function(a,b){return a.set-b.set;})};
-  });
+function getExHistory(exName, limit) {
+  // Get last 3 completed sessions for this exercise from local history.
+  return getExerciseHistorySessions(exName, limit || 3);
 }
 
 function openExLogDetail(exName) {
@@ -2019,13 +2075,14 @@ function openExLogDetail(exName) {
           '<span class="eld-hist-val">' + (s.reps||'—') + ' reps</span>' +
           '</div>';
       }).join('');
-      var histWid = session && session.workoutId ? session.workoutId : '';
+      var histWid = session_hist.wid || '';
       var histCmt = getSessionExComment(session_hist.date, histWid, currentExLogName);
-      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-');
-      var dateRow = '<div class="eld-hist-date">' + session_hist.date +
+      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-') + '-' + histWid;
+      var workoutLabel = session_hist.wname ? '<div class="eld-hist-workout">' + escHTML(session_hist.wname.split('\u2014')[0].trim()) + '</div>' : '';
+      var dateRow = '<div class="eld-hist-date">' + escHTML(session_hist.date) +
         (histCmt ? ' <span class="comment-indicator" onclick="openHistSessionComment(\'' + histDateId + '\')" title="View session note">&#128172;</span>' : '') +
-        '</div>';
-      return '<div class="eld-hist-session" data-date="' + session_hist.date + '" data-wid="' + histWid + '">' + dateRow + rows + '</div>';
+        '</div>' + workoutLabel;
+      return '<div class="eld-hist-session" data-date="' + escHTML(session_hist.date) + '" data-wid="' + escHTML(histWid) + '">' + dateRow + rows + '</div>';
     }).join('');
   }
 
@@ -2052,7 +2109,9 @@ function renderEldSets() {
   var exName = currentExLogName;
   var hist = getExHistory(exName);
   var histEl = document.getElementById('eld-history-content');
-  if (histEl && hist.length) {
+  if (histEl && !hist.length) {
+    histEl.innerHTML = '<div style="font-size:12px;color:#b0b0b0;">No previous sessions yet.</div>';
+  } else if (histEl && hist.length) {
     var todaySets = sets;
     var nextSetNum = todaySets.length + 1;
     var pb = pbCache[exName] !== undefined ? pbCache[exName] : null;
@@ -2068,13 +2127,14 @@ function renderEldSets() {
           '<span class="eld-hist-val">' + (s.reps||'—') + ' reps</span>' +
           '</div>';
       }).join('');
-      var histWid = session && session.workoutId ? session.workoutId : '';
+      var histWid = session_hist.wid || '';
       var histCmt = getSessionExComment(session_hist.date, histWid, exName);
-      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-');
-      var dateRow = '<div class="eld-hist-date">' + session_hist.date +
+      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-') + '-' + histWid;
+      var workoutLabel = session_hist.wname ? '<div class="eld-hist-workout">' + escHTML(session_hist.wname.split('\u2014')[0].trim()) + '</div>' : '';
+      var dateRow = '<div class="eld-hist-date">' + escHTML(session_hist.date) +
         (histCmt ? ' <span class="comment-indicator" onclick="openHistSessionComment(\'' + histDateId + '\')" title="View session note">&#128172;</span>' : '') +
-        '</div>';
-      return '<div class="eld-hist-session" data-date="' + session_hist.date + '" data-wid="' + histWid + '">' + dateRow + rows + '</div>';
+        '</div>' + workoutLabel;
+      return '<div class="eld-hist-session" data-date="' + escHTML(session_hist.date) + '" data-wid="' + escHTML(histWid) + '">' + dateRow + rows + '</div>';
     }).join('');
   }
   var list = document.getElementById('eld-sets-list');
@@ -2185,7 +2245,7 @@ function eldCommitSet() {
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, weight, reps, today];
   saveResultLocally(syncRow);
-  syncResultToSheets(syncRow, newSet);
+  trackSetSync(syncResultToSheets(syncRow, newSet));
 }
 
 function addLogSetFromDetail() { eldCommitSet(); }
@@ -2202,10 +2262,10 @@ async function addLogSet(exId) {
   if (list) list.insertAdjacentHTML('beforeend', logSetHTML(exName, newIdx, newSet));
   var today = new Date().toLocaleDateString('en-GB');
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  var exIdReal = (exercises.find(function(e){return e.name===exName;})||{}).id || sid(exName);
+  var exIdReal = sid(exName);
   var row = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, exIdReal, exName, newIdx+1, lastWeight, '', today];
   saveResultLocally(row);
-  syncResultToSheets(row, newSet);
+  trackSetSync(syncResultToSheets(row, newSet));
   rtQuickStart();
 }
 
@@ -2239,10 +2299,10 @@ async function updateLogSet(exId, setIdx, field, value) {
   if (!set.timestamp) set.timestamp = new Date().toISOString();
   var today = new Date().toLocaleDateString('en-GB');
   if (!set._localId) set._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  var exIdReal2 = (exercises.find(function(e){return e.name===exName;})||{}).id || sid(exName);
+  var exIdReal2 = sid(exName);
   var row = [set._localId, set.timestamp, session.workoutId, session.workoutName, exIdReal2, exName, setIdx+1, set.weight||'', set.reps||'', today];
   saveResultLocally(row);
-  updateResultInSheets(row, set);
+  trackSetSync(updateResultInSheets(row, set));
   var timeEl = document.querySelector('#setrow-' + exId + '-' + setIdx + ' .set-time');
   if (timeEl && set.timestamp) { timeEl.textContent = new Date(set.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); timeEl.classList.add('logged'); }
   if (field === 'weight') { var w = parseFloat(value); if (!isNaN(w) && (!pbCache[exName] || w > pbCache[exName])) { pbCache[exName] = w; } }
@@ -2255,8 +2315,9 @@ async function removeLogSet(exId, setIdx) {
   var sets = session.sets[exName];
   if (!sets || sets.length === 0) return;
   var set = sets[setIdx];
+  set._deleted = true;
   if (set._localId) deleteResultLocally(set._localId);
-  deleteResultInSheets(set);
+  trackSetSync(deleteResultInSheets(set));
   sets.splice(setIdx, 1); if (currentExLogName) { renderEldSets(); } else { renderLogExercises(); }
 }
 
@@ -2268,6 +2329,7 @@ async function cancelSession() {
     var sheetRows = [];
     Object.values(session.sets).forEach(function(sets) {
       sets.forEach(function(s) {
+        s._deleted = true;
         if (s._localId) localIds.push(s._localId);
         if (s.sheetRow) sheetRows.push(s.sheetRow);
       });
@@ -2277,6 +2339,7 @@ async function cancelSession() {
       var existing = getLocalResults();
       var idSet = new Set(localIds);
       localIds.forEach(function(id) { _deletedResultIds.add(id); });
+      localIds.forEach(removeQueuedResultOps);
       lsSet(LS_RESULTS, existing.filter(function(r) { return !idSet.has(r[0]); }));
     }
     // Delete from Sheets in background
@@ -2302,10 +2365,10 @@ async function cancelSession() {
 async function finishSession() {
   clearInterval(sessionTimerInterval);
   rtStop();
-  // Wait for any in-flight syncs to complete
   var finishBtn = document.getElementById('finish-btn');
   if (finishBtn) { finishBtn.textContent = 'Saving...'; finishBtn.disabled = true; }
-  await new Promise(function(r) { setTimeout(r, 2500); });
+  await waitForSetSyncs();
+  await flushSyncQueue();
   session = null;
   document.getElementById('session-info').classList.remove('active');
   document.getElementById('session-actions').classList.remove('active');
@@ -2601,7 +2664,7 @@ function renderWorkoutsScreen() {
   workouts.forEach(function(w, wi) {
     var item = document.createElement('div'); item.className = 'workout-item';
     item.innerHTML = '<div class="workout-item-header" onclick="toggleWorkoutExpand(' + wi + ')">' +
-      '<div style="flex:1"><div class="workout-item-name">' + w.name + '</div><div class="workout-item-meta">' + w.exercises.length + ' exercises</div></div>' +
+      '<div style="flex:1"><div class="workout-item-name">' + escHTML(w.name) + '</div><div class="workout-item-meta">' + w.exercises.length + ' exercises</div></div>' +
       '<button onclick="event.stopPropagation();openStatsForWorkout(' + wi + ')" style="background:transparent;border:none;color:#999;font-size:15px;cursor:pointer;padding:4px 6px;margin-right:2px;" title="Stats">&#9650;&#9650;</button>' +
       '<button onclick="event.stopPropagation();openWorkoutComment(' + wi + ',false)" class="comment-btn' + (getWorkoutComment(w.id) ? ' has-comment' : '') + '" title="' + (getWorkoutComment(w.id) ? 'Edit note' : 'Add note') + '">&#128172;</button>' +
       '<button onclick="event.stopPropagation();deleteWorkout(' + wi + ')" style="background:transparent;border:none;color:#b0b0b0;font-size:16px;cursor:pointer;padding:4px 8px;margin-right:4px;" title="Delete workout">&#215;</button>' +
@@ -2615,7 +2678,7 @@ function renderWorkoutsScreen() {
           '<button class="reorder-btn" onclick="moveEx(' + wi + ',' + ei + ',-1)"' + (isFirst ? ' disabled' : '') + '>&#9650;</button>' +
           '<button class="reorder-btn" onclick="moveEx(' + wi + ',' + ei + ',1)"' + (isLast ? ' disabled' : '') + '>&#9660;</button>' +
           '</div>' +
-          '<span class="workout-ex-name">' + ex + '</span>' +
+          '<span class="workout-ex-name">' + escHTML(ex) + '</span>' +
           '<button class="remove-ex-btn" onclick="removeExFromWorkout(' + wi + ',' + ei + ')">&#215;</button>' +
           '</div>';
       }).join('') +
@@ -2625,7 +2688,7 @@ function renderWorkoutsScreen() {
         allExercises.forEach(function(e) { exSet[e] = true; });
         workouts.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
         ehRows.forEach(function(r) { if (r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__') exSet[r[5]] = true; });
-        return Object.keys(exSet).sort(function(a,b){return a.localeCompare(b);}).map(function(e) { return '<option>' + e + '</option>'; }).join('');
+        return Object.keys(exSet).sort(function(a,b){return a.localeCompare(b);}).map(function(e) { return '<option>' + escHTML(e) + '</option>'; }).join('');
       })() +
       '<option value="__new__">+ New exercise...</option></select>' +
       '<button class="workout-add-btn" onclick="addExToWorkout(' + wi + ')">Add</button></div>' +
@@ -2646,7 +2709,6 @@ async function addExToWorkout(wi) {
     if (!exName || !exName.trim()) return;
     exName = exName.trim();
     if (allExercises.indexOf(exName) < 0) {
-      allExercises.push(exName);
       setSyncStatus('syncing');
       allExercises.push(exName); lsSet(LS_EXERCISES, allExercises);
       if (!offlineMode && accessToken) {
@@ -2843,14 +2905,15 @@ function rtStart() {
   scheduleNotification('Rest Complete ⏱', 'Time to lift!', rtRemaining);
   rtInterval = setInterval(function() {
     rtRemaining = Math.round((endTime - Date.now()) / 1000);
-    if (rtRemaining <= 0) { rtRemaining = 0; rtUpdateDisplay(); rtStop(); showToast('Rest done!'); }
+    if (rtRemaining <= 0) { rtRemaining = 0; rtUpdateDisplay(); rtStop(false); showToast('Rest done!'); }
     else { rtUpdateDisplay(); }
   }, 500);
 }
-function rtStop() {
+function rtStop(cancelServer) {
+  if (cancelServer !== false) cancelServer = true;
   rtRunning = false; clearInterval(rtInterval);
   cancelScheduledNotification();
-  serverCancelNotification(); // explicit cancel when user manually stops timer
+  if (cancelServer) serverCancelNotification(); // explicit cancel when user manually stops timer
   var b = document.getElementById('rt-play');
   if (b) { b.innerHTML = '&#9654;'; b.classList.remove('running'); }
   var eldBar = document.getElementById('eld-rest-bar');
