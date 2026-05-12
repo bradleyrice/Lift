@@ -75,8 +75,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .ex-list-name{font-family:var(--display);font-size:18px;font-weight:700;}
 .ex-list-meta{font-size:12px;color:#b0b0b0;text-align:right;line-height:1.6;}
 .ex-list-arrow{color:#b0b0b0;font-size:14px;margin-left:10px;}
-.ex-list-prev{font-size:11px;color:#8e8e8e;line-height:1.55;margin-top:6px;}
-.ex-list-prev strong{color:#b0b0b0;font-weight:400;}
 #ex-log-detail{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;background:var(--bg);z-index:150;display:none;flex-direction:column;overflow:hidden;}
 #ex-log-detail.visible{display:flex;}
 #eld-header{padding:14px 16px;border-bottom:2px solid var(--acid);display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;}
@@ -90,7 +88,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #eld-input-fixed{padding:10px 16px;background:var(--bg);border-top:1px solid #222;flex-shrink:0;}
 .eld-hist-session{margin-bottom:12px;}
 .eld-hist-date{font-size:12px;color:#b0b0b0;letter-spacing:1px;margin-bottom:5px;}
-.eld-hist-workout{font-size:10px;color:#666;letter-spacing:1px;margin:-2px 0 6px;text-transform:uppercase;}
 .eld-hist-row{display:grid;grid-template-columns:22px 64px 64px;gap:6px;margin-bottom:4px;font-size:15px;align-items:center;}
 .eld-hist-num{font-size:12px;color:#999;text-align:center;}
 .eld-hist-val{text-align:center;}
@@ -276,6 +273,196 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .loading-dots span:nth-child(2){animation-delay:0.2s;}
 .loading-dots span:nth-child(3){animation-delay:0.4s;}
 @keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.3}40%{transform:scale(1);opacity:1}}
+
+/* Coach notebook redesign */
+:root{
+  --acid:#5f7f42;
+  --bg:#ece9df;
+  --surface:#fbf8f0;
+  --surface-2:#f4efe4;
+  --border:#d5cec0;
+  --muted:#716b61;
+  --text:#1f1b16;
+  --ink:#1f1b16;
+  --paper:#fbf8f0;
+  --paper-soft:#f6f1e7;
+  --moss:#5f7f42;
+  --moss-dark:#3e5f2b;
+  --terracotta:#b9674f;
+  --amber:#d18b35;
+  --success:#4f7b43;
+  --display:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"SF Mono","Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
+  --nav-h:76px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:var(--display);letter-spacing:0;}
+body{background:
+  linear-gradient(rgba(31,27,22,0.018) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(31,27,22,0.014) 1px,transparent 1px),
+  var(--bg);background-size:22px 22px;}
+#auth-screen,#loading-screen,#error-screen,#app,#ex-log-detail,#session-detail,#ex-detail,#stats-screen{background:var(--bg)!important;color:var(--text);}
+.logo{color:var(--ink);letter-spacing:0;font-size:58px;}
+.logo-sub,.screen-sub,#sync-label,.nav-label{letter-spacing:0;text-transform:none;}
+#signin-btn,#retry-btn,#start-session-btn,#finish-btn,.workout-add-btn,.comment-save-btn,#adhoc-add-btn,.eld-commit-btn{background:var(--moss)!important;color:#fff!important;border:0!important;border-radius:8px!important;font-family:var(--display)!important;letter-spacing:0!important;text-transform:none!important;font-weight:800!important;box-shadow:0 8px 18px rgba(63,80,43,0.18);}
+.screen{padding-bottom:calc(var(--nav-h) + 22px);}
+.screen-header,#eld-header,#stats-header,#sd-header,#exd-header{background:rgba(236,233,223,0.94)!important;border-bottom:1px solid var(--border)!important;backdrop-filter:blur(16px);box-shadow:0 1px 0 rgba(255,255,255,0.45) inset;}
+.screen-header{padding:22px 18px 16px;}
+.screen-title{font-family:var(--display);font-size:32px;font-weight:850;letter-spacing:0;line-height:1;color:var(--ink);}
+.screen-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+#sync-row{gap:8px;margin-top:9px;}
+#sync-dot{width:8px;height:8px;background:var(--success);box-shadow:0 0 0 4px rgba(95,127,66,0.12);}
+#sync-dot.syncing{background:var(--amber);}
+#sync-dot.error{background:var(--terracotta);}
+#sync-label{font-family:var(--display);font-size:12px;color:var(--muted);}
+#workout-picker,#eh-search-wrap,#sh-filters{background:rgba(246,241,231,0.7);border-bottom:1px solid var(--border);padding:14px 16px;}
+#workout-select,#eh-search,.ex-sel,#push-server-input{background:var(--paper)!important;border:1px solid var(--border)!important;border-radius:8px!important;color:var(--text)!important;font-family:var(--display)!important;font-size:15px!important;padding:13px 12px!important;box-shadow:0 1px 0 rgba(255,255,255,0.65) inset;}
+#start-session-btn{padding:13px 18px;font-size:16px;}
+#session-info,#rest-timer{margin:12px 16px 0;background:var(--paper)!important;border:1px solid var(--border)!important;border-radius:8px;padding:14px 16px;box-shadow:0 8px 24px rgba(37,30,20,0.06);}
+#session-timer{font-family:var(--mono);font-size:26px;color:var(--moss-dark);}
+#session-meta{font-family:var(--display);font-size:12px;color:var(--muted);letter-spacing:0;}
+#rt-ring-fg,#eld-rt-ring{stroke:var(--moss)!important;}
+#rt-display,#eld-rt-display{color:var(--ink);}
+.rt-btn{border-radius:8px;font-family:var(--display);}
+#rt-play,#eld-rt-play{background:var(--moss)!important;color:#fff!important;}
+#rt-play.running{background:var(--terracotta)!important;}
+.rt-adj-btn,.numpad-btn{background:var(--paper)!important;border:1px solid var(--border)!important;color:var(--ink)!important;border-radius:8px!important;font-family:var(--mono);}
+#exercises-list,#sh-list,#eh-ex-list,#workouts-list,#sd-content,#exd-content,#stats-body{padding:14px 16px 0;}
+.ex-list-item,.session-card,.eh-ex-item,.workout-item,.stats-card,.stats-chart-wrap,.sd-ex{background:var(--paper);border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 28px rgba(42,35,24,0.07);overflow:hidden;}
+.ex-list-item,.eh-ex-item{padding:15px 16px;margin-bottom:10px;}
+.ex-list-item.has-sets::before{width:4px;background:var(--moss);}
+.ex-list-name,.session-workout,.eh-ex-name,.workout-item-name,.sd-ex-name{font-family:var(--display);font-size:18px;font-weight:800;letter-spacing:0;line-height:1.18;color:var(--ink);}
+.ex-list-meta,.session-meta-r,.eh-ex-meta,.workout-item-meta,.empty-state{font-family:var(--display);font-size:13px;color:var(--muted);letter-spacing:0;line-height:1.45;}
+.ex-list-arrow{color:var(--muted);font-size:22px;}
+.pb-badge,.session-ex-tag{border-radius:999px;border:1px solid rgba(95,127,66,0.22);background:rgba(95,127,66,0.1);color:var(--moss-dark);font-family:var(--display);font-size:12px;letter-spacing:0;padding:5px 9px;}
+.filter-btn{font-family:var(--display);font-size:13px;letter-spacing:0;text-transform:none;padding:9px 13px;border-radius:999px;background:var(--paper);border-color:var(--border);color:var(--muted);}
+.filter-btn.active{background:var(--moss);border-color:var(--moss);color:#fff;font-weight:800;}
+.session-card,.workout-item{margin-bottom:12px;}
+.session-card-header,.workout-item-header{padding:15px 16px;border-bottom:1px solid var(--border);}
+.session-date{font-family:var(--mono);font-size:12px;color:var(--moss-dark);letter-spacing:0;font-weight:800;}
+.session-exercises{padding:12px 16px 16px;}
+.session-resume-btn{border-radius:999px;background:transparent;border-color:var(--moss);color:var(--moss-dark);letter-spacing:0;text-transform:none;font-family:var(--display);font-weight:800;}
+.session-delete-btn,.remove-btn,.remove-ex-btn,.reorder-btn{color:var(--muted)!important;}
+.workout-body{border-top:1px solid var(--border);background:var(--paper-soft);padding:11px 14px;}
+.workout-ex-row{border-bottom:1px solid var(--border);padding:10px 0;}
+.add-workout-btn,.add-set-btn{background:rgba(95,127,66,0.06);border:1px dashed rgba(95,127,66,0.42);border-radius:8px;color:var(--moss-dark);font-family:var(--display);letter-spacing:0;text-transform:none;font-weight:800;}
+#nav{height:var(--nav-h);background:rgba(251,248,240,0.96);border-top:1px solid var(--border);backdrop-filter:blur(16px);padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 6px);box-shadow:0 -10px 28px rgba(40,32,20,0.08);}
+.nav-btn{border-radius:8px;color:var(--muted);gap:4px;font-family:var(--display);}
+.nav-btn.active{background:rgba(95,127,66,0.12);color:var(--moss-dark);}
+.nav-icon{font-size:20px;}
+.nav-label{font-size:11px;font-family:var(--display);font-weight:800;}
+#eld-header,#stats-header,#sd-header,#exd-header{padding:14px 16px;}
+#eld-title,#stats-title,#sd-title,#exd-name{font-family:var(--display);font-size:21px;font-weight:850;letter-spacing:0;color:var(--ink);}
+#eld-pb,#exd-pb,.stats-card-val,.eld-strip-val,.eld-vol-fraction{color:var(--moss-dark)!important;}
+.back-btn{border:1px solid var(--border);border-radius:999px;background:var(--paper);color:var(--ink);font-family:var(--display);font-size:13px;letter-spacing:0;padding:8px 12px;}
+#eld-stats-toggle-btn,.exercise-settings-btn{background:var(--paper)!important;border:1px solid var(--border)!important;color:var(--moss-dark)!important;border-radius:8px!important;font-family:var(--display)!important;font-weight:850!important;font-size:13px;padding:8px 12px;cursor:pointer;}
+#eld-rest-bar,#eld-stats-strip,#eld-input-fixed{background:var(--paper)!important;border-color:var(--border)!important;}
+#eld-rest-bar{order:5;border-top:1px solid var(--border)!important;border-bottom:0!important;margin:10px 16px 0!important;border-radius:8px;}
+#eld-input-fixed{order:3;border-bottom:1px solid var(--border)!important;padding:12px 16px 10px!important;}
+#eld-body{background:var(--bg);}
+#eld-col-history,#eld-col-today{padding:14px 10px 26px 16px;}
+#eld-col-history{border-right:1px solid var(--border);}
+.eld-history-title,.eld-sets-title,.stats-section-title{font-family:var(--display);font-size:12px;color:var(--muted);letter-spacing:0;text-transform:none;border-bottom:1px solid var(--border);}
+.eld-hist-session{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;box-shadow:0 8px 22px rgba(42,35,24,0.05);}
+.eld-hist-date{font-family:var(--mono);font-size:12px;color:var(--moss-dark);letter-spacing:0;margin-bottom:7px;font-weight:800;}
+.eld-hist-row,.eld-committed-row{border-bottom:0;gap:6px;font-size:14px;}
+.eld-hist-row{grid-template-columns:24px 1fr 1fr;padding:4px 0;}
+.eld-committed-row{grid-template-columns:24px 1fr 1fr 28px;padding:4px 0;}
+.eld-hist-target{background:rgba(95,127,66,0.13);border:1px solid rgba(95,127,66,0.22);border-radius:7px;}
+.eld-hist-target .eld-hist-val,.eld-hist-target .eld-hist-num{color:var(--moss-dark)!important;font-weight:800;}
+.eld-hist-warmup{background:rgba(31,27,22,0.04);}
+.eld-hist-warmup .eld-hist-val,.eld-hist-warmup .eld-hist-num{color:#9a9388!important;}
+.set-input,.eld-quick-input,.sd-edit-input,.comment-textarea{background:#fffdf8!important;border:1px solid var(--border)!important;border-radius:8px!important;color:var(--ink)!important;font-family:var(--mono)!important;box-shadow:0 1px 0 rgba(255,255,255,0.75) inset;}
+.eld-display-field.active,.eld-quick-input:focus,.set-input:focus,.sd-edit-input:focus,.comment-textarea:focus{border-color:var(--moss)!important;background:#f7fbf0!important;}
+.eld-field-label,.set-num,.eld-hist-num,.stats-card-lbl,.eld-strip-lbl{color:var(--muted)!important;letter-spacing:0!important;text-transform:none!important;}
+.eld-commit-btn{font-size:18px;padding:15px 0;}
+#eld-weight-display,#eld-reps-display{color:var(--ink);}
+.comment-modal,.comment-modal-inner,#adhoc-modal > div,#timer-edit-modal{background:rgba(31,27,22,0.34)!important;}
+.comment-modal-inner,#adhoc-modal > div{background:var(--paper)!important;border-color:var(--border)!important;color:var(--ink)!important;}
+#timer-edit-modal{background:rgba(236,233,223,0.96)!important;}
+#timer-edit-display{color:var(--moss-dark)!important;}
+.sd-ex{padding:14px;margin-bottom:12px;}
+.sd-ex-name{color:var(--moss-dark);margin-bottom:9px;}
+.sd-set-row{grid-template-columns:28px 1fr 1fr 58px 36px;gap:8px;padding:4px 0;}
+.sd-rest,.exd-rest{color:var(--muted);}
+.stats-card,.stats-chart-wrap{padding:12px;background:var(--paper);}
+.stats-chart-title{color:var(--muted);letter-spacing:0;text-transform:none;font-family:var(--display);}
+#toast{background:var(--ink);color:#fff;border-radius:999px;font-family:var(--display);letter-spacing:0;}
+#eld-compare-panel{order:2;background:var(--paper-soft);border-bottom:1px solid var(--border);padding:12px 12px 10px;flex-shrink:0;}
+.eld-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.eld-metric-card{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;box-shadow:0 8px 20px rgba(42,35,24,0.05);}
+.eld-metric-label{font-family:var(--display);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:850;}
+.eld-metric-value{font-family:var(--mono);font-size:22px;font-weight:900;color:var(--ink);line-height:1.1;margin-top:6px;}
+.eld-metric-sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.25;}
+.eld-compare-shell{background:var(--paper);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 20px rgba(42,35,24,0.05);overflow:hidden;}
+.eld-compare-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#fffdf8;}
+.eld-compare-kicker{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:0.08em;}
+.eld-compare-title{font-family:var(--display);font-size:14px;color:var(--ink);font-weight:850;margin-top:3px;}
+.eld-compare-summary{text-align:right;font-family:var(--mono);font-size:12px;color:var(--moss-dark);font-weight:850;white-space:nowrap;}
+.eld-compare-table{display:grid;grid-template-columns:40px repeat(6,minmax(0,1fr));align-items:stretch;}
+.eld-compare-cell{padding:8px 8px;border-bottom:1px solid rgba(213,206,192,0.72);border-right:1px solid rgba(213,206,192,0.5);font-family:var(--mono);font-size:13px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+.eld-compare-cell.h{font-family:var(--display);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:850;color:var(--muted);background:var(--paper-soft);}
+.eld-compare-cell.group{font-size:13px;color:var(--ink);background:#fffdf8;}
+.eld-compare-cell.group.target{color:var(--terracotta);background:#fff7f3;}
+.eld-compare-cell.set{color:var(--muted);font-weight:850;text-align:center;}
+.eld-compare-cell.target{background:#f8fbf1;color:var(--moss-dark);font-weight:850;}
+.eld-compare-cell.eld-compare-row-active{background:rgba(95,127,66,0.08);}
+.eld-compare-cell.eld-compare-row-active.target{background:rgba(95,127,66,0.15);}
+.eld-compare-cell.editable{cursor:pointer;background:#fffdf8;}
+.eld-compare-cell.editable:hover{background:rgba(95,127,66,0.12);}
+.eld-target-delta{display:block;font-family:var(--display);font-size:10px;color:var(--moss-dark);margin-top:2px;font-weight:850;}
+.eld-compare-foot{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;font-size:12px;color:var(--muted);line-height:1.35;}
+.eld-compare-foot strong{color:var(--moss-dark);}
+#eld-body{order:4;flex:0 1 auto!important;display:none!important;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);min-height:0;}
+#eld-col-history{display:none!important;}
+#eld-col-today{display:block!important;border:0!important;padding:12px 16px 28px!important;}
+.eld-sets-title{display:flex;align-items:center;justify-content:space-between;}
+.eld-sets-title::after{content:"editable";font-size:11px;color:var(--muted);font-weight:700;}
+.eld-input-label{font-family:var(--display);font-size:12px;color:var(--ink);font-weight:850;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+.eld-input-row{grid-template-columns:1fr 1fr!important;gap:12px!important;padding:0!important;}
+.eld-stepper{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;background:#fffdf8;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.eld-stepper-btn{height:52px;background:transparent;border:0;color:var(--ink);font-family:var(--display);font-size:24px;font-weight:850;cursor:pointer;}
+.eld-stepper-btn:first-child{border-right:1px solid var(--border);}
+.eld-stepper-btn:last-child{border-left:1px solid var(--border);}
+.eld-stepper-value{min-height:52px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--mono);font-size:24px;font-weight:900;color:var(--ink);cursor:pointer;}
+.eld-stepper-unit{font-family:var(--display);font-size:11px;color:var(--muted);font-weight:850;text-transform:uppercase;align-self:flex-end;margin-bottom:11px;}
+.eld-add-visible{width:100%;margin-top:10px;padding:15px 0;background:var(--moss);border:0;border-radius:8px;color:#fff;font-family:var(--display);font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;cursor:pointer;box-shadow:0 8px 18px rgba(63,80,43,0.18);}
+.eld-note-card{margin-top:10px;background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:11px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;}
+.eld-note-title{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:0.08em;}
+.eld-note-text{font-size:13px;color:var(--ink);margin-top:3px;line-height:1.35;}
+.eld-note-edit{color:var(--moss-dark);font-weight:900;}
+.exercise-settings-modal{display:none;position:fixed;inset:0;background:rgba(31,27,22,0.36);z-index:520;align-items:flex-end;justify-content:center;padding:16px;}
+.exercise-settings-modal.visible{display:flex;}
+.exercise-settings-panel{width:min(520px,100%);background:var(--paper);border:1px solid var(--border);border-radius:10px;box-shadow:0 24px 70px rgba(31,27,22,0.22);padding:16px;}
+.exercise-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.exercise-settings-title{font-family:var(--display);font-size:22px;font-weight:850;color:var(--ink);line-height:1.05;}
+.exercise-settings-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.exercise-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.exercise-setting-field{background:#fffdf8;border:1px solid var(--border);border-radius:8px;padding:10px;}
+.exercise-setting-field label{display:block;font-family:var(--display);font-size:10px;font-weight:850;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.exercise-setting-field input{width:100%;border:0;background:transparent;font-family:var(--mono);font-size:26px;font-weight:900;color:var(--ink);outline:0;}
+.exercise-settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.exercise-settings-actions button{border-radius:8px;padding:13px;font-family:var(--display);font-weight:850;font-size:15px;cursor:pointer;}
+.exercise-settings-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.exercise-settings-save{background:var(--moss);border:1px solid var(--moss);color:#fff;}
+.stats-chart{display:block;width:100%;height:150px;}
+.stats-chart-wrap{min-height:174px;}
+.session-active #workout-picker{display:none!important;}
+.session-active #session-info{display:none!important;}
+#active-session-summary{display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap;}
+.session-active #active-session-summary{display:flex;}
+.active-session-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(95,127,66,0.22);background:rgba(95,127,66,0.1);color:var(--moss-dark);border-radius:999px;padding:5px 9px;font-family:var(--display);font-size:12px;font-weight:850;}
+.active-session-timer{font-family:var(--mono);font-size:15px;color:var(--ink);}
+.sd-ex-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.sd-add-set-btn{background:rgba(95,127,66,0.1);border:1px solid rgba(95,127,66,0.28);color:var(--moss-dark);border-radius:999px;padding:8px 11px;font-family:var(--display);font-size:12px;font-weight:850;cursor:pointer;white-space:nowrap;}
+.sd-delete-set-btn{background:transparent;border:1px solid var(--border);color:var(--terracotta);border-radius:8px;font-family:var(--display);font-size:14px;font-weight:850;cursor:pointer;padding:6px 8px;}
+.eh-ex-item{cursor:pointer;}
+.eh-delete-btn{background:transparent;border:none;color:#707070;font-size:18px;cursor:pointer;padding:8px 10px;flex-shrink:0;}
+@media (max-width:390px){
+  .eld-metric-grid{grid-template-columns:1fr;}
+  .eld-compare-table{grid-template-columns:32px repeat(6,minmax(0,1fr));}
+  .eld-compare-cell{font-size:11px;padding:7px 4px;}
+  #eld-col-history,#eld-col-today{padding-top:10px;}
+}
 </style>
 </head>
 <body>
@@ -304,7 +491,16 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
     <div class="screen active" id="screen-log">
       <div class="screen-header">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div><div class="screen-title">LOG</div><div id="sync-row"><span id="sync-dot"></span><span id="sync-label">synced</span></div></div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+              <div class="screen-title">LOG</div>
+              <div id="active-session-summary">
+                <span class="active-session-pill"><span id="active-session-timer" class="active-session-timer">0:00</span></span>
+                <span class="active-session-pill" id="active-session-workout">Session active</span>
+              </div>
+            </div>
+            <div id="sync-row"><span id="sync-dot"></span><span id="sync-label">synced</span></div>
+          </div>
           <div style="display:flex;gap:6px;margin-top:4px;">
             <button onclick="forceSyncToSheets()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Force sync</button>
             <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Sign out</button>
@@ -430,7 +626,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <div id="eld-header">
     <button id="close-ex-log-detail-btn" class="back-btn" onclick="closeExLogDetail()">&#8592; Back</button>
     <div style="flex:1"><div id="eld-title"></div><div id="eld-pb"></div></div>
-    <button id="eld-stats-toggle-btn" onclick="eldToggleStats()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-size:16px;padding:6px 11px;border-radius:4px;cursor:pointer;" title="Stats">&#9650;&#9650;</button>
+    <button class="exercise-settings-btn" onclick="openExerciseSettings(currentExLogName)" title="Exercise settings">Settings</button>
+    <button id="eld-stats-toggle-btn" onclick="eldToggleStats()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-size:13px;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:800;" title="Detailed stats">Stats</button>
   </div>
   <div id="eld-rest-bar" style="display:flex;background:#131313;border-bottom:1px solid var(--border);padding:14px 16px;flex-shrink:0;align-items:center;gap:12px;">
     <div class="eld-rt-ring-wrap" style="position:relative;width:60px;height:60px;flex-shrink:0;cursor:pointer;" onclick="openTimerEditModal()">
@@ -485,6 +682,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-vol" style="width:0%"></div></div>
     </div>
   </div>
+  <div id="eld-compare-panel"></div>
   <!-- Numpad overlay — absolutely positioned, covers body area -->
   <div id="eld-numpad-overlay" style="display:none;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:20;padding:12px 16px 16px;gap:8px;overflow:hidden;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
@@ -519,14 +717,30 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
   <!-- Timer edit numpad overlay -->
 
   <div id="eld-input-fixed">
+    <div class="eld-input-label">Quick Set Entry</div>
     <div class="eld-input-row" id="eld-input-row">
-      <span class="set-num" id="eld-input-setnum">1</span>
-      <div class="eld-quick-input eld-display-field" id="eld-input-weight" onclick="eldFocusField('weight')">
-        <span id="eld-weight-display">—</span><span class="eld-field-label">kg</span>
+      <div class="eld-stepper" id="eld-input-weight">
+        <button class="eld-stepper-btn" onclick="eldAdjustDraft('weight',-eldWeightStep())">−</button>
+        <div class="eld-stepper-value" onclick="eldFocusField('weight')">
+          <span id="eld-weight-display">—</span><span class="eld-stepper-unit">kg</span>
+        </div>
+        <button class="eld-stepper-btn" onclick="eldAdjustDraft('weight',eldWeightStep())">+</button>
       </div>
-      <div class="eld-quick-input eld-display-field" id="eld-input-reps" onclick="eldFocusField('reps')">
-        <span id="eld-reps-display">—</span><span class="eld-field-label">reps</span>
+      <div class="eld-stepper" id="eld-input-reps">
+        <button class="eld-stepper-btn" onclick="eldAdjustDraft('reps',-1)">−</button>
+        <div class="eld-stepper-value" onclick="eldFocusField('reps')">
+          <span id="eld-reps-display">—</span><span class="eld-stepper-unit">reps</span>
+        </div>
+        <button class="eld-stepper-btn" onclick="eldAdjustDraft('reps',1)">+</button>
       </div>
+    </div>
+    <button class="eld-add-visible" onclick="eldCommitSet()">Add Set</button>
+    <div class="eld-note-card" onclick="openSessionExComment()">
+      <div>
+        <div class="eld-note-title">Notes</div>
+        <div class="eld-note-text" id="eld-note-text">Add a note for this exercise.</div>
+      </div>
+      <div class="eld-note-edit">&#9998;</div>
     </div>
   </div>
   <div id="eld-body">
@@ -537,13 +751,38 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
       </div>
     </div>
     <div id="eld-col-today">
-      <div class="eld-sets-title">Today</div>
+      <div class="eld-sets-title">Logged today</div>
       <div id="eld-sets-list"></div>
     </div>
   </div>
 </div>
 <div id="session-detail"><div id="sd-header"><button id="close-session-detail-btn" class="back-btn" onclick="closeSessionDetail()">&#8592; Back</button><div id="sd-title"></div></div><div id="sd-content"></div></div>
-<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div style="display:flex;align-items:center;gap:8px;"><div id="exd-name"></div><button onclick="editExerciseName()" style="background:transparent;border:none;color:#c0c0c0;font-size:22px;cursor:pointer;padding:6px 12px;flex-shrink:0;" title="Rename">&#9998;</button><button id="exd-comment-btn" class="comment-btn" onclick="openExerciseComment(document.getElementById('exd-name').textContent,false)" title="Add note" style="font-size:20px;padding:6px 8px;">&#128172;</button></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
+<div id="ex-detail"><div id="exd-header"><button id="close-ex-detail-btn" class="back-btn" onclick="closeExDetail()">&#8592; Back</button><div style="display:flex;align-items:center;gap:8px;flex:1;"><div id="exd-name"></div><button onclick="editExerciseName()" style="background:transparent;border:none;color:#c0c0c0;font-size:22px;cursor:pointer;padding:6px 12px;flex-shrink:0;" title="Rename">&#9998;</button><button id="exd-comment-btn" class="comment-btn" onclick="openExerciseComment(document.getElementById('exd-name').textContent,false)" title="Add note" style="font-size:20px;padding:6px 8px;">&#128172;</button><button class="exercise-settings-btn" onclick="openExerciseSettings(document.getElementById('exd-name').textContent)" title="Exercise settings">Settings</button></div><div id="exd-pb"></div></div><div id="exd-content"></div></div>
+<div id="exercise-settings-modal" class="exercise-settings-modal">
+  <div class="exercise-settings-panel">
+    <div class="exercise-settings-head">
+      <div>
+        <div class="exercise-settings-title" id="exercise-settings-title">Exercise settings</div>
+        <div class="exercise-settings-sub">Targets add one rep per session until max reps, then suggest a weight increase.</div>
+      </div>
+      <button class="back-btn" onclick="closeExerciseSettings()">Close</button>
+    </div>
+    <div class="exercise-settings-grid">
+      <div class="exercise-setting-field">
+        <label for="exercise-setting-increment">Weight increment</label>
+        <input id="exercise-setting-increment" type="number" inputmode="decimal" step="0.5" min="0" value="2.5">
+      </div>
+      <div class="exercise-setting-field">
+        <label for="exercise-setting-max-reps">Max reps</label>
+        <input id="exercise-setting-max-reps" type="number" inputmode="numeric" step="1" min="1" value="10">
+      </div>
+    </div>
+    <div class="exercise-settings-actions">
+      <button class="exercise-settings-cancel" onclick="closeExerciseSettings()">Cancel</button>
+      <button class="exercise-settings-save" onclick="saveExerciseSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
 <div id="stats-screen">
   <div id="stats-header">
     <button class="back-btn" onclick="closeStats()">&#8592; Back</button>
@@ -611,6 +850,7 @@ var LS_EXERCISES = 'lift_exercises';
 var LS_RESULTS = 'lift_results';
 var LS_PUSH_SERVER = 'lift_push_server';
 var LS_COMMENTS = 'lift_comments';
+var LS_EX_SETTINGS = 'lift_exercise_settings';
 var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
@@ -1059,12 +1299,15 @@ function openSessionExComment() {
 }
 
 function openHistSessionComment(histDateId) {
+  // Find the session div by its date data attribute
+  var el = document.querySelector('.eld-hist-session[data-date]');
+  // Walk through all hist sessions to find one matching
   var sessions = document.querySelectorAll('.eld-hist-session[data-date]');
   for (var i = 0; i < sessions.length; i++) {
     var s = sessions[i];
     var d = s.getAttribute('data-date');
     var w = s.getAttribute('data-wid');
-    var id = 'hd-' + d.replace(/\//g, '-') + '-' + w;
+    var id = 'hd-' + d.replace(/\//g, '-');
     if (id === histDateId) {
       var cmt = getSessionExComment(d, w, currentExLogName);
       openCommentModal({ type:'sessionEx', date:d, wid:w, exName:currentExLogName, title:'Session Note — ' + d, text:cmt, readOnly:true });
@@ -1092,11 +1335,10 @@ function eldFocusField(field) {
   // Highlight active field in overlay
   document.getElementById('eld-overlay-weight').classList.toggle('active', field === 'weight');
   document.getElementById('eld-overlay-reps').classList.toggle('active', field === 'reps');
-  // Position overlay below the header + rest bar
+  // Position overlay below the header; the rest timer now lives lower in the flow.
   var overlay = document.getElementById('eld-numpad-overlay');
   var header = document.getElementById('eld-header');
-  var restBar = document.getElementById('eld-rest-bar');
-  var topOffset = (header ? header.offsetHeight : 0) + (restBar ? restBar.offsetHeight : 0);
+  var topOffset = (header ? header.offsetHeight : 0);
   overlay.style.top = topOffset + 'px';
   overlay.style.display = 'flex';
 }
@@ -1126,6 +1368,24 @@ function eldNumpadPress(key) {
   eldPreviewInput();
 }
 
+function eldAdjustDraft(field, delta) {
+  var isWeight = field === 'weight';
+  var val = isWeight ? parseFloat(_eldWeightVal) || 0 : parseInt(_eldRepsVal) || 0;
+  val = isWeight ? Math.max(0, Math.round((val + delta) * 10) / 10) : Math.max(0, val + delta);
+  if (isWeight) {
+    _eldWeightVal = val ? fmtKg(val) : '';
+    document.getElementById('eld-weight-display').textContent = _eldWeightVal || '—';
+    var ow = document.getElementById('eld-weight-display-overlay');
+    if (ow) ow.textContent = _eldWeightVal || '—';
+  } else {
+    _eldRepsVal = val ? String(val) : '';
+    document.getElementById('eld-reps-display').textContent = _eldRepsVal || '—';
+    var or = document.getElementById('eld-reps-display-overlay');
+    if (or) or.textContent = _eldRepsVal || '—';
+  }
+  eldPreviewInput();
+}
+
 function eldCloseNumpad() {
   _eldActiveField = null;
   _eldInputFocused = false;
@@ -1146,18 +1406,7 @@ function eldKeyboardOpen() { /* no-op — replaced by eldFocusField */ }
 function eldKeyboardClose() { /* no-op — replaced by eldCloseNumpad */ }
 
 function eldToggleStats() {
-  var strip = document.getElementById('eld-stats-strip');
-  if (!strip) return;
-  var btn = document.getElementById('eld-stats-toggle-btn');
-  if (strip.style.display === 'block') {
-    strip.style.display = 'none';
-    strip.removeAttribute('data-visible');
-    if (btn) btn.style.color = '#b0b0b0';
-  } else if (strip.getAttribute('data-visible') === 'true' || strip.getAttribute('data-available') === 'true') {
-    strip.style.display = 'block';
-    strip.setAttribute('data-visible', 'true');
-    if (btn) btn.style.color = 'var(--acid)';
-  }
+  openStatsFromEld();
 }
 
 var _timerNumpadVal = '';
@@ -1234,11 +1483,15 @@ function rtAdjust(delta) {
 
 function updateEldCommentBtn() {
   var btn = document.getElementById('eld-comment-btn');
-  if (!btn || !session || !currentExLogName) return;
+  var note = document.getElementById('eld-note-text');
+  if (!session || !currentExLogName) return;
   var today = new Date().toLocaleDateString('en-GB');
   var text = getSessionExComment(today, session.workoutId, currentExLogName);
-  btn.classList.toggle('has-comment', !!text);
-  btn.title = text ? 'Edit session note' : 'Add session note';
+  if (btn) {
+    btn.classList.toggle('has-comment', !!text);
+    btn.title = text ? 'Edit session note' : 'Add session note';
+  }
+  if (note) note.textContent = text || 'Add a note for this exercise.';
 }
 
 function addAdHocExercise() {
@@ -1313,6 +1566,7 @@ function signOut() {
   if (accessToken) { try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
   accessToken = null; session = null; offlineMode = false;
   clearInterval(sessionTimerInterval);
+  setSessionChrome(false);
   lsSet(LS_MODE, null);
   showScreen('auth-screen');
 }
@@ -1766,6 +2020,10 @@ async function flushSyncQueue() {
         else await appendRows('Results', [op.row]);
       } else if (op.type === 'delete' && op.sheetRow) {
         await deleteSheetRow('Results', op.sheetRow);
+      } else if (op.type === 'result-delete' && op.resultId) {
+        var rawDelete = await ensureSheetReady('Results');
+        var deleteIdx = rawDelete.findIndex(function(r) { return r[1] === op.resultId; });
+        if (deleteIdx > 0) await deleteSheetRow('Results', deleteIdx + 1);
       } else if (op.type === 'workout-save') {
         // Update or append workout row in Sheets
         var wRows = await ensureSheetReady('Workouts');
@@ -1828,6 +2086,29 @@ function renderWorkoutPicker() {
   }).join('');
 }
 
+function setSessionChrome(active) {
+  var logScreen = document.getElementById('screen-log');
+  if (logScreen) logScreen.classList.toggle('session-active', !!active);
+  if (!active) {
+    var timerEl = document.getElementById('active-session-timer');
+    var workoutEl = document.getElementById('active-session-workout');
+    if (timerEl) timerEl.textContent = '0:00';
+    if (workoutEl) workoutEl.textContent = 'Session active';
+  }
+}
+
+function updateSessionChrome(workoutName) {
+  if (!session) return;
+  var elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+  var m = Math.floor(elapsed / 60), s = elapsed % 60;
+  var timeText = m + ':' + (s < 10 ? '0' : '') + s;
+  var timerEl = document.getElementById('active-session-timer');
+  var workoutEl = document.getElementById('active-session-workout');
+  if (timerEl) timerEl.textContent = timeText;
+  if (workoutEl) workoutEl.textContent = (workoutName || session.workoutName || '').split('\u2014')[0].trim();
+  document.getElementById('session-timer').textContent = timeText;
+}
+
 function startSession() {
   if (session && !confirm('End current session and start new?')) return;
   if (session) clearInterval(sessionTimerInterval);
@@ -1837,10 +2118,10 @@ function startSession() {
   session = {workoutId:workout.id, workoutName:workout.name, startTime:new Date(), sets:{}};
   workout.exercises.forEach(function(ex) { session.sets[ex] = []; });
     clearInterval(sessionTimerInterval);
+  setSessionChrome(true);
+  updateSessionChrome(workout.name);
   sessionTimerInterval = setInterval(function() {
-    var elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
-    var m = Math.floor(elapsed / 60), s = elapsed % 60;
-    document.getElementById('session-timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    updateSessionChrome(workout.name);
     var wCmt = getWorkoutComment(workout.id);
     document.getElementById('session-meta').innerHTML =
       '<span style="cursor:default;">' + workout.name + '</span>' +
@@ -1876,10 +2157,10 @@ function resumeSession(wid, date) {
   session = {workoutId:workout.id, workoutName:workout.name, startTime:startTime, sets:sets};
 
   clearInterval(sessionTimerInterval);
+  setSessionChrome(true);
+  updateSessionChrome(workout.name);
   sessionTimerInterval = setInterval(function() {
-    var elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
-    var m = Math.floor(elapsed/60), s = elapsed%60;
-    document.getElementById('session-timer').textContent = m+':'+(s<10?'0':'')+s;
+    updateSessionChrome(workout.name);
     var wCmt2 = getWorkoutComment(workout.id);
     document.getElementById('session-meta').innerHTML =
       '<span style="cursor:default;">' + workout.name + '</span>' +
@@ -1921,29 +2202,15 @@ function renderLogExercises() {
     var sets = session.sets[exName];
     var logged = sets.filter(function(s) { return s.weight || s.reps; });
     var pb = pbCache[exName] !== undefined ? pbCache[exName] : null;
-    var lastHist = getExHistory(exName, 1)[0];
-    var prevText = '';
-    if (lastHist && lastHist.sets && lastHist.sets.length) {
-      var maxWeight = lastHist.sets.reduce(function(max, s) {
-        return Math.max(max, parseFloat(s.weight) || 0);
-      }, 0);
-      var setText = lastHist.sets.map(function(s) {
-        return (s.weight || '—') + 'x' + (s.reps || '—');
-      }).join(' · ');
-      prevText = '<div class="ex-list-prev"><strong>Last:</strong> ' + escHTML(lastHist.date) +
-        (lastHist.wname ? ' · ' + escHTML(lastHist.wname.split('\u2014')[0].trim()) : '') +
-        (maxWeight ? ' · top ' + escHTML(maxWeight) + 'kg' : '') +
-        '<br>' + escHTML(setText) + '</div>';
-    }
     var item = document.createElement('div');
     item.className = 'ex-list-item' + (logged.length > 0 ? ' has-sets' : '');
     var metaStr = logged.length > 0
       ? logged.length + ' set' + (logged.length !== 1 ? 's' : '') + (pb !== null ? ' · PB ' + pb + 'kg' : '')
       : (pb !== null ? 'PB ' + pb + 'kg' : 'Not started');
     var exCmt = getExerciseComment(exName);
-    item.innerHTML = '<div style="flex:1;"><div class="ex-list-name">' + escHTML(exName) +
-      (exCmt ? ' <span class="comment-indicator" onclick="event.stopPropagation();openExerciseComment(\'' + escJS(exName) + '\',true)" title="View exercise note">&#128172;</span>' : '') +
-      '</div><div class="ex-list-meta">' + escHTML(metaStr) + '</div>' + prevText + '</div>' +
+    item.innerHTML = '<div style="flex:1;"><div class="ex-list-name">' + exName +
+      (exCmt ? ' <span class="comment-indicator" onclick="event.stopPropagation();openExerciseComment(\'' + exName.replace(/'/g,"\'\'") + '\',true)" title="View exercise note">&#128172;</span>' : '') +
+      '</div><div class="ex-list-meta">' + metaStr + '</div></div>' +
       '<span class="ex-list-arrow">&#8250;</span>';
     item.onclick = function() { openExLogDetail(exName); };
     wrap.appendChild(item);
@@ -1995,52 +2262,30 @@ function detectWarmupSetsFromRaw(rawSets) {
   return hasWorkingSets ? warmups : new Set();
 }
 
-function dateSortKey(dateStr) {
-  var x = String(dateStr || '').split('/');
-  return x.length === 3 ? x[2] + x[1] + x[0] : String(dateStr || '');
-}
-
-function currentSessionResultIds() {
-  var ids = new Set();
-  if (!session || !session.sets) return ids;
-  Object.keys(session.sets).forEach(function(ex) {
-    session.sets[ex].forEach(function(s) { if (s._localId) ids.add(s._localId); });
-  });
-  return ids;
-}
-
-function getExerciseHistorySessions(exName, limit) {
-  var currentIds = currentSessionResultIds();
-  var bySession = {};
-  var source = shRows.length > 0 ? shRows : getLocalResults();
-  source.filter(function(r) {
-    return isValidResultRow(r) && r[5] === exName && !currentIds.has(r[0]);
-  }).forEach(function(r) {
-    var key = r[9] + '||' + r[2];
-    if (!bySession[key]) {
-      bySession[key] = {date:r[9], wid:r[2], wname:r[3] || '', sets:[]};
-    }
-    bySession[key].sets.push({set:parseInt(r[6])||0, weight:r[7], reps:r[8], ts:r[1]});
-  });
-  var sessions = Object.values(bySession).sort(function(a,b) {
-    var d = dateSortKey(b.date).localeCompare(dateSortKey(a.date));
-    if (d !== 0) return d;
-    var at = a.sets.reduce(function(min, s) { return s.ts && s.ts < min ? s.ts : min; }, '9999');
-    var bt = b.sets.reduce(function(min, s) { return s.ts && s.ts < min ? s.ts : min; }, '9999');
-    return bt.localeCompare(at);
-  });
-  sessions.forEach(function(s) { s.sets.sort(function(a,b){ return a.set-b.set; }); });
-  return limit ? sessions.slice(0, limit) : sessions;
-}
-
 function getPrevSessionWeight(exName, setIndex) {
   // Returns weight for the corresponding set number from the previous session
-  // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions).
-  var prev = getExerciseHistorySessions(exName, 1)[0];
-  if (!prev) return 0;
-  var prevSets = prev.sets.map(function(s) {
-    return {set:s.set, weight:parseFloat(s.weight)||0};
+  // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions)
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
+    });
+  }
+  var source = shRows.length > 0 ? shRows : [];
+  var byDate = {};
+  source.filter(function(r) {
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && r[7] && r[9] && !currentIds.has(r[0]);
+  }).forEach(function(r) {
+    var d = r[9];
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push({ set: parseInt(r[6])||1, weight: parseFloat(r[7])||0 });
   });
+  var dates = Object.keys(byDate).sort(function(a,b) {
+    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
+    return p(b).localeCompare(p(a));
+  });
+  if (!dates.length) return 0;
+  var prevSets = byDate[dates[0]];
   var match = prevSets.find(function(s) { return s.set === setIndex + 1; });
   if (match) return match.weight;
   return Math.max.apply(null, prevSets.map(function(s) { return s.weight; })) || 0;
@@ -2077,9 +2322,228 @@ function getLastSessionWeight(exName) {
   return Math.max.apply(null, weights) || '';
 }
 
-function getExHistory(exName, limit) {
-  // Get last 3 completed sessions for this exercise from local history.
-  return getExerciseHistorySessions(exName, limit || 3);
+function getExHistory(exName) {
+  // Get last 3 sessions for this exercise from shRows/ehRows cache
+  // Exclude rows belonging to the current live session
+  var currentIds = new Set();
+  if (session) {
+    Object.keys(session.sets).forEach(function(ex) {
+      session.sets[ex].forEach(function(s) { if (s._localId) currentIds.add(s._localId); });
+    });
+  }
+  var source = shRows.length > 0 ? shRows : [];
+  var byDate = {};
+  source.filter(function(r) {
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !currentIds.has(r[0]) && (r[7] || r[8]);
+  }).forEach(function(r) {
+    var d = r[9]; if (!d) return;
+    if (!byDate[d]) byDate[d] = [];
+    var setNum = parseInt(r[6]) || 0;
+    var existingIdx = byDate[d].findIndex(function(s) { return s.set === setNum; });
+    var nextSet = {set:setNum, weight:r[7], reps:r[8], ts:r[1]};
+    if (existingIdx >= 0) byDate[d][existingIdx] = nextSet;
+    else byDate[d].push(nextSet);
+  });
+  var dates = Object.keys(byDate).sort(function(a,b) {
+    var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
+    return p(b).localeCompare(p(a));
+  });
+  return dates.slice(0,3).map(function(d) {
+    return {date:d, sets:byDate[d].filter(function(s) { return s.weight || s.reps; }).sort(function(a,b){return a.set-b.set;})};
+  }).filter(function(h) { return h.sets.length > 0; });
+}
+
+function setVolume(sets) {
+  return (sets || []).reduce(function(total, s) {
+    var w = parseFloat(s.weight) || 0;
+    var r = parseInt(s.reps) || 0;
+    return total + (w * r);
+  }, 0);
+}
+
+function setLineHTML(s, i) {
+  if (!s) return '<div class="eld-compare-row"><span>' + (i + 1) + '</span><strong>—</strong></div>';
+  return '<div class="eld-compare-row"><span>' + (s.set || i + 1) + '</span><strong>' +
+    (s.weight || '—') + 'kg × ' + (s.reps || '—') + '</strong></div>';
+}
+
+function compareSetText(s, fallback) {
+  if (!s) return fallback || '—';
+  var w = s.weight || '—';
+  var r = s.reps || '—';
+  if (w === '—' && r === '—') return fallback || '—';
+  return w + 'kg × ' + r;
+}
+
+function fmtKg(v) {
+  var n = parseFloat(v);
+  if (isNaN(n)) return '—';
+  return n % 1 ? n.toFixed(1) : String(n);
+}
+
+function getAllExerciseSettings() {
+  return lsGet(LS_EX_SETTINGS) || {};
+}
+
+function getExerciseSettings(exName) {
+  var all = getAllExerciseSettings();
+  var s = all[exName] || {};
+  var inc = parseFloat(s.weightIncrement);
+  var maxReps = parseInt(s.maxReps);
+  return {
+    weightIncrement: !isNaN(inc) && inc > 0 ? inc : 2.5,
+    maxReps: !isNaN(maxReps) && maxReps > 0 ? maxReps : 10
+  };
+}
+
+function setExerciseSettings(exName, settings) {
+  if (!exName) return;
+  var all = getAllExerciseSettings();
+  all[exName] = {
+    weightIncrement: settings.weightIncrement,
+    maxReps: settings.maxReps
+  };
+  lsSet(LS_EX_SETTINGS, all);
+}
+
+function eldWeightStep() {
+  return getExerciseSettings(currentExLogName || '').weightIncrement;
+}
+
+var _settingsExerciseName = '';
+
+function openExerciseSettings(exName) {
+  if (!exName) return;
+  _settingsExerciseName = exName;
+  var settings = getExerciseSettings(exName);
+  var modal = document.getElementById('exercise-settings-modal');
+  var title = document.getElementById('exercise-settings-title');
+  var incInput = document.getElementById('exercise-setting-increment');
+  var repsInput = document.getElementById('exercise-setting-max-reps');
+  if (title) title.textContent = exName + ' settings';
+  if (incInput) incInput.value = fmtKg(settings.weightIncrement);
+  if (repsInput) repsInput.value = settings.maxReps;
+  if (modal) modal.classList.add('visible');
+}
+
+function closeExerciseSettings() {
+  var modal = document.getElementById('exercise-settings-modal');
+  if (modal) modal.classList.remove('visible');
+}
+
+function saveExerciseSettings() {
+  if (!_settingsExerciseName) return;
+  var inc = parseFloat(document.getElementById('exercise-setting-increment').value);
+  var maxReps = parseInt(document.getElementById('exercise-setting-max-reps').value);
+  if (isNaN(inc) || inc <= 0 || isNaN(maxReps) || maxReps <= 0) {
+    showToast('Enter valid settings');
+    return;
+  }
+  setExerciseSettings(_settingsExerciseName, {weightIncrement: inc, maxReps: maxReps});
+  closeExerciseSettings();
+  if (currentExLogName === _settingsExerciseName) renderEldSets();
+  var exdName = document.getElementById('exd-name');
+  var exDetail = document.getElementById('ex-detail');
+  if (exDetail && exDetail.classList.contains('visible') && exdName && exdName.textContent === _settingsExerciseName) openExDetail(_settingsExerciseName);
+  showToast('Settings saved');
+}
+
+function findSetByNum(sets, num) {
+  return (sets || []).find(function(s, i) { return (parseInt(s.set) || i + 1) === num; }) || null;
+}
+
+function targetForPreviousSet(prevSet, settings) {
+  if (!prevSet) return null;
+  var w = parseFloat(prevSet.weight);
+  var reps = parseInt(prevSet.reps) || 0;
+  var inc = settings && settings.weightIncrement ? settings.weightIncrement : 2.5;
+  var maxReps = settings && settings.maxReps ? settings.maxReps : 10;
+  var maxed = reps >= maxReps;
+  return {
+    weight: isNaN(w) ? '' : fmtKg(maxed ? w + inc : w),
+    reps: reps ? String(maxed ? maxReps : Math.min(reps + 1, maxReps)) : '',
+    delta: isNaN(w) ? '' : (maxed ? '+' + fmtKg(inc) + 'kg' : '+1 rep')
+  };
+}
+
+function exerciseAllSets(exName, todaySets) {
+  var rows = getLocalResults().filter(function(r) {
+    return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__';
+  }).map(function(r) {
+    return {weight:r[7], reps:r[8], date:r[9]};
+  });
+  (todaySets || []).forEach(function(s) { rows.push({weight:s.weight, reps:s.reps, date:new Date().toLocaleDateString('en-GB')}); });
+  return rows;
+}
+
+function renderEldCompare() {
+  var panel = document.getElementById('eld-compare-panel');
+  if (!panel || !currentExLogName || !session) return;
+  var hist = getExHistory(currentExLogName);
+  var previous = hist.length ? hist[0] : null;
+  var settings = getExerciseSettings(currentExLogName);
+  var todaySets = session.sets[currentExLogName] || [];
+  var nextIdx = todaySets.length;
+  var prevSets = previous ? previous.sets : [];
+  var targetSet = prevSets[nextIdx] || prevSets[prevSets.length - 1] || null;
+  var prevVolume = setVolume(prevSets);
+  var todayVolume = setVolume(todaySets);
+  var remaining = Math.max(0, prevVolume - todayVolume);
+  var allSets = exerciseAllSets(currentExLogName, todaySets);
+  var best = allSets.reduce(function(acc, s) {
+    var w = parseFloat(s.weight) || 0;
+    var r = parseInt(s.reps) || 0;
+    var est = e1rm(w, r) || 0;
+    return est > acc.est ? {weight:w, reps:r, est:est} : acc;
+  }, {weight:0, reps:0, est:0});
+  var maxWeight = allSets.reduce(function(max, s) {
+    var w = parseFloat(s.weight) || 0;
+    return Math.max(max, w);
+  }, 0);
+  var bestSetText = best.weight ? fmtKg(best.weight) + 'kg × ' + best.reps : '—';
+  var maxWeightText = maxWeight ? fmtKg(maxWeight) + 'kg' : '—';
+  var rowCount = Math.max(prevSets.length, todaySets.length, 1);
+  var table = '<div class="eld-compare-table">' +
+    '<div class="eld-compare-cell h"></div>' +
+    '<div class="eld-compare-cell h group" style="grid-column:span 2;">Previous</div>' +
+    '<div class="eld-compare-cell h group target" style="grid-column:span 2;">Target</div>' +
+    '<div class="eld-compare-cell h group" style="grid-column:span 2;">Today</div>' +
+    '<div class="eld-compare-cell h">Set</div>' +
+    '<div class="eld-compare-cell h">kg</div><div class="eld-compare-cell h">reps</div>' +
+    '<div class="eld-compare-cell h">kg</div><div class="eld-compare-cell h">reps</div>' +
+    '<div class="eld-compare-cell h">kg</div><div class="eld-compare-cell h">reps</div>';
+  for (var i = 0; i < rowCount; i++) {
+    var setNum = i + 1;
+    var prevSet = findSetByNum(prevSets, setNum);
+    var todaySet = todaySets[i] || null;
+    var target = targetForPreviousSet(prevSet, settings);
+    var isActive = i === todaySets.length && !!prevSet;
+    var editableWeight = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'weight\',\'' + escJS(todaySet.weight || '') + '\')" title="Edit today weight' : '';
+    var editableReps = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'reps\',\'' + escJS(todaySet.reps || '') + '\')" title="Edit today reps' : '';
+    table += '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell set">' + setNum + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell">' + escHTML(fmtKg(prevSet && prevSet.weight)) + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell">' + escHTML(prevSet && prevSet.reps ? prevSet.reps : '—') + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target">' + escHTML(target ? target.weight : '—') + (target && target.delta ? '<span class="eld-target-delta">' + escHTML(target.delta) + '</span>' : '') + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target">' + escHTML(target && target.reps ? target.reps : '—') + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell' + editableWeight + '">' + escHTML(fmtKg(todaySet && todaySet.weight)) + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell' + editableReps + '">' + escHTML(todaySet && todaySet.reps ? todaySet.reps : '—') + '</div>';
+  }
+  table += '</div>';
+  var targetNote = prevVolume
+    ? (remaining > 0 ? '<strong>' + escHTML(fmtVol(remaining)) + '</strong> volume left to beat last time' : '<strong>Last volume beaten</strong>')
+    : 'No previous session yet. Today becomes the baseline.';
+
+  panel.innerHTML = '<div class="eld-metric-grid">' +
+      '<div class="eld-metric-card"><div class="eld-metric-label">Max weight</div><div class="eld-metric-value">' + escHTML(maxWeightText) + '</div><div class="eld-metric-sub">heaviest load</div></div>' +
+      '<div class="eld-metric-card"><div class="eld-metric-label">Best set</div><div class="eld-metric-value">' + escHTML(bestSetText) + '</div><div class="eld-metric-sub">' + escHTML(previous ? previous.date : 'baseline') + '</div></div>' +
+      '<div class="eld-metric-card"><div class="eld-metric-label">Volume to beat</div><div class="eld-metric-value">' + escHTML(prevVolume ? fmtVol(prevVolume) : '—') + '</div><div class="eld-metric-sub">' + escHTML(targetSet ? compareSetText(targetSet, '') : 'no target yet') + '</div></div>' +
+    '</div><div class="eld-compare-shell">' +
+    '<div class="eld-compare-head"><div><div class="eld-compare-kicker">Previous / Target / Today</div>' +
+      '<div class="eld-compare-title">' + escHTML(previous ? 'Last session ' + previous.date : 'First logged session for this exercise') + '</div></div>' +
+      '<div class="eld-compare-summary">' + escHTML(todaySets.length + ' set' + (todaySets.length === 1 ? '' : 's')) + '<br>' + escHTML(fmtVol(todayVolume)) + '</div></div>' +
+    table +
+    '<div class="eld-compare-foot"><span>' + targetNote + '</span><span>+1 rep to ' + escHTML(settings.maxReps) + ', then +' + escHTML(fmtKg(settings.weightIncrement)) + 'kg</span></div>' +
+  '</div>';
 }
 
 function openExLogDetail(exName) {
@@ -2114,18 +2578,18 @@ function openExLogDetail(exName) {
           '<span class="eld-hist-val">' + (s.reps||'—') + ' reps</span>' +
           '</div>';
       }).join('');
-      var histWid = session_hist.wid || '';
+      var histWid = session && session.workoutId ? session.workoutId : '';
       var histCmt = getSessionExComment(session_hist.date, histWid, currentExLogName);
-      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-') + '-' + histWid;
-      var workoutLabel = session_hist.wname ? '<div class="eld-hist-workout">' + escHTML(session_hist.wname.split('\u2014')[0].trim()) + '</div>' : '';
-      var dateRow = '<div class="eld-hist-date">' + escHTML(session_hist.date) +
+      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-');
+      var dateRow = '<div class="eld-hist-date">' + session_hist.date +
         (histCmt ? ' <span class="comment-indicator" onclick="openHistSessionComment(\'' + histDateId + '\')" title="View session note">&#128172;</span>' : '') +
-        '</div>' + workoutLabel;
-      return '<div class="eld-hist-session" data-date="' + escHTML(session_hist.date) + '" data-wid="' + escHTML(histWid) + '">' + dateRow + rows + '</div>';
+        '</div>';
+      return '<div class="eld-hist-session" data-date="' + session_hist.date + '" data-wid="' + histWid + '">' + dateRow + rows + '</div>';
     }).join('');
   }
 
   renderEldSets();
+  renderEldCompare();
   updateEldCommentBtn();
   document.getElementById('ex-log-detail').classList.add('visible');
 }
@@ -2144,13 +2608,12 @@ function renderEldSets() {
   if (currentExLogName) updateEldStatsStrip(currentExLogName);
   if (!currentExLogName || !session) return;
   var sets = session.sets[currentExLogName] || [];
+  renderEldCompare();
   // Re-render history to update target highlight when set count changes
   var exName = currentExLogName;
   var hist = getExHistory(exName);
   var histEl = document.getElementById('eld-history-content');
-  if (histEl && !hist.length) {
-    histEl.innerHTML = '<div style="font-size:12px;color:#b0b0b0;">No previous sessions yet.</div>';
-  } else if (histEl && hist.length) {
+  if (histEl && hist.length) {
     var todaySets = sets;
     var nextSetNum = todaySets.length + 1;
     var pb = pbCache[exName] !== undefined ? pbCache[exName] : null;
@@ -2166,14 +2629,13 @@ function renderEldSets() {
           '<span class="eld-hist-val">' + (s.reps||'—') + ' reps</span>' +
           '</div>';
       }).join('');
-      var histWid = session_hist.wid || '';
+      var histWid = session && session.workoutId ? session.workoutId : '';
       var histCmt = getSessionExComment(session_hist.date, histWid, exName);
-      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-') + '-' + histWid;
-      var workoutLabel = session_hist.wname ? '<div class="eld-hist-workout">' + escHTML(session_hist.wname.split('\u2014')[0].trim()) + '</div>' : '';
-      var dateRow = '<div class="eld-hist-date">' + escHTML(session_hist.date) +
+      var histDateId = 'hd-' + session_hist.date.replace(/\//g,'-');
+      var dateRow = '<div class="eld-hist-date">' + session_hist.date +
         (histCmt ? ' <span class="comment-indicator" onclick="openHistSessionComment(\'' + histDateId + '\')" title="View session note">&#128172;</span>' : '') +
-        '</div>' + workoutLabel;
-      return '<div class="eld-hist-session" data-date="' + escHTML(session_hist.date) + '" data-wid="' + escHTML(histWid) + '">' + dateRow + rows + '</div>';
+        '</div>';
+      return '<div class="eld-hist-session" data-date="' + session_hist.date + '" data-wid="' + histWid + '">' + dateRow + rows + '</div>';
     }).join('');
   }
   var list = document.getElementById('eld-sets-list');
@@ -2191,17 +2653,21 @@ function renderEldSets() {
   if (numEl) numEl.textContent = nextIdx + 1;
   var setnumO = document.getElementById('eld-input-setnum-overlay');
   if (setnumO) setnumO.textContent = nextIdx + 1;
-  // Pre-fill weight from previous session corresponding set
-  var prevWeight = getPrevSessionWeight(currentExLogName, nextIdx);
+  // Pre-fill the next working target from exercise settings.
+  var histForTarget = getExHistory(currentExLogName);
+  var prevSetForTarget = histForTarget.length ? findSetByNum(histForTarget[0].sets, nextIdx + 1) : null;
+  var settings = getExerciseSettings(currentExLogName);
+  var targetForDraft = targetForPreviousSet(prevSetForTarget, settings);
+  var prevWeight = targetForDraft && targetForDraft.weight ? parseFloat(targetForDraft.weight) : getPrevSessionWeight(currentExLogName, nextIdx);
   var currentSets = session && session.sets[currentExLogName] ? session.sets[currentExLogName] : [];
   var currentMax = currentSets.reduce(function(max, s) { return Math.max(max, parseFloat(s.weight)||0); }, 0);
   var prefill = Math.max(prevWeight, currentMax);
-  _eldWeightVal = prefill ? String(prefill) : '';
-  _eldRepsVal = '';
+  _eldWeightVal = prefill ? fmtKg(prefill) : '';
+  _eldRepsVal = targetForDraft && targetForDraft.reps ? String(targetForDraft.reps) : '';
   var wDisp = document.getElementById('eld-weight-display');
   var rDisp = document.getElementById('eld-reps-display');
   if (wDisp) wDisp.textContent = _eldWeightVal || '—';
-  if (rDisp) rDisp.textContent = '—';
+  if (rDisp) rDisp.textContent = _eldRepsVal || '—';
   // Close numpad after commit
   eldCloseNumpad();
 }
@@ -2392,6 +2858,7 @@ async function cancelSession() {
   }
   clearInterval(sessionTimerInterval);
   session = null;
+  setSessionChrome(false);
   document.getElementById('session-info').classList.remove('active');
   document.getElementById('session-actions').classList.remove('active');
   document.getElementById('rest-timer').classList.remove('visible');
@@ -2409,6 +2876,7 @@ async function finishSession() {
   await waitForSetSyncs();
   await flushSyncQueue();
   session = null;
+  setSessionChrome(false);
   document.getElementById('session-info').classList.remove('active');
   document.getElementById('session-actions').classList.remove('active');
   document.getElementById('rest-timer').classList.remove('visible');
@@ -2517,7 +2985,8 @@ function openSessionDetail(date, wid, wname) {
   Object.entries(byEx).forEach(function(entry) {
     var ex = entry[0], sets = entry[1];
     var div = document.createElement('div'); div.className = 'sd-ex';
-    var html = '<div class="sd-ex-name">' + ex + '</div>';
+    var html = '<div class="sd-ex-head"><div class="sd-ex-name">' + escHTML(ex) + '</div>' +
+      '<button class="sd-add-set-btn" onclick="addMissingHistoricalSet(\'' + escJS(date) + '\',\'' + escJS(wid) + '\',\'' + escJS(wname) + '\',\'' + escJS(ex) + '\')">+ Missing set</button></div>';
     sets.forEach(function(s, i) {
       var rest = i > 0 && s.ts && sets[i-1].ts ? restStr(sets[i-1].ts, s.ts) : '';
       if (rest) html += '<div class="sd-rest">&#8627; rest ' + rest + '</div>';
@@ -2526,6 +2995,7 @@ function openSessionDetail(date, wid, wname) {
         '<input class="sd-edit-input" type="number" inputmode="decimal" value="' + (s.weight||'') + '" placeholder="kg" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'weight\',this.value)">' +
         '<input class="sd-edit-input" type="number" inputmode="numeric" value="' + (s.reps||'') + '" placeholder="reps" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'reps\',this.value)">' +
         '<span class="sd-set-time">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + '</span>' +
+        '<button class="sd-delete-set-btn" onclick="deleteHistoricalSet(\'' + s.resultId + '\',\'' + escJS(date) + '\',\'' + escJS(wid) + '\',\'' + escJS(wname) + '\')">&times;</button>' +
         '</div>';
     });
     div.innerHTML = html;
@@ -2563,6 +3033,60 @@ async function updateHistoricalSet(resultId, field, value) {
   }
 }
 
+function historicalTimestamp(dateStr) {
+  var parts = String(dateStr || '').split('/');
+  var now = new Date();
+  if (parts.length !== 3) return now.toISOString();
+  var d = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1, y = parseInt(parts[2], 10);
+  return new Date(y, m, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+}
+
+async function deleteResultFromSheetsById(resultId) {
+  if (offlineMode || !accessToken) {
+    addToSyncQueue({type:'result-delete', resultId:resultId});
+    return;
+  }
+  var raw = await ensureSheetReady('Results');
+  var idx = raw.findIndex(function(r) { return r[1] === resultId; });
+  if (idx > 0) await deleteSheetRow('Results', idx + 1);
+}
+
+async function deleteHistoricalSet(resultId, date, wid, wname) {
+  if (!confirm('Delete this set?')) return;
+  var results = getLocalResults();
+  var next = results.filter(function(r) { return r[0] !== resultId; });
+  lsSet(LS_RESULTS, next);
+  shRows = next; ehRows = next;
+  openSessionDetail(date, wid, wname);
+  setSyncStatus('syncing');
+  try {
+    await deleteResultFromSheetsById(resultId);
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
+async function addMissingHistoricalSet(date, wid, wname, exName) {
+  var rows = getLocalResults().filter(function(r) { return r[9] === date && r[2] === wid && r[5] === exName; });
+  var nextSetNum = rows.reduce(function(max, r) { return Math.max(max, parseInt(r[6]) || 0); }, 0) + 1;
+  var weight = prompt('Weight for set ' + nextSetNum + ' (kg):');
+  if (weight === null || weight === '') return;
+  var reps = prompt('Reps for set ' + nextSetNum + ':');
+  if (reps === null || reps === '') return;
+  var rowId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var row = [rowId, historicalTimestamp(date), wid, wname, sid(exName), exName, nextSetNum, weight, reps, date];
+  saveResultLocally(row);
+  openSessionDetail(date, wid, wname);
+  setSyncStatus('syncing');
+  try {
+    await syncResultToSheets(row, {_localId:rowId});
+    setSyncStatus('saved');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
 function closeSessionDetail() { document.getElementById('session-detail').classList.remove('visible'); }
 function restStr(ts1, ts2) {
   var d = Math.round((new Date(ts2) - new Date(ts1)) / 1000);
@@ -2588,10 +3112,11 @@ function renderExerciseHistory() {
     var pb = pbCache[ex] !== undefined ? pbCache[ex] : null;
     var sc = new Set(exRows.map(function(r) { return r[9]; })).size;
     var item = document.createElement('div'); item.className = 'eh-ex-item';
-    item.innerHTML = '<div style="flex:1;" onclick="openExDetail(\'' + ex.replace(/'/g,"\'") + '\')">' +
-      '<div class="eh-ex-name">' + ex + '</div>' +
+    item.onclick = function() { openExDetail(ex); };
+    item.innerHTML = '<div style="flex:1;">' +
+      '<div class="eh-ex-name">' + escHTML(ex) + '</div>' +
       '<div class="eh-ex-meta">' + (pb !== null ? 'PB ' + pb + 'kg' : 'No data') + ' · ' + sc + ' session' + (sc !== 1 ? 's' : '') + '</div></div>' +
-      '<button onclick="deleteGlobalExercise(\'' + ex.replace(/'/g,"\'") + '\')" style="background:transparent;border:none;color:#707070;font-size:16px;cursor:pointer;padding:4px 8px;flex-shrink:0;">&#215;</button>';
+      '<button class="eh-delete-btn" onclick="event.stopPropagation();deleteGlobalExercise(\'' + escJS(ex) + '\')">&#215;</button>';
     item.style.display = 'flex';
     item.style.alignItems = 'center';
     wrap.appendChild(item);
@@ -2613,7 +3138,11 @@ function openExDetail(exName) {
   rows.forEach(function(r) { var d = r[9]; if (!byDate[d]) byDate[d] = []; byDate[d].push({set:parseInt(r[6]),weight:r[7],reps:r[8],ts:r[1]}); });
   var dates = Object.keys(byDate).sort(function(a,b) { var p=function(s){var x=s.split('/');return x[2]+x[1]+x[0];}; return p(b).localeCompare(p(a)); });
   var content = document.getElementById('exd-content'); content.innerHTML = '';
-  if (!dates.length) { content.innerHTML = '<div class="empty-state">No data logged yet.</div>'; return; }
+  if (!dates.length) {
+    content.innerHTML = '<div class="empty-state">No data logged yet.</div>';
+    document.getElementById('ex-detail').classList.add('visible');
+    return;
+  }
   dates.forEach(function(date) {
     var sets = byDate[date].sort(function(a,b) { return a.set-b.set; });
     var div = document.createElement('div'); div.className = 'exd-session';
@@ -2642,6 +3171,12 @@ async function editExerciseName() {
     if (r[5] === oldName) { r[5] = newName; }  // ExerciseName col
   });
   lsSet(LS_RESULTS, results);
+  var exerciseSettings = getAllExerciseSettings();
+  if (exerciseSettings[oldName]) {
+    exerciseSettings[newName] = exerciseSettings[oldName];
+    delete exerciseSettings[oldName];
+    lsSet(LS_EX_SETTINGS, exerciseSettings);
+  }
 
   // Update exercises list in localStorage
   var exList = lsGet(LS_EXERCISES) || [];
@@ -3127,11 +3662,20 @@ function renderStats() {
 
   if (!recent.length) {
     ['chart-volume','chart-maxwt','chart-e1rm'].forEach(function(id) {
-      var ctx = document.getElementById(id); if (!ctx) return;
-      var c = ctx.getContext('2d');
-      c.clearRect(0,0,ctx.width,ctx.height);
-      c.fillStyle = '#444'; c.font = '12px monospace'; c.textAlign = 'center';
-      c.fillText('No data yet', ctx.width/2, ctx.height/2);
+      var canvas = document.getElementById(id); if (!canvas) return;
+      var parentRect = canvas.parentElement.getBoundingClientRect();
+      var cssW = Math.max(240, Math.floor(parentRect.width - 24));
+      var cssH = 150;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+      var c = canvas.getContext('2d');
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0,0,cssW,cssH);
+      c.fillStyle = '#706a60'; c.font = '12px monospace'; c.textAlign = 'center';
+      c.fillText('No data yet', cssW/2, cssH/2);
     });
     return;
   }
@@ -3170,18 +3714,19 @@ function fmtVol(v) {
 function drawChart(canvasId, labels, values, color, fmtFn) {
   var canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  var dpr = window.devicePixelRatio || 1;
-  var cssW = canvas.parentElement.clientWidth - 24;
-  var cssH = 110;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var parentRect = canvas.parentElement.getBoundingClientRect();
+  var cssW = Math.max(240, Math.floor(parentRect.width - 24));
+  var cssH = 150;
   canvas.style.width = cssW + 'px';
   canvas.style.height = cssH + 'px';
-  canvas.width = cssW * dpr;
-  canvas.height = cssH * dpr;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
   var ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   var W = cssW, H = cssH;
-  var padL = 42, padR = 10, padT = 16, padB = 28;
+  var padL = 46, padR = 18, padT = 18, padB = 32;
   var chartW = W - padL - padR;
   var chartH = H - padT - padB;
 
