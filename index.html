@@ -351,13 +351,18 @@ body{background:
 .nav-icon{font-size:20px;}
 .nav-label{font-size:11px;font-family:var(--display);font-weight:800;}
 #eld-header,#stats-header,#sd-header,#exd-header{padding:14px 16px;}
+#ex-log-detail{--eld-rest-h:78px;--eld-entry-h:222px;--eld-bottom-gap:10px;--eld-edge:12px;--eld-bottom-stack:calc(var(--eld-rest-h) + var(--eld-entry-h) + var(--eld-bottom-gap) + var(--eld-edge));}
+#eld-header{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px 10px;}
+.eld-title-wrap{flex:1 1 calc(100% - 108px);min-width:0;}
+.eld-header-actions{flex:0 0 100%;display:flex;gap:8px;justify-content:flex-end;}
 #eld-title,#stats-title,#sd-title,#exd-name{font-family:var(--display);font-size:21px;font-weight:850;letter-spacing:0;color:var(--ink);}
+#eld-title{font-size:clamp(17px,4.2vw,21px);line-height:1.06;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 #eld-pb,#exd-pb,.stats-card-val,.eld-strip-val,.eld-vol-fraction{color:var(--moss-dark)!important;}
 .back-btn{border:1px solid var(--border);border-radius:999px;background:var(--paper);color:var(--ink);font-family:var(--display);font-size:13px;letter-spacing:0;padding:8px 12px;}
 #eld-stats-toggle-btn,.exercise-settings-btn{background:var(--paper)!important;border:1px solid var(--border)!important;color:var(--moss-dark)!important;border-radius:8px!important;font-family:var(--display)!important;font-weight:850!important;font-size:13px;padding:8px 12px;cursor:pointer;}
 #eld-rest-bar,#eld-stats-strip,#eld-input-fixed{background:var(--paper)!important;border-color:var(--border)!important;}
-#eld-rest-bar{order:5;border-top:1px solid var(--border)!important;border-bottom:0!important;margin:10px 16px 0!important;border-radius:8px;}
-#eld-input-fixed{order:3;border-bottom:1px solid var(--border)!important;padding:12px 16px 10px!important;}
+#eld-rest-bar{position:absolute!important;left:16px;right:16px;bottom:var(--eld-edge);z-index:12;height:var(--eld-rest-h);box-sizing:border-box;order:5;border:1px solid var(--border)!important;margin:0!important;border-radius:8px;padding:9px 12px!important;box-shadow:0 12px 34px rgba(42,35,24,0.12);}
+#eld-input-fixed{position:absolute!important;left:0;right:0;bottom:calc(var(--eld-edge) + var(--eld-rest-h) + var(--eld-bottom-gap));z-index:11;height:var(--eld-entry-h);box-sizing:border-box;order:3;border-top:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;padding:10px 16px!important;box-shadow:0 -10px 30px rgba(42,35,24,0.08);}
 #eld-body{background:var(--bg);}
 #eld-col-history,#eld-col-today{padding:14px 10px 26px 16px;}
 #eld-col-history{border-right:1px solid var(--border);}
@@ -387,13 +392,13 @@ body{background:
 .stats-card,.stats-chart-wrap{padding:12px;background:var(--paper);}
 .stats-chart-title{color:var(--muted);letter-spacing:0;text-transform:none;font-family:var(--display);}
 #toast{background:var(--ink);color:#fff;border-radius:999px;font-family:var(--display);letter-spacing:0;}
-#eld-compare-panel{order:2;background:var(--paper-soft);border-bottom:1px solid var(--border);padding:12px 12px 10px;flex-shrink:0;}
-.eld-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
-.eld-metric-card{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;box-shadow:0 8px 20px rgba(42,35,24,0.05);}
-.eld-metric-label{font-family:var(--display);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:850;}
-.eld-metric-value{font-family:var(--mono);font-size:22px;font-weight:900;color:var(--ink);line-height:1.1;margin-top:6px;}
-.eld-metric-sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.25;}
-.eld-compare-shell{background:var(--paper);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 20px rgba(42,35,24,0.05);overflow:hidden;}
+#eld-compare-panel{order:2;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;background:var(--paper-soft);border-bottom:1px solid var(--border);padding:8px 12px 0;margin-bottom:var(--eld-bottom-stack);overflow:hidden;}
+.eld-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:7px;flex-shrink:0;}
+.eld-metric-card{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:7px 8px;text-align:center;box-shadow:0 8px 18px rgba(42,35,24,0.04);min-height:58px;}
+.eld-metric-label{font-family:var(--display);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:850;}
+.eld-metric-value{font-family:var(--mono);font-size:18px;font-weight:900;color:var(--ink);line-height:1.05;margin-top:4px;}
+.eld-metric-sub{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.15;}
+.eld-compare-shell{flex:1 1 auto;min-height:0;background:var(--paper);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 20px rgba(42,35,24,0.05);overflow:auto;-webkit-overflow-scrolling:touch;}
 .eld-compare-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#fffdf8;}
 .eld-compare-kicker{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:0.08em;}
 .eld-compare-title{font-family:var(--display);font-size:14px;color:var(--ink);font-weight:850;margin-top:3px;}
@@ -458,9 +463,17 @@ body{background:
 .eh-ex-item{cursor:pointer;}
 .eh-delete-btn{background:transparent;border:none;color:#707070;font-size:18px;cursor:pointer;padding:8px 10px;flex-shrink:0;}
 @media (max-width:390px){
-  .eld-metric-grid{grid-template-columns:1fr;}
+  #ex-log-detail{--eld-entry-h:210px;--eld-rest-h:72px;}
+  .eld-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;}
+  .eld-metric-card{padding:6px 4px;min-height:52px;}
+  .eld-metric-label{font-size:8px;}
+  .eld-metric-value{font-size:16px;}
+  .eld-metric-sub{font-size:9px;}
   .eld-compare-table{grid-template-columns:32px repeat(6,minmax(0,1fr));}
   .eld-compare-cell{font-size:11px;padding:7px 4px;}
+  .eld-input-row{gap:8px!important;}
+  .eld-stepper{grid-template-columns:36px 1fr 36px;}
+  .eld-stepper-btn,.eld-stepper-value{height:46px;min-height:46px;}
   #eld-col-history,#eld-col-today{padding-top:10px;}
 }
 </style>
@@ -625,9 +638,11 @@ body{background:
 <div id="ex-log-detail">
   <div id="eld-header">
     <button id="close-ex-log-detail-btn" class="back-btn" onclick="closeExLogDetail()">&#8592; Back</button>
-    <div style="flex:1"><div id="eld-title"></div><div id="eld-pb"></div></div>
-    <button class="exercise-settings-btn" onclick="openExerciseSettings(currentExLogName)" title="Exercise settings">Settings</button>
-    <button id="eld-stats-toggle-btn" onclick="eldToggleStats()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-size:13px;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:800;" title="Detailed stats">Stats</button>
+    <div class="eld-title-wrap"><div id="eld-title"></div><div id="eld-pb"></div></div>
+    <div class="eld-header-actions">
+      <button class="exercise-settings-btn" onclick="openExerciseSettings(currentExLogName)" title="Exercise settings">Settings</button>
+      <button id="eld-stats-toggle-btn" onclick="eldToggleStats()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-size:13px;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:800;" title="Detailed stats">Stats</button>
+    </div>
   </div>
   <div id="eld-rest-bar" style="display:flex;background:#131313;border-bottom:1px solid var(--border);padding:14px 16px;flex-shrink:0;align-items:center;gap:12px;">
     <div class="eld-rt-ring-wrap" style="position:relative;width:60px;height:60px;flex-shrink:0;cursor:pointer;" onclick="openTimerEditModal()">
