@@ -1062,6 +1062,7 @@ function addToSyncQueue(op) { var q = getSyncQueue(); q.push(op); lsSet(LS_SYNC_
 function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); }
 function syncErrMsg(e) {
   if (!e) return 'Unknown error';
+  if (typeof e === 'string') return e;
   return e.message || String(e);
 }
 function recordSyncError(context, e) {
@@ -1129,7 +1130,7 @@ var tokenExpiry = 0;
 var currentUser = null; // { email, name }
 var LS_USER = 'lift_user';
 
-function ensureFreshToken() {
+function ensureFreshToken(promptMode) {
   return new Promise(function(resolve, reject) {
     if (accessToken && Date.now() < tokenExpiry - 60000) { resolve(); return; }
     if (!tokenClient) { reject(new Error('No token client')); return; }
@@ -1139,10 +1140,13 @@ function ensureFreshToken() {
         tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
         resolve();
       } else {
-        reject(new Error('Token refresh failed'));
+        reject(new Error('Token refresh failed: ' + syncErrMsg(resp)));
       }
     };
-    tokenClient.requestAccessToken({prompt: ''});
+    tokenClient.error_callback = function(err) {
+      reject(new Error('Token refresh failed: ' + syncErrMsg(err && (err.message || err.type || err.error || JSON.stringify(err)))));
+    };
+    tokenClient.requestAccessToken({prompt: promptMode || ''});
   });
 }
 var workouts = [];
@@ -1181,6 +1185,11 @@ function signIn() {
       client_id: CLIENT_ID,
       scope: SCOPES,
       include_granted_scopes: true,
+      error_callback: function(err) {
+        var msg = recordSyncError('Google sign-in', err && (err.message || err.type || err.error || JSON.stringify(err)));
+        setSyncStatus('error', msg);
+        showError('Google sign-in failed: ' + msg);
+      },
       callback: async function(resp) {
         if (resp && resp.access_token && resp.access_token.length > 10) {
           accessToken = resp.access_token;
@@ -1192,6 +1201,7 @@ function signIn() {
             currentUser = { email: uResp.email, name: uResp.name || uResp.email };
             lsSet(LS_USER, currentUser);
           } catch(e) {
+            recordSyncError('User info sync', e);
             currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
           }
           // Always reconcile queued/missing local rows on sign-in.
@@ -1637,8 +1647,8 @@ function xhrRequest(method, url, body, isRetry) {
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try { resolve(JSON.parse(xhr.responseText)); } catch(e) { resolve({}); }
-      } else if (xhr.status === 401 && !isRetry) {
-        ensureFreshToken().then(function() {
+      } else if ((xhr.status === 401 || xhr.status === 403) && !isRetry) {
+        ensureFreshToken(xhr.status === 403 ? 'consent' : '').then(function() {
           return xhrRequest(method, url, body, true);
         }).then(resolve).catch(reject);
       } else if (xhr.status === 429 && !isRetry) {
@@ -1804,6 +1814,13 @@ function updateSheetRow(tab, rowNum, values) {
 async function deleteSheetRow(tab, rowNum) {
   var blanks = ['__DELETED__','','','','','','','','','',''];
   await writeRow(tab, rowNum, blanks);
+}
+
+async function findResultSheetRow(resultId) {
+  if (!resultId) return 0;
+  var raw = await ensureSheetReady('Results');
+  var idx = raw.findIndex(function(r) { return r[1] === resultId; });
+  return idx > 0 ? idx + 1 : 0;
 }
 
 // INIT
@@ -1988,14 +2005,16 @@ async function syncResultToSheets(row, set) {
     setSyncStatus('syncing');
     set.sheetRow = await appendRows('Results', [sheetRow]);
     if (set._deleted) {
-      await deleteSheetRow('Results', set.sheetRow);
+      var appendedRow = await findResultSheetRow(set._localId);
+      await deleteSheetRow('Results', appendedRow || set.sheetRow);
       set.sheetRow = null;
     }
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error', recordSyncError('Add set sync', e));
     if (set._deleted) {
-      if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+      if (set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
+      else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
       else removeQueuedResultOps(set._localId);
     } else {
       addToSyncQueue({type:'append', row:sheetRow, setId:set._localId});
@@ -2012,8 +2031,10 @@ async function updateResultInSheets(row, set) {
   }
   try {
     setSyncStatus('syncing');
-    if (set.sheetRow) {
-      await updateSheetRow('Results', set.sheetRow, sheetRow);
+    var rowNum = await findResultSheetRow(set._localId);
+    if (rowNum) {
+      await updateSheetRow('Results', rowNum, sheetRow);
+      set.sheetRow = rowNum;
     } else {
       // No sheet index yet — just append. ResultID deduplication handles any dupes on read.
       set.sheetRow = await appendRows('Results', [sheetRow]);
@@ -2028,17 +2049,21 @@ async function updateResultInSheets(row, set) {
 async function deleteResultInSheets(set) {
   if (set && set._localId) removeQueuedResultOps(set._localId);
   if (offlineMode || !accessToken) {
-    if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+    if (set && set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
+    else if (set && set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
     return;
   }
-  if (!set.sheetRow) return;
+  if (!set || (!set.sheetRow && !set._localId)) return;
   try {
     setSyncStatus('syncing');
-    await deleteSheetRow('Results', set.sheetRow);
+    var rowNum = await findResultSheetRow(set._localId);
+    if (rowNum) await deleteSheetRow('Results', rowNum);
+    else if (set.sheetRow) await deleteSheetRow('Results', set.sheetRow);
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error', recordSyncError('Delete set sync', e));
-    addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+    if (set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
+    else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
   }
 }
 
@@ -2918,11 +2943,14 @@ async function cancelSession() {
     // Delete from Sheets in background
     setSyncStatus('syncing');
     try {
-      for (var i = 0; i < sheetRows.length; i++) {
+      for (var idIdx = 0; idIdx < localIds.length; idIdx++) {
+        await deleteResultFromSheetsById(localIds[idIdx]);
+      }
+      for (var i = 0; i < sheetRows.length && !localIds.length; i++) {
         await deleteSheetRow('Results', sheetRows[i]);
       }
       setSyncStatus('saved');
-    } catch(e) { setSyncStatus('error'); }
+    } catch(e) { setSyncStatus('error', recordSyncError('Cancel session sync', e)); }
   }
   clearInterval(sessionTimerInterval);
   session = null;
@@ -3097,7 +3125,7 @@ async function updateHistoricalSet(resultId, field, value) {
     }
     setSyncStatus('saved');
   } catch(e) {
-    setSyncStatus('error');
+    setSyncStatus('error', recordSyncError('Historical set sync', e));
   }
 }
 
@@ -3114,9 +3142,14 @@ async function deleteResultFromSheetsById(resultId) {
     addToSyncQueue({type:'result-delete', resultId:resultId});
     return;
   }
-  var raw = await ensureSheetReady('Results');
-  var idx = raw.findIndex(function(r) { return r[1] === resultId; });
-  if (idx > 0) await deleteSheetRow('Results', idx + 1);
+  try {
+    var rowNum = await findResultSheetRow(resultId);
+    if (rowNum) await deleteSheetRow('Results', rowNum);
+  } catch(e) {
+    setSyncStatus('error', recordSyncError('Delete result sync', e));
+    addToSyncQueue({type:'result-delete', resultId:resultId});
+    throw e;
+  }
 }
 
 async function deleteHistoricalSet(resultId, date, wid, wname) {
