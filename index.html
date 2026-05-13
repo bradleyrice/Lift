@@ -869,6 +869,7 @@ var LS_EX_SETTINGS = 'lift_exercise_settings';
 var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
+var LS_LAST_SYNC_ERROR = 'lift_last_sync_error';
 var LS_VERSION = 'lift_version';
 var CURRENT_VERSION = '8';
 
@@ -1059,6 +1060,25 @@ function getLocalResults() {
 function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
 function addToSyncQueue(op) { var q = getSyncQueue(); q.push(op); lsSet(LS_SYNC_QUEUE, q); }
 function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); }
+function syncErrMsg(e) {
+  if (!e) return 'Unknown error';
+  return e.message || String(e);
+}
+function recordSyncError(context, e) {
+  var msg = syncErrMsg(e);
+  var text = context + ': ' + msg;
+  lsSet(LS_LAST_SYNC_ERROR, { at: new Date().toISOString(), context: context, message: msg });
+  console.warn('[LIFT] ' + text, e);
+  return text;
+}
+function clearSyncError() {
+  lsSet(LS_LAST_SYNC_ERROR, null);
+}
+function getLastSyncErrorText() {
+  var last = lsGet(LS_LAST_SYNC_ERROR);
+  if (!last) return '';
+  return (last.context ? last.context + ': ' : '') + (last.message || 'Unknown error');
+}
 function queuedResultId(op) {
   if (!op) return null;
   if (op.localId) return op.localId;
@@ -1160,6 +1180,7 @@ function signIn() {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
+      include_granted_scopes: true,
       callback: async function(resp) {
         if (resp && resp.access_token && resp.access_token.length > 10) {
           accessToken = resp.access_token;
@@ -1178,16 +1199,16 @@ function signIn() {
           if (getSyncQueue().length > 0) {
             showScreen('loading-screen');
             setLoadingMsg('Syncing queued changes to Sheets...');
-            try { await flushSyncQueue(); } catch(e) { console.warn('Queue flush failed:', e); }
+            try { await flushSyncQueue(); } catch(e) { setSyncStatus('error', recordSyncError('Sign-in queue sync', e)); }
           }
-          try { await mergeLocalToSheets(); } catch(e) { console.warn('Merge failed:', e); }
+          try { await mergeLocalToSheets(); } catch(e) { setSyncStatus('error', recordSyncError('Sign-in merge', e)); }
           initApp();
         } else {
           showError('Sign in failed. Please try again.');
         }
       }
     });
-    tokenClient.requestAccessToken();
+    tokenClient.requestAccessToken({ prompt: 'consent' });
   } catch(e) {
     showError('Sign in error: ' + e.message);
   }
@@ -1225,9 +1246,9 @@ async function forceSyncToSheets() {
     setSyncStatus('saved');
     showToast('Synced: ' + toUpdate.length + ' updated, ' + toAppendRows.length + ' added');
   } catch(e) {
-    console.warn('[LIFT] Force sync failed:', e);
-    setSyncStatus('error', e.message);
-    showToast('Sync failed: ' + e.message);
+    var err = recordSyncError('Force sync', e);
+    setSyncStatus('error', err);
+    showToast('Sync failed: ' + err);
   }
 }
 
@@ -1972,7 +1993,7 @@ async function syncResultToSheets(row, set) {
     }
     setSyncStatus('saved');
   } catch(e) {
-    setSyncStatus('error');
+    setSyncStatus('error', recordSyncError('Add set sync', e));
     if (set._deleted) {
       if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
       else removeQueuedResultOps(set._localId);
@@ -1999,7 +2020,7 @@ async function updateResultInSheets(row, set) {
     }
     setSyncStatus('saved');
   } catch(e) {
-    setSyncStatus('error');
+    setSyncStatus('error', recordSyncError('Update set sync', e));
     addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
   }
 }
@@ -2016,7 +2037,7 @@ async function deleteResultInSheets(set) {
     await deleteSheetRow('Results', set.sheetRow);
     setSyncStatus('saved');
   } catch(e) {
-    setSyncStatus('error');
+    setSyncStatus('error', recordSyncError('Delete set sync', e));
     addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
   }
 }
@@ -2074,7 +2095,7 @@ async function flushSyncQueue() {
         if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
       }
     } catch(e) {
-      console.warn('[LIFT] Queued sync failed:', op && op.type, e && e.message ? e.message : e);
+      recordSyncError('Queued ' + ((op && op.type) || 'write'), e);
       failed.push(op);
     }
   }
@@ -3956,12 +3977,13 @@ function setSyncStatus(state, errMsg) {
   dot.className = state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '';
   dot.style.background = state === 'error' ? '#ff4747' : state === 'syncing' ? '#888' : '#3a6000';
   var queued = getSyncQueue().length;
+  var storedErr = errMsg || getLastSyncErrorText();
   lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error — tap to retry' : (queued ? queued + ' queued — tap to sync' : 'synced');
-  lbl.title = errMsg || '';
-  if (state === 'saved' || state === 'synced') syncErrorToastShown = false;
+  lbl.title = storedErr || '';
+  if (state === 'saved' || state === 'synced') { syncErrorToastShown = false; clearSyncError(); }
   if (state === 'error' && !syncErrorToastShown) {
     syncErrorToastShown = true;
-    showToast('\u26a0\ufe0f Sync failed' + (errMsg ? ': ' + errMsg : ' — data not saved to Sheets'));
+    showToast('\u26a0\ufe0f Sync failed' + (storedErr ? ': ' + storedErr : ' — data not saved to Sheets'));
   }
   lbl.onclick = state === 'error' || queued ? function() { retryFailedSyncs(); } : null;
   lbl.style.cursor = state === 'error' || queued ? 'pointer' : 'default';
@@ -3978,16 +4000,16 @@ async function retryFailedSyncs() {
   showToast('Retrying sync...');
   setSyncStatus('syncing');
   if (queued) {
-    try { await flushSyncQueue(); } catch(e) { setSyncStatus('error'); showToast('Sync failed: ' + e.message); return; }
+    try { await flushSyncQueue(); } catch(e) { setSyncStatus('error', recordSyncError('Retry queued sync', e)); showToast('Sync failed: ' + syncErrMsg(e)); return; }
   }
   var queue = failedSyncQueue.slice();
   failedSyncQueue = [];
   var failed = 0;
   for (var i = 0; i < queue.length; i++) {
-    try { await queue[i](); } catch(e) { failed++; failedSyncQueue.push(queue[i]); }
+    try { await queue[i](); } catch(e) { failed++; recordSyncError('Retry sync', e); failedSyncQueue.push(queue[i]); }
   }
   if (failed > 0) {
-    setSyncStatus('error');
+    setSyncStatus('error', failed + ' sync(s) still failing. ' + getLastSyncErrorText());
     showToast('\u26a0\ufe0f ' + failed + ' sync(s) still failing');
   } else {
     setSyncStatus('saved');
