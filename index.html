@@ -479,6 +479,7 @@ body{background:
 </style>
 </head>
 <body>
+<button id="backup-copy-btn" onclick="copyLocalDataBackup()" style="position:fixed;right:12px;bottom:12px;z-index:9999;background:#1f1b16;color:#fff;border:1px solid #d5cec0;border-radius:999px;padding:10px 14px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;font-weight:850;box-shadow:0 10px 28px rgba(31,27,22,0.18);cursor:pointer;">Copy backup</button>
 <div id="auth-screen">
   <div class="logo">LIFT</div>
   <div class="logo-sub">Workout Tracker</div>
@@ -1038,6 +1039,58 @@ function lsSet(key, val) {
     if (key === LS_RESULTS) backupResultsSnapshot('before-results-write', raw);
     localStorage.setItem(key, raw);
   } catch(e) { console.warn('localStorage write failed', e); }
+}
+function collectLocalDataBackup() {
+  var keys = {};
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k || k.indexOf('lift_') !== 0) continue;
+      keys[k] = localStorage.getItem(k);
+    }
+  } catch(e) {
+    keys.__error = e && e.message ? e.message : String(e);
+  }
+  var parsedResults = [];
+  try { parsedResults = JSON.parse(keys[LS_RESULTS] || '[]'); } catch(e2) {}
+  return {
+    app: 'LIFT',
+    exportedAt: new Date().toISOString(),
+    url: location.href,
+    origin: location.origin,
+    userAgent: navigator.userAgent,
+    resultRows: Array.isArray(parsedResults) ? parsedResults.length : 0,
+    keys: keys
+  };
+}
+async function copyLocalDataBackup() {
+  var backup = collectLocalDataBackup();
+  var text = JSON.stringify(backup, null, 2);
+  window.__liftBackupText = text;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      throw new Error('Clipboard API unavailable');
+    }
+    showToast('Backup copied: ' + backup.resultRows + ' result rows');
+  } catch(e) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', 'readonly');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Backup copied: ' + backup.resultRows + ' result rows');
+    } catch(e2) {
+      console.log('LIFT_BACKUP_JSON', text);
+      alert('Could not copy automatically. Backup is printed in the browser console as LIFT_BACKUP_JSON.');
+    }
+  }
 }
 function escHTML(val) {
   return String(val == null ? '' : val).replace(/[&<>"']/g, function(ch) {
