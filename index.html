@@ -858,6 +858,7 @@ var DEFAULT_WORKOUTS = [
   {id:'w3',name:'Day 3 \u2014 Back & Triceps',exercises:['Iso Lateral Front Pulldown','Second Pulldown (TBC)','Chest Supported Row','Cable Overhead Rope Tricep Extension','Tricep Cable Crossover']},
   {id:'w4',name:'Day 4 \u2014 Hamstrings, Glutes & Abductors',exercises:['Standing Hip Extension Squat Machine','Seated Leg Curl','Iso Lateral Kneeling Leg Curl','Back Extension','Hip Abductor','Hip Adductor']}
 ];
+var PROD_APP_URL = 'https://bradleyrice.github.io/Lift/';
 
 // LOCAL STORAGE LAYER
 var LS_WORKOUTS = 'lift_workouts';
@@ -870,6 +871,8 @@ var LS_SYNC_QUEUE = 'lift_sync_queue';
 var LS_MODE = 'lift_mode'; // 'google' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_LAST_SYNC_ERROR = 'lift_last_sync_error';
+var LS_SYNC_LOG = 'lift_sync_log';
+var LS_AUTH_STATE = 'lift_auth_state';
 var LS_VERSION = 'lift_version';
 var CURRENT_VERSION = '8';
 
@@ -1058,8 +1061,35 @@ function getLocalResults() {
 }
 
 function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
-function addToSyncQueue(op) { var q = getSyncQueue(); q.push(op); lsSet(LS_SYNC_QUEUE, q); }
-function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); }
+function syncLog(event, data) {
+  var entry = {
+    at: new Date().toISOString(),
+    event: event,
+    data: data || {}
+  };
+  try {
+    var log = lsGet(LS_SYNC_LOG) || [];
+    log.push(entry);
+    if (log.length > 120) log = log.slice(log.length - 120);
+    lsSet(LS_SYNC_LOG, log);
+  } catch(e) {}
+  try {
+    var line = '[LIFT SYNC] ' + event + ' ' + JSON.stringify(entry.data);
+    if (entry.data && entry.data.level === 'error') console.warn(line);
+    else console.info(line);
+  } catch(e2) {
+    console.info('[LIFT SYNC] ' + event, entry.data);
+  }
+  return entry;
+}
+function clearSyncLog() { lsSet(LS_SYNC_LOG, []); syncLog('log-cleared'); }
+function addToSyncQueue(op) {
+  var q = getSyncQueue();
+  q.push(op);
+  lsSet(LS_SYNC_QUEUE, q);
+  syncLog('queue-add', { type: op && op.type, resultId: queuedResultId(op), size: q.length });
+}
+function clearSyncQueue() { lsSet(LS_SYNC_QUEUE, []); syncLog('queue-clear'); }
 function syncErrMsg(e) {
   if (!e) return 'Unknown error';
   if (typeof e === 'string') return e;
@@ -1069,6 +1099,7 @@ function recordSyncError(context, e) {
   var msg = syncErrMsg(e);
   var text = context + ': ' + msg;
   lsSet(LS_LAST_SYNC_ERROR, { at: new Date().toISOString(), context: context, message: msg });
+  syncLog('error', { level: 'error', context: context, message: msg });
   console.warn('[LIFT] ' + text, e);
   return text;
 }
@@ -1132,22 +1163,96 @@ var LS_USER = 'lift_user';
 
 function ensureFreshToken(promptMode) {
   return new Promise(function(resolve, reject) {
-    if (accessToken && Date.now() < tokenExpiry - 60000) { resolve(); return; }
-    if (!tokenClient) { reject(new Error('No token client')); return; }
+    if (accessToken && Date.now() < tokenExpiry - 60000) { syncLog('token-fresh'); resolve(); return; }
+    if (!tokenClient) { syncLog('token-refresh-missing-client', { level: 'error' }); reject(new Error('No token client')); return; }
+    syncLog('token-refresh-start', { prompt: promptMode || '' });
     tokenClient.callback = function(resp) {
       if (resp && resp.access_token) {
         accessToken = resp.access_token;
         tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
+        syncLog('token-refresh-success', { expiresIn: resp.expires_in || 3600 });
         resolve();
       } else {
+        syncLog('token-refresh-empty', { level: 'error', response: syncErrMsg(resp) });
         reject(new Error('Token refresh failed: ' + syncErrMsg(resp)));
       }
     };
     tokenClient.error_callback = function(err) {
+      syncLog('token-refresh-error', { level: 'error', message: syncErrMsg(err && (err.message || err.type || err.error || JSON.stringify(err))) });
       reject(new Error('Token refresh failed: ' + syncErrMsg(err && (err.message || err.type || err.error || JSON.stringify(err)))));
     };
     tokenClient.requestAccessToken({prompt: promptMode || ''});
   });
+}
+
+function beginRedirectAuth(reason) {
+  var state = 'lift_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  var isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+  var redirectUri = isLocal ? PROD_APP_URL : (window.location.origin + window.location.pathname);
+  lsSet(LS_AUTH_STATE, state);
+  syncLog('redirect-auth-start', { reason: reason || 'manual', redirectUri: redirectUri, local: isLocal });
+  var params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'token',
+    scope: SCOPES,
+    include_granted_scopes: 'true',
+    prompt: 'consent',
+    state: state
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+function finishRedirectSignIn() {
+  showScreen('loading-screen');
+  setLoadingMsg('Completing sign in...');
+  setTimeout(async function() {
+    try {
+      var uResp = await xhrRequest('GET', 'https://www.googleapis.com/oauth2/v2/userinfo', null);
+      currentUser = { email: uResp.email, name: uResp.name || uResp.email };
+      lsSet(LS_USER, currentUser);
+      syncLog('redirect-user-info-success', { email: currentUser.email });
+    } catch(e) {
+      recordSyncError('Redirect user info sync', e);
+      currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
+    }
+    lsSet(LS_MODE, 'google');
+    if (getSyncQueue().length > 0) {
+      setLoadingMsg('Syncing queued changes to Sheets...');
+      try { await flushSyncQueue(); } catch(e2) { setSyncStatus('error', recordSyncError('Redirect queue sync', e2)); }
+    }
+    try { await mergeLocalToSheets(); } catch(e3) { setSyncStatus('error', recordSyncError('Redirect merge', e3)); }
+    initApp();
+  }, 0);
+}
+
+function handleRedirectAuthResult() {
+  if (!window.location.hash || window.location.hash.indexOf('access_token') < 0 && window.location.hash.indexOf('error') < 0) return false;
+  clearSyncLog();
+  var hash = window.location.hash.slice(1);
+  var params = new URLSearchParams(hash);
+  history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  var err = params.get('error');
+  if (err) {
+    var errText = err + (params.get('error_description') ? ': ' + params.get('error_description') : '');
+    setSyncStatus('error', recordSyncError('Redirect sign-in', errText));
+    showError('Google sign-in failed: ' + errText);
+    return true;
+  }
+  var expectedState = lsGet(LS_AUTH_STATE);
+  var returnedState = params.get('state');
+  if (expectedState && returnedState && expectedState !== returnedState) {
+    setSyncStatus('error', recordSyncError('Redirect sign-in', 'State mismatch'));
+    showError('Google sign-in failed: state mismatch');
+    return true;
+  }
+  accessToken = params.get('access_token');
+  tokenExpiry = Date.now() + ((parseInt(params.get('expires_in'), 10) || 3600) * 1000);
+  offlineMode = false;
+  lsSet(LS_AUTH_STATE, null);
+  syncLog('redirect-token-success', { expiresIn: parseInt(params.get('expires_in'), 10) || 3600 });
+  finishRedirectSignIn();
+  return true;
 }
 var workouts = [];
 var allExercises = [];
@@ -1178,6 +1283,8 @@ function signIn() {
     alert('Google library not loaded yet. Please wait a moment and try again.');
     return;
   }
+  clearSyncLog();
+  syncLog('sign-in-start');
   showScreen('loading-screen');
   setLoadingMsg('Signing in...');
   try {
@@ -1186,12 +1293,18 @@ function signIn() {
       scope: SCOPES,
       include_granted_scopes: true,
       error_callback: function(err) {
-        var msg = recordSyncError('Google sign-in', err && (err.message || err.type || err.error || JSON.stringify(err)));
+        var errText = syncErrMsg(err && (err.message || err.type || err.error || JSON.stringify(err)));
+        var msg = recordSyncError('Google sign-in', errText);
         setSyncStatus('error', msg);
+        if (errText.toLowerCase().indexOf('popup') >= 0) {
+          beginRedirectAuth('popup-blocked');
+          return;
+        }
         showError('Google sign-in failed: ' + msg);
       },
       callback: async function(resp) {
         if (resp && resp.access_token && resp.access_token.length > 10) {
+          syncLog('sign-in-token-success', { expiresIn: resp.expires_in || 3600 });
           accessToken = resp.access_token;
           tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
           offlineMode = false;
@@ -1200,26 +1313,32 @@ function signIn() {
             var uResp = await xhrRequest('GET', 'https://www.googleapis.com/oauth2/v2/userinfo', null);
             currentUser = { email: uResp.email, name: uResp.name || uResp.email };
             lsSet(LS_USER, currentUser);
+            syncLog('user-info-success', { email: currentUser.email });
           } catch(e) {
             recordSyncError('User info sync', e);
             currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
           }
           // Always reconcile queued/missing local rows on sign-in.
           lsSet(LS_MODE, 'google');
+          syncLog('sign-in-reconcile-start', { queue: getSyncQueue().length });
           if (getSyncQueue().length > 0) {
             showScreen('loading-screen');
             setLoadingMsg('Syncing queued changes to Sheets...');
             try { await flushSyncQueue(); } catch(e) { setSyncStatus('error', recordSyncError('Sign-in queue sync', e)); }
           }
           try { await mergeLocalToSheets(); } catch(e) { setSyncStatus('error', recordSyncError('Sign-in merge', e)); }
+          syncLog('sign-in-reconcile-complete');
           initApp();
         } else {
+          syncLog('sign-in-empty-response', { level: 'error', response: syncErrMsg(resp) });
           showError('Sign in failed. Please try again.');
         }
       }
     });
+    syncLog('sign-in-consent-request');
     tokenClient.requestAccessToken({ prompt: 'consent' });
   } catch(e) {
+    recordSyncError('Sign in error', e);
     showError('Sign in error: ' + e.message);
   }
 }
@@ -1229,6 +1348,7 @@ async function forceSyncToSheets() {
   setSyncStatus('syncing');
   showToast('Syncing all local data...');
   try {
+    syncLog('force-sync-start', { queue: getSyncQueue().length, localRows: getLocalResults().length });
     if (getSyncQueue().length) await flushSyncQueue();
     var localRows = getLocalResults();
     var email = currentUser ? currentUser.email : 'unknown';
@@ -1254,6 +1374,7 @@ async function forceSyncToSheets() {
     if (toAppendRows.length) await appendRows('Results', toAppendRows);
     if (getSyncQueue().length) throw new Error(getSyncQueue().length + ' queued write(s) still failing');
     setSyncStatus('saved');
+    syncLog('force-sync-success', { updated: toUpdate.length, appended: toAppendRows.length });
     showToast('Synced: ' + toUpdate.length + ' updated, ' + toAppendRows.length + ' added');
   } catch(e) {
     var err = recordSyncError('Force sync', e);
@@ -1640,28 +1761,43 @@ var SHEET_HEADERS = {
 function xhrRequest(method, url, body, isRetry) {
   return new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest();
+    var requestId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    var urlLabel = url.replace(BASE_URL, 'Sheets');
+    var bodyInfo = body && body.values ? { rows: body.values.length, cols: body.values[0] ? body.values[0].length : 0 } :
+      body && body.data ? { batchRows: body.data.length } : null;
+    syncLog('xhr-start', { id: requestId, method: method, url: urlLabel, retry: !!isRetry, body: bodyInfo });
     xhr.open(method, url, true);
     xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.timeout = 15000;
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
+        syncLog('xhr-success', { id: requestId, status: xhr.status, method: method, url: urlLabel });
         try { resolve(JSON.parse(xhr.responseText)); } catch(e) { resolve({}); }
       } else if ((xhr.status === 401 || xhr.status === 403) && !isRetry) {
+        syncLog('xhr-auth-retry', { id: requestId, status: xhr.status, method: method, url: urlLabel, response: xhr.responseText.substring(0, 300) });
         ensureFreshToken(xhr.status === 403 ? 'consent' : '').then(function() {
           return xhrRequest(method, url, body, true);
         }).then(resolve).catch(reject);
       } else if (xhr.status === 429 && !isRetry) {
+        syncLog('xhr-rate-retry', { id: requestId, status: xhr.status, method: method, url: urlLabel });
         // Rate limited — wait 2s and retry once
         setTimeout(function() {
           xhrRequest(method, url, body, true).then(resolve).catch(reject);
         }, 2000);
       } else {
+        syncLog('xhr-fail', { level: 'error', id: requestId, status: xhr.status, method: method, url: urlLabel, response: xhr.responseText.substring(0, 500) });
         reject(new Error('HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,150)));
       }
     };
-    xhr.onerror = function() { reject(new Error('Network error: ' + method + ' ' + url.split('/').pop())); };
-    xhr.ontimeout = function() { reject(new Error('Timeout')); };
+    xhr.onerror = function() {
+      syncLog('xhr-network-error', { level: 'error', id: requestId, method: method, url: urlLabel });
+      reject(new Error('Network error: ' + method + ' ' + url.split('/').pop()));
+    };
+    xhr.ontimeout = function() {
+      syncLog('xhr-timeout', { level: 'error', id: requestId, method: method, url: urlLabel });
+      reject(new Error('Timeout: ' + method + ' ' + urlLabel));
+    };
     xhr.send(body ? JSON.stringify(body) : null);
   });
 }
@@ -1753,14 +1889,19 @@ function writeTable(tab, rows) {
 }
 
 async function ensureSheetReady(tab) {
+  syncLog('sheet-ready-start', { tab: tab });
   var rows = await readSheet(tab);
   var header = SHEET_HEADERS[tab];
   if (!header) return rows;
   if (!rows.length) {
     await writeRow(tab, 1, header);
+    syncLog('sheet-ready-created', { tab: tab });
     return [header];
   }
-  if (rows[0] && rows[0][0] === 'UserID') return rows;
+  if (rows[0] && rows[0][0] === 'UserID') {
+    syncLog('sheet-ready-ok', { tab: tab, rows: rows.length });
+    return rows;
+  }
 
   var email = currentUser ? currentUser.email : 'unknown';
   var firstCell = rows[0] && rows[0][0];
@@ -1774,6 +1915,7 @@ async function ensureSheetReady(tab) {
   var nextRows = [header].concat(migratedRows);
   setLoadingMsg('Preparing ' + tab + ' for sync...');
   await writeTable(tab, nextRows);
+  syncLog('sheet-ready-migrated', { tab: tab, rows: nextRows.length });
   return nextRows;
 }
 
@@ -1799,27 +1941,33 @@ async function safeAppendRows(tab, rows) {
 }
 
 async function appendRows(tab, rows) {
+  syncLog('append-start', { tab: tab, rows: rows.length });
   var existing = await ensureSheetReady(tab);
   var nextRow = existing.length + 1;
   for (var i = 0; i < rows.length; i++) {
     await writeRow(tab, nextRow + i, rows[i]);
   }
+  syncLog('append-success', { tab: tab, firstRow: nextRow, rows: rows.length });
   return nextRow;
 }
 
 function updateSheetRow(tab, rowNum, values) {
+  syncLog('row-update', { tab: tab, rowNum: rowNum, cols: values ? values.length : 0 });
   return writeRow(tab, rowNum, values);
 }
 
 async function deleteSheetRow(tab, rowNum) {
+  syncLog('row-delete', { tab: tab, rowNum: rowNum });
   var blanks = ['__DELETED__','','','','','','','','','',''];
   await writeRow(tab, rowNum, blanks);
 }
 
 async function findResultSheetRow(resultId) {
   if (!resultId) return 0;
+  syncLog('find-result-row-start', { resultId: resultId });
   var raw = await ensureSheetReady('Results');
   var idx = raw.findIndex(function(r) { return r[1] === resultId; });
+  syncLog('find-result-row-complete', { resultId: resultId, rowNum: idx > 0 ? idx + 1 : 0 });
   return idx > 0 ? idx + 1 : 0;
 }
 
@@ -1998,10 +2146,12 @@ async function syncResultToSheets(row, set) {
   var email = currentUser ? currentUser.email : 'unknown';
   var sheetRow = [email].concat(row);
   if (offlineMode || !accessToken) {
+    syncLog('set-sync-queued-offline', { resultId: set && set._localId, offlineMode: offlineMode, hasToken: !!accessToken });
     addToSyncQueue({type:'append', row:sheetRow, setId: set._localId});
     return;
   }
   try {
+    syncLog('set-sync-start', { resultId: set && set._localId });
     setSyncStatus('syncing');
     set.sheetRow = await appendRows('Results', [sheetRow]);
     if (set._deleted) {
@@ -2010,6 +2160,7 @@ async function syncResultToSheets(row, set) {
       set.sheetRow = null;
     }
     setSyncStatus('saved');
+    syncLog('set-sync-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
   } catch(e) {
     setSyncStatus('error', recordSyncError('Add set sync', e));
     if (set._deleted) {
@@ -2026,10 +2177,12 @@ async function updateResultInSheets(row, set) {
   var email = currentUser ? currentUser.email : 'unknown';
   var sheetRow = [email].concat(row);
   if (offlineMode || !accessToken) {
+    syncLog('set-update-queued-offline', { resultId: set && set._localId, offlineMode: offlineMode, hasToken: !!accessToken });
     addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
     return;
   }
   try {
+    syncLog('set-update-start', { resultId: set && set._localId });
     setSyncStatus('syncing');
     var rowNum = await findResultSheetRow(set._localId);
     if (rowNum) {
@@ -2040,6 +2193,7 @@ async function updateResultInSheets(row, set) {
       set.sheetRow = await appendRows('Results', [sheetRow]);
     }
     setSyncStatus('saved');
+    syncLog('set-update-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
   } catch(e) {
     setSyncStatus('error', recordSyncError('Update set sync', e));
     addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
@@ -2049,17 +2203,20 @@ async function updateResultInSheets(row, set) {
 async function deleteResultInSheets(set) {
   if (set && set._localId) removeQueuedResultOps(set._localId);
   if (offlineMode || !accessToken) {
+    syncLog('set-delete-queued-offline', { resultId: set && set._localId, offlineMode: offlineMode, hasToken: !!accessToken });
     if (set && set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
     else if (set && set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
     return;
   }
   if (!set || (!set.sheetRow && !set._localId)) return;
   try {
+    syncLog('set-delete-start', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
     setSyncStatus('syncing');
     var rowNum = await findResultSheetRow(set._localId);
     if (rowNum) await deleteSheetRow('Results', rowNum);
     else if (set.sheetRow) await deleteSheetRow('Results', set.sheetRow);
     setSyncStatus('saved');
+    syncLog('set-delete-success', { resultId: set && set._localId });
   } catch(e) {
     setSyncStatus('error', recordSyncError('Delete set sync', e));
     if (set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
@@ -2072,6 +2229,7 @@ async function flushSyncQueue() {
   if (offlineMode || !accessToken) return;
   var queue = getSyncQueue();
   if (!queue.length) return;
+  syncLog('queue-flush-start', { size: queue.length });
   clearSyncQueue();
   setSyncStatus('syncing');
   var failed = [];
@@ -2079,6 +2237,7 @@ async function flushSyncQueue() {
   for (var i = 0; i < queue.length; i++) {
     var op = queue[i];
     try {
+      syncLog('queue-op-start', { index: i, type: op && op.type, resultId: queuedResultId(op) });
       if (op.type === 'append') {
         var appendRow = withCurrentUserOnQueuedRow(op.row, email);
         var appendId = appendRow && appendRow[1];
@@ -2119,13 +2278,21 @@ async function flushSyncQueue() {
         var eIdx = eRows.findIndex(function(r) { return r[2] === op.name && r[0] === email; });
         if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
       }
+      syncLog('queue-op-success', { index: i, type: op && op.type, resultId: queuedResultId(op) });
     } catch(e) {
       recordSyncError('Queued ' + ((op && op.type) || 'write'), e);
       failed.push(op);
     }
   }
-  if (failed.length) { lsSet(LS_SYNC_QUEUE, failed); setSyncStatus('error', failed.length + ' queued write(s) failed'); }
-  else { setSyncStatus('saved'); lsSet(LS_LAST_SYNC, Date.now()); }
+  if (failed.length) {
+    lsSet(LS_SYNC_QUEUE, failed);
+    syncLog('queue-flush-failed', { level: 'error', failed: failed.length });
+    setSyncStatus('error', failed.length + ' queued write(s) failed');
+  }
+  else {
+    syncLog('queue-flush-success', { size: queue.length });
+    setSyncStatus('saved'); lsSet(LS_LAST_SYNC, Date.now());
+  }
 }
 
 // Merge local data into Sheets (when offline user signs in)
@@ -4161,6 +4328,10 @@ document.addEventListener('visibilitychange', function() {
   document.querySelectorAll('.rt-preset').forEach(function(b) {
     b.classList.toggle('active', b.textContent === p+'s' || (p===120 && b.textContent==='2m') || (p===180 && b.textContent==='3m'));
   });
+})();
+
+(function bootAuth() {
+  if (handleRedirectAuthResult()) return;
 })();
 
 (function waitGSI(n) {
