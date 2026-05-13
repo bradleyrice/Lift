@@ -1217,14 +1217,16 @@ async function forceSyncToSheets() {
         toAppendRows.push(sheetRow);
       }
     });
-    // Batch update existing rows — one API call
-    if (toUpdate.length) await batchWriteRows('Results', toUpdate);
-    // Append new rows via safe append endpoint — never risks overwriting
-    if (toAppendRows.length) await safeAppendRows('Results', toAppendRows);
+    for (var i = 0; i < toUpdate.length; i++) {
+      await updateSheetRow('Results', toUpdate[i].rowNum, toUpdate[i].values);
+    }
+    if (toAppendRows.length) await appendRows('Results', toAppendRows);
+    if (getSyncQueue().length) throw new Error(getSyncQueue().length + ' queued write(s) still failing');
     setSyncStatus('saved');
     showToast('Synced: ' + toUpdate.length + ' updated, ' + toAppendRows.length + ' added');
   } catch(e) {
-    setSyncStatus('error');
+    console.warn('[LIFT] Force sync failed:', e);
+    setSyncStatus('error', e.message);
     showToast('Sync failed: ' + e.message);
   }
 }
@@ -1759,12 +1761,10 @@ async function batchWriteRows(tab, rowDataArray) {
 }
 
 async function safeAppendRows(tab, rows) {
-  // Uses Sheets append API — finds first empty row automatically, never overwrites
+  // Keep writes on the same row PUT path as live logging; this avoids
+  // append-specific failures while still calculating the first empty row.
   if (!rows.length) return;
-  await ensureSheetReady(tab);
-  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID +
-    '/values/' + enc(tab) + '!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS';
-  return xhrRequest('POST', url, { values: rows });
+  return appendRows(tab, rows);
 }
 
 async function appendRows(tab, rows) {
@@ -2073,9 +2073,12 @@ async function flushSyncQueue() {
         var eIdx = eRows.findIndex(function(r) { return r[2] === op.name && r[0] === email; });
         if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
       }
-    } catch(e) { failed.push(op); }
+    } catch(e) {
+      console.warn('[LIFT] Queued sync failed:', op && op.type, e && e.message ? e.message : e);
+      failed.push(op);
+    }
   }
-  if (failed.length) { lsSet(LS_SYNC_QUEUE, failed); setSyncStatus('error'); }
+  if (failed.length) { lsSet(LS_SYNC_QUEUE, failed); setSyncStatus('error', failed.length + ' queued write(s) failed'); }
   else { setSyncStatus('saved'); lsSet(LS_LAST_SYNC, Date.now()); }
 }
 
@@ -3954,10 +3957,11 @@ function setSyncStatus(state, errMsg) {
   dot.style.background = state === 'error' ? '#ff4747' : state === 'syncing' ? '#888' : '#3a6000';
   var queued = getSyncQueue().length;
   lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error — tap to retry' : (queued ? queued + ' queued — tap to sync' : 'synced');
+  lbl.title = errMsg || '';
   if (state === 'saved' || state === 'synced') syncErrorToastShown = false;
   if (state === 'error' && !syncErrorToastShown) {
     syncErrorToastShown = true;
-    showToast('\u26a0\ufe0f Sync failed — data not saved to Sheets');
+    showToast('\u26a0\ufe0f Sync failed' + (errMsg ? ': ' + errMsg : ' — data not saved to Sheets'));
   }
   lbl.onclick = state === 'error' || queued ? function() { retryFailedSyncs(); } : null;
   lbl.style.cursor = state === 'error' || queued ? 'pointer' : 'default';
