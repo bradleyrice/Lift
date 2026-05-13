@@ -1063,8 +1063,16 @@ function queuedResultId(op) {
   if (!op) return null;
   if (op.localId) return op.localId;
   if (op.setId) return op.setId;
+  if (op.row && op.row.length === 10) return op.row[0];
   if (op.row && op.row[1]) return op.row[1];
   return null;
+}
+function withCurrentUserOnQueuedRow(row, email) {
+  if (!row) return row;
+  var next = row.slice();
+  if (next.length === 10) next = [email].concat(next);
+  else next[0] = email;
+  return next;
 }
 function removeQueuedResultOps(resultId) {
   if (!resultId) return;
@@ -1190,6 +1198,7 @@ async function forceSyncToSheets() {
   setSyncStatus('syncing');
   showToast('Syncing all local data...');
   try {
+    if (getSyncQueue().length) await flushSyncQueue();
     var localRows = getLocalResults();
     var email = currentUser ? currentUser.email : 'unknown';
     // Read sheet once to build ResultID -> rowNumber map
@@ -2025,14 +2034,21 @@ async function flushSyncQueue() {
     var op = queue[i];
     try {
       if (op.type === 'append') {
-        await appendRows('Results', [op.row]);
+        var appendRow = withCurrentUserOnQueuedRow(op.row, email);
+        var appendId = appendRow && appendRow[1];
+        var appendRaw = await ensureSheetReady('Results');
+        var appendExistingIdx = appendRaw.findIndex(function(r) { return r[1] === appendId; });
+        if (appendExistingIdx > 0) await updateSheetRow('Results', appendExistingIdx + 1, appendRow);
+        else await appendRows('Results', [appendRow]);
       } else if (op.type === 'update') {
         // Try to find existing row by ResultID (op.row[1] after UserID prepend)
         var localId = op.localId || (op.row && op.row[1]);
+        var updateRow = withCurrentUserOnQueuedRow(op.row, email);
+        localId = op.localId || (updateRow && updateRow[1]);
         var raw = await ensureSheetReady('Results');
         var existingIdx = raw.findIndex(function(r) { return r[1] === localId; });
-        if (existingIdx > 0) await updateSheetRow('Results', existingIdx + 1, op.row);
-        else await appendRows('Results', [op.row]);
+        if (existingIdx > 0) await updateSheetRow('Results', existingIdx + 1, updateRow);
+        else await appendRows('Results', [updateRow]);
       } else if (op.type === 'delete' && op.sheetRow) {
         await deleteSheetRow('Results', op.sheetRow);
       } else if (op.type === 'result-delete' && op.resultId) {
@@ -2277,6 +2293,10 @@ function detectWarmupSetsFromRaw(rawSets) {
   return hasWorkingSets ? warmups : new Set();
 }
 
+function workingSetsOnly(sets, warmups) {
+  return (sets || []).filter(function(s, i) { return !(warmups && warmups.has(i)); });
+}
+
 function getPrevSessionWeight(exName, setIndex) {
   // Returns weight for the corresponding set number from the previous session
   // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions)
@@ -2498,9 +2518,12 @@ function renderEldCompare() {
   var previous = hist.length ? hist[0] : null;
   var settings = getExerciseSettings(currentExLogName);
   var todaySets = session.sets[currentExLogName] || [];
-  var nextIdx = todaySets.length;
   var prevSets = previous ? previous.sets : [];
-  var targetSet = prevSets[nextIdx] || prevSets[prevSets.length - 1] || null;
+  var prevWarmups = detectWarmupSetsFromRaw(prevSets);
+  var todayWarmups = detectWarmupSets(todaySets);
+  var prevWorkingSets = workingSetsOnly(prevSets, prevWarmups);
+  var todayWorkingCount = workingSetsOnly(todaySets, todayWarmups).length;
+  var targetSet = prevWorkingSets[todayWorkingCount] || prevWorkingSets[prevWorkingSets.length - 1] || null;
   var prevVolume = setVolume(prevSets);
   var todayVolume = setVolume(todaySets);
   var remaining = Math.max(0, prevVolume - todayVolume);
@@ -2531,8 +2554,9 @@ function renderEldCompare() {
     var setNum = i + 1;
     var prevSet = findSetByNum(prevSets, setNum);
     var todaySet = todaySets[i] || null;
-    var target = targetForPreviousSet(prevSet, settings);
-    var isActive = i === todaySets.length && !!prevSet;
+    var isWarmupTarget = prevWarmups.has(i);
+    var target = isWarmupTarget ? null : targetForPreviousSet(prevSet, settings);
+    var isActive = !isWarmupTarget && !!prevSet && targetSet && prevSet === targetSet;
     var editableWeight = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'weight\',\'' + escJS(todaySet.weight || '') + '\')" title="Edit today weight' : '';
     var editableReps = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'reps\',\'' + escJS(todaySet.reps || '') + '\')" title="Edit today reps' : '';
     table += '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell set">' + setNum + '</div>' +
@@ -2670,7 +2694,12 @@ function renderEldSets() {
   if (setnumO) setnumO.textContent = nextIdx + 1;
   // Pre-fill the next working target from exercise settings.
   var histForTarget = getExHistory(currentExLogName);
-  var prevSetForTarget = histForTarget.length ? findSetByNum(histForTarget[0].sets, nextIdx + 1) : null;
+  var prevSetsForTarget = histForTarget.length ? histForTarget[0].sets : [];
+  var prevWarmupsForTarget = detectWarmupSetsFromRaw(prevSetsForTarget);
+  var todayWarmupsForTarget = detectWarmupSets(sets);
+  var todayWorkingCountForTarget = workingSetsOnly(sets, todayWarmupsForTarget).length;
+  var prevWorkingSetsForTarget = workingSetsOnly(prevSetsForTarget, prevWarmupsForTarget);
+  var prevSetForTarget = prevWorkingSetsForTarget[todayWorkingCountForTarget] || null;
   var settings = getExerciseSettings(currentExLogName);
   var targetForDraft = targetForPreviousSet(prevSetForTarget, settings);
   var prevWeight = targetForDraft && targetForDraft.weight ? parseFloat(targetForDraft.weight) : getPrevSessionWeight(currentExLogName, nextIdx);
@@ -3923,14 +3952,15 @@ function setSyncStatus(state, errMsg) {
   }
   dot.className = state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '';
   dot.style.background = state === 'error' ? '#ff4747' : state === 'syncing' ? '#888' : '#3a6000';
-  lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error — tap to retry' : 'synced';
-  if (state === 'synced') syncErrorToastShown = false;
+  var queued = getSyncQueue().length;
+  lbl.textContent = state === 'syncing' ? 'syncing...' : state === 'error' ? 'sync error — tap to retry' : (queued ? queued + ' queued — tap to sync' : 'synced');
+  if (state === 'saved' || state === 'synced') syncErrorToastShown = false;
   if (state === 'error' && !syncErrorToastShown) {
     syncErrorToastShown = true;
     showToast('\u26a0\ufe0f Sync failed — data not saved to Sheets');
   }
-  lbl.onclick = state === 'error' ? function() { retryFailedSyncs(); } : null;
-  lbl.style.cursor = state === 'error' ? 'pointer' : 'default';
+  lbl.onclick = state === 'error' || queued ? function() { retryFailedSyncs(); } : null;
+  lbl.style.cursor = state === 'error' || queued ? 'pointer' : 'default';
 }
 
 var failedSyncQueue = [];
@@ -3938,9 +3968,14 @@ function queueFailedSync(fn) {
   failedSyncQueue.push(fn);
 }
 async function retryFailedSyncs() {
-  if (!failedSyncQueue.length) { showToast('Nothing to retry'); return; }
-  showToast('Retrying ' + failedSyncQueue.length + ' failed sync(s)...');
+  var queued = getSyncQueue().length;
+  if (!failedSyncQueue.length && !queued) { showToast('Nothing to retry'); return; }
+  if (offlineMode || !accessToken) { showToast('Sign in to sync'); return; }
+  showToast('Retrying sync...');
   setSyncStatus('syncing');
+  if (queued) {
+    try { await flushSyncQueue(); } catch(e) { setSyncStatus('error'); showToast('Sync failed: ' + e.message); return; }
+  }
   var queue = failedSyncQueue.slice();
   failedSyncQueue = [];
   var failed = 0;
