@@ -1,7 +1,7 @@
 {
   "name": "LIFT Workout Tracker",
   "short_name": "LIFT",
-  "start_url": "/Lift/",
+  "start_url": "/lift/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",

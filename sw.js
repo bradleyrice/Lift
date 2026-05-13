@@ -120,11 +120,11 @@ self.addEventListener('notificationclick', function(e) {
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
       for (var i = 0; i < list.length; i++) {
-        if (list[i].url.indexOf('bradleyrice.github.io') !== -1) {
+        if (list[i].url.indexOf('/lift/') !== -1) {
           return list[i].focus();
         }
       }
-      return clients.openWindow('https://bradleyrice.github.io/Lift/');
+      return clients.openWindow('/lift/');
     })
   );
 });

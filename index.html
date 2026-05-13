@@ -858,7 +858,7 @@ var DEFAULT_WORKOUTS = [
   {id:'w3',name:'Day 3 \u2014 Back & Triceps',exercises:['Iso Lateral Front Pulldown','Second Pulldown (TBC)','Chest Supported Row','Cable Overhead Rope Tricep Extension','Tricep Cable Crossover']},
   {id:'w4',name:'Day 4 \u2014 Hamstrings, Glutes & Abductors',exercises:['Standing Hip Extension Squat Machine','Seated Leg Curl','Iso Lateral Kneeling Leg Curl','Back Extension','Hip Abductor','Hip Adductor']}
 ];
-var PROD_APP_URL = 'https://bradleyrice.github.io/Lift/';
+var PROD_APP_URL = 'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift/';
 
 // LOCAL STORAGE LAYER
 var LS_WORKOUTS = 'lift_workouts';
@@ -999,18 +999,46 @@ async function serverCancelNotification() {
   }
 } // bump to force cache clear
 
-// Clear stale cache on version mismatch
+// Keep data across releases. Older builds cleared results on version mismatch,
+// which can hide unsynced local sessions when moving between hosting origins.
 (function() {
   try {
     if (localStorage.getItem(LS_VERSION) !== CURRENT_VERSION) {
-      localStorage.removeItem(LS_RESULTS);
       localStorage.setItem(LS_VERSION, CURRENT_VERSION);
     }
   } catch(e) {}
 })();
 
 function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
-function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage write failed', e); } }
+function backupResultsSnapshot(reason, nextRaw) {
+  try {
+    var raw = localStorage.getItem(LS_RESULTS);
+    if (!raw || raw === '[]' || raw === nextRaw) return;
+    var rows = JSON.parse(raw);
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    var key = 'lift_results_backup_' + Date.now();
+    localStorage.setItem(key, JSON.stringify({
+      reason: reason || 'before-write',
+      at: new Date().toISOString(),
+      url: location.href,
+      rows: rows
+    }));
+    var backups = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('lift_results_backup_') === 0) backups.push(k);
+    }
+    backups.sort();
+    while (backups.length > 20) localStorage.removeItem(backups.shift());
+  } catch(e) {}
+}
+function lsSet(key, val) {
+  try {
+    var raw = JSON.stringify(val);
+    if (key === LS_RESULTS) backupResultsSnapshot('before-results-write', raw);
+    localStorage.setItem(key, raw);
+  } catch(e) { console.warn('localStorage write failed', e); }
+}
 function escHTML(val) {
   return String(val == null ? '' : val).replace(/[&<>"']/g, function(ch) {
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
