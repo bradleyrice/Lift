@@ -1,4 +1,4 @@
-var CACHE = 'lift-v4';
+var CACHE = 'lift-v5';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();

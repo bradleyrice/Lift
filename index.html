@@ -568,12 +568,14 @@ body{background:
       <div style="margin:24px 0 8px;padding:16px;background:#111;border-radius:8px;border:1px solid #1e1e1e;">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#666;text-transform:uppercase;margin-bottom:10px;">Push Server</div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <input id="push-server-input" type="url" placeholder="https://your-tunnel.trycloudflare.com"
+          <input id="push-server-input" type="url" placeholder="https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift-push"
             style="flex:1;background:#0a0a0a;border:1px solid #2e2e2e;border-radius:4px;color:#e0e0e0;font-family:var(--mono);font-size:11px;padding:8px 10px;outline:none;"
             oninput="this.style.borderColor='#2e2e2e'"
             value="">
           <button onclick="savePushServerUrl()"
             style="background:transparent;border:1px solid #383838;color:#999;font-family:var(--mono);font-size:10px;letter-spacing:2px;padding:8px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;">SAVE</button>
+          <button onclick="enablePushNotifications()"
+            style="background:var(--acid);border:1px solid var(--acid);color:#0b0b0b;font-family:var(--mono);font-size:10px;letter-spacing:2px;padding:8px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;font-weight:800;">ENABLE</button>
         </div>
         <div id="push-server-status" style="font-family:var(--mono);font-size:10px;color:#555;margin-top:6px;"></div>
       </div>
@@ -878,25 +880,57 @@ var LS_VERSION = 'lift_version';
 var CURRENT_VERSION = '8';
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
+var DEFAULT_PUSH_SERVER = 'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift-push';
+var PUSH_SERVER = getDefaultPushServerUrl();
+var _pushSubscription = null;
+
+function getDefaultPushServerUrl() {
+  if (location.protocol === 'https:' && location.hostname === 'ubuntu-4gb-nbg1-3.tail6bd62e.ts.net') {
+    return location.origin + '/lift-push';
+  }
+  return DEFAULT_PUSH_SERVER;
+}
+
+function isLegacyPushServerUrl(url) {
+  return !url || /trycloudflare\.com/i.test(url);
+}
+
 function savePushServerUrl() {
   var input = document.getElementById('push-server-input');
   var val = (input.value || '').trim().replace(/\/+$/, '');
   if (!val) { document.getElementById('push-server-status').textContent = 'Enter a URL first'; return; }
   PUSH_SERVER = val;
   lsSet(LS_PUSH_SERVER, val);
-  document.getElementById('push-server-status').textContent = 'Saved. Sign out and back in to reconnect.';
+  document.getElementById('push-server-status').textContent = 'Saved. Reconnecting push...';
   input.style.borderColor = 'var(--acid)';
+  initPushSubscription();
 }
 
 function loadPushServerUrl() {
-  var saved = lsGet(LS_PUSH_SERVER);
-  if (saved) PUSH_SERVER = saved;
+  var saved = (lsGet(LS_PUSH_SERVER) || '').trim().replace(/\/+$/, '');
+  if (saved && !isLegacyPushServerUrl(saved)) {
+    PUSH_SERVER = saved;
+  } else {
+    PUSH_SERVER = getDefaultPushServerUrl();
+    if (saved) localStorage.removeItem(LS_PUSH_SERVER);
+  }
   var input = document.getElementById('push-server-input');
   if (input) input.value = PUSH_SERVER;
+  var status = document.getElementById('push-server-status');
+  if (status) status.textContent = 'Using ' + PUSH_SERVER;
 }
 
-var PUSH_SERVER = 'https://replica-scheme-advisory-flowers.trycloudflare.com';
-var _pushSubscription = null;
+async function enablePushNotifications() {
+  loadPushServerUrl();
+  var permission = await requestNotifPermission(true);
+  if (permission !== 'granted') {
+    var status = document.getElementById('push-server-status');
+    if (status) status.textContent = 'Notifications are ' + permission + '. Enable them in browser settings.';
+    showToast('Notifications are ' + permission);
+    return;
+  }
+  await initPushSubscription();
+}
 
 async function initPushSubscription() {
   if (!('serviceWorker' in navigator)) { showToast('Push: no SW support'); return; }
@@ -911,16 +945,22 @@ async function initPushSubscription() {
 
     showToast('Push: subscribing...');
     var reg = await navigator.serviceWorker.ready;
-    // Always get fresh subscription — previous one may be stale after reinstall
     var existing = await reg.pushManager.getSubscription();
     if (existing) {
-      showToast('Push: unsubscribing stale...');
-      await existing.unsubscribe();
+      var existingKey = existing.options && existing.options.applicationServerKey ? uint8ArrayToBase64Url(existing.options.applicationServerKey) : '';
+      if (existingKey && existingKey !== vapidKey) {
+        await existing.unsubscribe();
+        existing = null;
+      }
     }
-    _pushSubscription = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey)
-    });
+    if (existing) {
+      _pushSubscription = existing;
+    } else {
+      _pushSubscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      });
+    }
     showToast('Push: subscribed, registering...');
 
     var userId = currentUser ? currentUser.email : null;
@@ -932,11 +972,17 @@ async function initPushSubscription() {
     });
     if (regResp.ok) {
       showToast('Push: ready ✓');
+      var status = document.getElementById('push-server-status');
+      if (status) status.textContent = 'Push ready via ' + PUSH_SERVER;
     } else {
       showToast('Push: server reg failed ' + regResp.status);
+      var errStatus = document.getElementById('push-server-status');
+      if (errStatus) errStatus.textContent = 'Push server registration failed: ' + regResp.status;
     }
   } catch(e) {
     showToast('Push error: ' + e.message);
+    var statusEl = document.getElementById('push-server-status');
+    if (statusEl) statusEl.textContent = 'Push error: ' + e.message;
     console.warn('[LIFT] Push subscription failed:', e.message);
   }
 }
@@ -950,10 +996,19 @@ function urlBase64ToUint8Array(base64String) {
   return arr;
 }
 
+function uint8ArrayToBase64Url(buffer) {
+  var bytes = new Uint8Array(buffer);
+  var binary = '';
+  for (var i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 var _serverScheduleTimer = null;
 
 async function serverScheduleNotification(title, body, delaySeconds) {
-  if (!currentUser || !_pushSubscription) return false;
+  if (!currentUser) return false;
+  if (!_pushSubscription) await initPushSubscription();
+  if (!_pushSubscription) return false;
   // Debounce — if called again within 300ms, cancel previous and use latest
   if (_serverScheduleTimer) { clearTimeout(_serverScheduleTimer); _serverScheduleTimer = null; }
   return new Promise(function(resolve) {
@@ -1855,6 +1910,7 @@ var SHEET_HEADERS = {
   'Exercises': ['UserID','ExerciseID','Name'],
   'Results': ['UserID','ResultID','Timestamp','WorkoutID','WorkoutName','ExerciseID','ExerciseName','Set','Weight','Reps','SessionDate']
 };
+var sheetPropertiesCache = null;
 
 function xhrRequest(method, url, body, isRetry) {
   return new Promise(function(resolve, reject) {
@@ -1904,6 +1960,39 @@ function getSheetNames() {
   return xhrRequest('GET', BASE_URL + '?fields=sheets.properties.title', null).then(function(meta) {
     return meta.sheets.map(function(s) { return s.properties.title; });
   });
+}
+
+async function getSheetPropertiesMap(force) {
+  if (sheetPropertiesCache && !force) return sheetPropertiesCache;
+  var meta = await xhrRequest('GET', BASE_URL + '?fields=sheets.properties(sheetId,title,gridProperties(rowCount,columnCount))', null);
+  var map = {};
+  (meta.sheets || []).forEach(function(s) {
+    if (s.properties && s.properties.title) map[s.properties.title] = s.properties;
+  });
+  sheetPropertiesCache = map;
+  return map;
+}
+
+async function ensureSheetRows(tab, minRows) {
+  if (!minRows || minRows < 1) return;
+  var map = await getSheetPropertiesMap(false);
+  var props = map[tab];
+  if (!props || !props.sheetId) return;
+  var currentRows = props.gridProperties && props.gridProperties.rowCount ? props.gridProperties.rowCount : 0;
+  if (currentRows >= minRows) return;
+  var targetRows = Math.max(minRows + 500, currentRows + 500, 1000);
+  syncLog('sheet-grow-start', { tab: tab, from: currentRows, to: targetRows });
+  await xhrRequest('POST', BASE_URL + ':batchUpdate', {
+    requests: [{
+      updateSheetProperties: {
+        properties: { sheetId: props.sheetId, gridProperties: { rowCount: targetRows } },
+        fields: 'gridProperties.rowCount'
+      }
+    }]
+  });
+  props.gridProperties = props.gridProperties || {};
+  props.gridProperties.rowCount = targetRows;
+  syncLog('sheet-grow-success', { tab: tab, rows: targetRows });
 }
 
 function readSheet(tab) {
@@ -1972,14 +2061,16 @@ async function migrateSheetAddUser(tab, rows) {
   lsSet(LS_MIGRATED, migratedTabs);
 }
 
-function writeRow(tab, rowNum, values) {
+async function writeRow(tab, rowNum, values) {
+  await ensureSheetRows(tab, rowNum);
   var cols = String.fromCharCode(64 + Math.min(values.length, 26));
   var url = BASE_URL + '/values/' + enc(tab) + '!A' + rowNum + ':' + cols + rowNum + '?valueInputOption=RAW';
   return xhrRequest('PUT', url, {values: [values]});
 }
 
-function writeTable(tab, rows) {
+async function writeTable(tab, rows) {
   if (!rows.length) return Promise.resolve();
+  await ensureSheetRows(tab, rows.length);
   var maxCols = rows.reduce(function(max, r) { return Math.max(max, r.length); }, 1);
   var cols = String.fromCharCode(64 + Math.min(maxCols, 26));
   var url = BASE_URL + '/values/' + enc(tab) + '!A1:' + cols + rows.length + '?valueInputOption=RAW';
@@ -2020,6 +2111,8 @@ async function ensureSheetReady(tab) {
 async function batchWriteRows(tab, rowDataArray) {
   // rowDataArray: [{rowNum, values}, ...] — writes all in a single API call
   if (!rowDataArray.length) return;
+  var maxRow = rowDataArray.reduce(function(max, item) { return Math.max(max, item.rowNum || 0); }, 0);
+  await ensureSheetRows(tab, maxRow);
   var data = rowDataArray.map(function(item) {
     var cols = String.fromCharCode(64 + Math.min(item.values.length, 26));
     return {
@@ -4345,11 +4438,12 @@ window.addEventListener('online', function() {
 });
 
 // Request notification permission
-async function requestNotifPermission() {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') {
+async function requestNotifPermission(force) {
+  if (!('Notification' in window)) return 'unsupported';
+  if (Notification.permission === 'default' && force !== false) {
     await Notification.requestPermission();
   }
+  return Notification.permission;
 }
 
 function sendNotification(title, body) {
@@ -4390,8 +4484,17 @@ function scheduleNotification(title, body, delaySeconds) {
     sendNotification(title, body);
     _notifyPageTimer = null; _notifyFireAt = null;
   }, delaySeconds * 1000);
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      if (reg.active) {
+        reg.active.postMessage({type: 'scheduleNotify', title: title, body: body, fireAt: _notifyFireAt});
+      }
+    }).catch(function() {});
+  }
   // Also schedule on server for reliable background/locked-screen delivery
-  serverScheduleNotification(title, body, delaySeconds);
+  serverScheduleNotification(title, body, delaySeconds).then(function(ok) {
+    if (!ok) console.warn('[LIFT] Server push was not scheduled; local timer fallback remains active.');
+  });
 }
 
 function cancelScheduledNotification() {
