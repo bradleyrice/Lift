@@ -421,8 +421,15 @@ body{background:
 .eld-compare-cell.prev-reps,.eld-compare-cell.target-reps,.eld-compare-cell.today-reps{border-right:2px solid #b8ad9c;}
 .eld-compare-cell.set{color:var(--muted);font-weight:850;text-align:center;}
 .eld-compare-cell.target{background:#f7fbf1;color:var(--moss-dark);font-weight:850;}
-.eld-compare-cell.eld-compare-row-active{background:#edf3e3;}
-.eld-compare-cell.eld-compare-row-active.target,.eld-compare-cell.eld-compare-row-active.target-col{background:#e2efd3;}
+.eld-compare-cell.eld-compare-row-active{background:#dbe9c9;color:var(--ink);font-weight:900;border-top:2px solid var(--moss);border-bottom:2px solid var(--moss);box-shadow:inset 0 1px 0 rgba(255,255,255,0.55),inset 0 -1px 0 rgba(63,80,43,0.14);}
+.eld-compare-cell.eld-compare-row-active.compare-set{background:#cfdcbd;color:var(--moss-dark);border-left:3px solid var(--moss);}
+.eld-compare-cell.eld-compare-row-active.target,.eld-compare-cell.eld-compare-row-active.target-col{background:#cfe4ba;color:var(--moss-dark);}
+.eld-compare-cell.eld-compare-row-active.today-reps{border-right:3px solid var(--moss);}
+.eld-compare-cell.eld-compare-row-active.editable{background:#e2efd3;}
+.eld-compare-cell.eld-compare-row-warmup-complete{background:#f1eee6;color:#aaa397;opacity:0.55;}
+.eld-compare-cell.eld-compare-row-warmup-complete.target,.eld-compare-cell.eld-compare-row-warmup-complete.target-col{background:#eef1e8;color:#94a084;}
+.eld-compare-cell.eld-compare-row-warmup-complete.editable{background:#f1eee6;color:#aaa397;}
+.eld-compare-cell.eld-compare-row-warmup-complete .eld-target-delta{color:#9aa68c;}
 .eld-compare-cell.editable{cursor:pointer;background:#fffdf8;}
 .eld-compare-cell.editable:hover{background:rgba(95,127,66,0.12);}
 .eld-target-delta{display:block;font-family:var(--display);font-size:10px;color:var(--moss-dark);margin-top:2px;font-weight:850;}
@@ -2971,15 +2978,16 @@ function renderEldCompare() {
     var isWarmupTarget = prevWarmups.has(i);
     var target = isWarmupTarget ? null : targetForPreviousSet(prevSet, settings);
     var isActive = !isWarmupTarget && !!prevSet && targetSet && prevSet === targetSet;
+    var rowStateClass = (isActive ? 'eld-compare-row-active ' : '') + (todaySet && todayWarmups.has(i) ? 'eld-compare-row-warmup-complete ' : '');
     var editableWeight = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'weight\',\'' + escJS(todaySet.weight || '') + '\')" title="Edit today weight' : '';
     var editableReps = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'reps\',\'' + escJS(todaySet.reps || '') + '\')" title="Edit today reps' : '';
-    table += '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell set compare-set">' + setNum + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell prev-col prev-kg">' + escHTML(fmtKg(prevSet && prevSet.weight)) + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell prev-col prev-reps">' + escHTML(prevSet && prevSet.reps ? prevSet.reps : '—') + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target target-col target-kg">' + escHTML(target ? target.weight : '—') + (target && target.delta ? '<span class="eld-target-delta">' + escHTML(target.delta) + '</span>' : '') + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target target-col target-reps">' + escHTML(target && target.reps ? target.reps : '—') + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell today-col today-kg' + editableWeight + '">' + escHTML(fmtKg(todaySet && todaySet.weight)) + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell today-col today-reps' + editableReps + '">' + escHTML(todaySet && todaySet.reps ? todaySet.reps : '—') + '</div>';
+    table += '<div class="' + rowStateClass + 'eld-compare-cell set compare-set">' + setNum + '</div>' +
+      '<div class="' + rowStateClass + 'eld-compare-cell prev-col prev-kg">' + escHTML(fmtKg(prevSet && prevSet.weight)) + '</div>' +
+      '<div class="' + rowStateClass + 'eld-compare-cell prev-col prev-reps">' + escHTML(prevSet && prevSet.reps ? prevSet.reps : '—') + '</div>' +
+      '<div class="' + rowStateClass + 'eld-compare-cell target target-col target-kg">' + escHTML(target ? target.weight : '—') + (target && target.delta ? '<span class="eld-target-delta">' + escHTML(target.delta) + '</span>' : '') + '</div>' +
+      '<div class="' + rowStateClass + 'eld-compare-cell target target-col target-reps">' + escHTML(target && target.reps ? target.reps : '—') + '</div>' +
+      '<div class="' + rowStateClass + 'eld-compare-cell today-col today-kg' + editableWeight + '">' + escHTML(fmtKg(todaySet && todaySet.weight)) + '</div>' +
+      '<div class="' + rowStateClass + 'eld-compare-cell today-col today-reps' + editableReps + '">' + escHTML(todaySet && todaySet.reps ? todaySet.reps : '—') + '</div>';
   }
   table += '</div>';
   var targetNote = prevVolume
