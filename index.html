@@ -1190,6 +1190,7 @@ function isValidResultRow(r) {
 
 function getLocalResults() {
   var rows = lsGet(LS_RESULTS) || [];
+  if (!Array.isArray(rows)) rows = [];
   var result = [];
   var seen = {};
   for (var i = 0; i < rows.length; i++) {
@@ -1208,6 +1209,27 @@ function getLocalResults() {
     result.push(r);
   }
   return result;
+}
+
+function defaultWorkoutsCopy() {
+  return DEFAULT_WORKOUTS.map(function(w) {
+    return {id:w.id, name:w.name, exercises:(w.exercises || []).slice()};
+  });
+}
+
+function defaultExercisesList() {
+  var exSet = {};
+  DEFAULT_WORKOUTS.forEach(function(w) {
+    (w.exercises || []).forEach(function(e) { exSet[e] = true; });
+  });
+  return Object.keys(exSet);
+}
+
+function normalizeLocalWorkouts(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(function(w) { return w && w.id && w.name; }).map(function(w) {
+    return {id:w.id, name:w.name, exercises:Array.isArray(w.exercises) ? w.exercises : []};
+  });
 }
 
 function getSyncQueue() { return lsGet(LS_SYNC_QUEUE) || []; }
@@ -2271,16 +2293,24 @@ async function initApp() {
 
 async function loadFromLocal() {
   // Load workouts from local or seed defaults
-  var localWorkouts = lsGet(LS_WORKOUTS);
+  var localWorkouts = normalizeLocalWorkouts(lsGet(LS_WORKOUTS));
   var localExercises = lsGet(LS_EXERCISES);
-  if (!localWorkouts || localWorkouts.length === 0) {
+  localExercises = Array.isArray(localExercises) ? localExercises : [];
+  if (localWorkouts.length === 0) {
     setLoadingMsg('Setting up your routine...');
     seedLocalDefaults();
-    localWorkouts = lsGet(LS_WORKOUTS);
+    localWorkouts = normalizeLocalWorkouts(lsGet(LS_WORKOUTS));
     localExercises = lsGet(LS_EXERCISES);
+    localExercises = Array.isArray(localExercises) ? localExercises : [];
+  }
+  // Some file:// browsers can reject localStorage writes. Keep setup usable with
+  // an in-memory default routine instead of crashing on null.map().
+  if (localWorkouts.length === 0) {
+    localWorkouts = defaultWorkoutsCopy();
+    localExercises = defaultExercisesList();
   }
   workouts = localWorkouts;
-  allExercises = localExercises || [];
+  allExercises = localExercises.length ? localExercises : defaultExercisesList();
   shRows = getLocalResults();
   ehRows = shRows;
   await loadPBs();
@@ -2289,10 +2319,8 @@ async function loadFromLocal() {
 }
 
 function seedLocalDefaults() {
-  var exSet = {};
-  DEFAULT_WORKOUTS.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
-  lsSet(LS_WORKOUTS, DEFAULT_WORKOUTS.map(function(w) { return {id:w.id, name:w.name, exercises:w.exercises}; }));
-  lsSet(LS_EXERCISES, Object.keys(exSet));
+  lsSet(LS_WORKOUTS, defaultWorkoutsCopy());
+  lsSet(LS_EXERCISES, defaultExercisesList());
   lsSet(LS_RESULTS, []);
 }
 
@@ -2533,7 +2561,9 @@ function goScreen(name) {
 
 // LOG
 function renderWorkoutPicker() {
-  document.getElementById('workout-select').innerHTML = workouts.map(function(w) {
+  var list = Array.isArray(workouts) && workouts.length ? workouts : defaultWorkoutsCopy();
+  workouts = list;
+  document.getElementById('workout-select').innerHTML = list.map(function(w) {
     return '<option value="' + w.id + '">' + w.name + '</option>';
   }).join('');
 }
