@@ -177,7 +177,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 /* ELD summary strip */
 #eld-stats-strip{background:#131313;border-top:1px solid var(--border);padding:10px 16px;display:none;flex-shrink:0;}
 #eld-input-fixed{padding:8px 8px 4px;background:var(--bg);border-bottom:1px solid #222;flex-shrink:0;}
-.eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
+.eld-strip-inner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
 .eld-strip-card{text-align:center;}
 .eld-strip-val{font-family:var(--display);font-size:14px;font-weight:500;color:var(--acid);line-height:1;}
 .eld-strip-lbl{font-size:8px;color:#b0b0b0;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
@@ -351,15 +351,16 @@ body{background:
 .nav-icon{font-size:20px;}
 .nav-label{font-size:11px;font-family:var(--display);font-weight:800;}
 #eld-header,#stats-header,#sd-header,#exd-header{padding:14px 16px;}
-#ex-log-detail{--eld-rest-h:78px;--eld-entry-h:222px;--eld-bottom-gap:10px;--eld-edge:12px;--eld-bottom-stack:calc(var(--eld-rest-h) + var(--eld-entry-h) + var(--eld-bottom-gap) + var(--eld-edge));}
-#eld-header{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px 10px;}
-.eld-title-wrap{flex:1 1 calc(100% - 108px);min-width:0;}
-.eld-header-actions{flex:0 0 100%;display:flex;gap:8px;justify-content:flex-end;}
+#ex-log-detail{--eld-rest-h:78px;--eld-entry-h:146px;--eld-bottom-gap:10px;--eld-edge:12px;--eld-bottom-stack:calc(var(--eld-rest-h) + var(--eld-entry-h) + var(--eld-bottom-gap) + var(--eld-edge));}
+#eld-header{display:flex!important;flex-wrap:nowrap;align-items:center;gap:8px;padding:10px 12px!important;}
+.eld-title-wrap{flex:1 1 auto;min-width:0;}
+.eld-header-actions{flex:0 0 auto;display:flex;gap:6px;justify-content:flex-end;}
 #eld-title,#stats-title,#sd-title,#exd-name{font-family:var(--display);font-size:21px;font-weight:850;letter-spacing:0;color:var(--ink);}
-#eld-title{font-size:clamp(17px,4.2vw,21px);line-height:1.06;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#eld-title{font-size:clamp(16px,3.8vw,20px);line-height:1.04;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 #eld-pb,#exd-pb,.stats-card-val,.eld-strip-val,.eld-vol-fraction{color:var(--moss-dark)!important;}
-.back-btn{border:1px solid var(--border);border-radius:999px;background:var(--paper);color:var(--ink);font-family:var(--display);font-size:13px;letter-spacing:0;padding:8px 12px;}
-#eld-stats-toggle-btn,.exercise-settings-btn{background:var(--paper)!important;border:1px solid var(--border)!important;color:var(--moss-dark)!important;border-radius:8px!important;font-family:var(--display)!important;font-weight:850!important;font-size:13px;padding:8px 12px;cursor:pointer;}
+.back-btn{border:1px solid var(--border);border-radius:999px;background:var(--paper);color:var(--ink);font-family:var(--display);font-size:13px;letter-spacing:0;padding:8px 10px;white-space:nowrap;flex-shrink:0;}
+#eld-stats-toggle-btn,.exercise-settings-btn{background:var(--paper)!important;border:1px solid var(--border)!important;color:var(--moss-dark)!important;border-radius:8px!important;font-family:var(--display)!important;font-weight:850!important;font-size:12px;padding:8px 9px;cursor:pointer;white-space:nowrap;}
+#eld-comment-btn.has-comment{background:rgba(95,127,66,0.14)!important;border-color:rgba(95,127,66,0.4)!important;}
 #eld-rest-bar,#eld-stats-strip,#eld-input-fixed{background:var(--paper)!important;border-color:var(--border)!important;}
 #eld-rest-bar{position:absolute!important;left:16px;right:16px;bottom:var(--eld-edge);z-index:12;height:var(--eld-rest-h);box-sizing:border-box;order:5;border:1px solid var(--border)!important;margin:0!important;border-radius:8px;padding:9px 12px!important;box-shadow:0 12px 34px rgba(42,35,24,0.12);}
 #eld-input-fixed{position:absolute!important;left:0;right:0;bottom:calc(var(--eld-edge) + var(--eld-rest-h) + var(--eld-bottom-gap));z-index:11;height:var(--eld-entry-h);box-sizing:border-box;order:3;border-top:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;padding:10px 16px!important;box-shadow:0 -10px 30px rgba(42,35,24,0.08);}
@@ -403,15 +404,25 @@ body{background:
 .eld-compare-kicker{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:0.08em;}
 .eld-compare-title{font-family:var(--display);font-size:14px;color:var(--ink);font-weight:850;margin-top:3px;}
 .eld-compare-summary{text-align:right;font-family:var(--mono);font-size:12px;color:var(--moss-dark);font-weight:850;white-space:nowrap;}
-.eld-compare-table{display:grid;grid-template-columns:40px repeat(6,minmax(0,1fr));align-items:stretch;}
-.eld-compare-cell{padding:8px 8px;border-bottom:1px solid rgba(213,206,192,0.72);border-right:1px solid rgba(213,206,192,0.5);font-family:var(--mono);font-size:13px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
-.eld-compare-cell.h{font-family:var(--display);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:850;color:var(--muted);background:var(--paper-soft);}
-.eld-compare-cell.group{font-size:13px;color:var(--ink);background:#fffdf8;}
-.eld-compare-cell.group.target{color:var(--terracotta);background:#fff7f3;}
+.eld-compare-table{display:grid;grid-template-columns:40px repeat(6,minmax(0,1fr));align-items:stretch;background:#d8d0c2;border-top:1px solid #cfc6b6;border-bottom:1px solid #cfc6b6;}
+.eld-compare-cell{padding:8px 8px;border-bottom:1px solid rgba(190,179,162,0.72);border-right:1px solid rgba(190,179,162,0.52);font-family:var(--mono);font-size:13px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;background:#fffdf8;}
+.eld-compare-cell.h{font-family:var(--display);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:850;color:var(--muted);background:#eee8dc;}
+.eld-compare-cell.group{font-size:13px;color:var(--ink);background:#efe8d9;border-bottom:1px solid #bfb29d;}
+.eld-compare-cell.group.prev{background:#eef1e5;color:#384a2b;}
+.eld-compare-cell.group.target{color:#9b5847;background:#f7e8e2;}
+.eld-compare-cell.group.today{background:#eaf1dd;color:var(--moss-dark);}
+.eld-compare-cell.compare-set{background:#eee8dc;color:var(--muted);}
+.eld-compare-cell.prev-col{background:#fbfaf4;}
+.eld-compare-cell.target-col{background:#f7fbf1;color:var(--moss-dark);font-weight:850;}
+.eld-compare-cell.today-col{background:#fffaf0;}
+.eld-compare-cell.group.prev,.eld-compare-cell.prev-kg{border-left:2px solid #a7b28f;}
+.eld-compare-cell.group.target,.eld-compare-cell.target-kg{border-left:3px solid #c99a8d;}
+.eld-compare-cell.group.today,.eld-compare-cell.today-kg{border-left:3px solid #8da46f;}
+.eld-compare-cell.prev-reps,.eld-compare-cell.target-reps,.eld-compare-cell.today-reps{border-right:2px solid #b8ad9c;}
 .eld-compare-cell.set{color:var(--muted);font-weight:850;text-align:center;}
-.eld-compare-cell.target{background:#f8fbf1;color:var(--moss-dark);font-weight:850;}
-.eld-compare-cell.eld-compare-row-active{background:rgba(95,127,66,0.08);}
-.eld-compare-cell.eld-compare-row-active.target{background:rgba(95,127,66,0.15);}
+.eld-compare-cell.target{background:#f7fbf1;color:var(--moss-dark);font-weight:850;}
+.eld-compare-cell.eld-compare-row-active{background:#edf3e3;}
+.eld-compare-cell.eld-compare-row-active.target,.eld-compare-cell.eld-compare-row-active.target-col{background:#e2efd3;}
 .eld-compare-cell.editable{cursor:pointer;background:#fffdf8;}
 .eld-compare-cell.editable:hover{background:rgba(95,127,66,0.12);}
 .eld-target-delta{display:block;font-family:var(--display);font-size:10px;color:var(--moss-dark);margin-top:2px;font-weight:850;}
@@ -431,7 +442,7 @@ body{background:
 .eld-stepper-value{min-height:52px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--mono);font-size:24px;font-weight:900;color:var(--ink);cursor:pointer;}
 .eld-stepper-unit{font-family:var(--display);font-size:11px;color:var(--muted);font-weight:850;text-transform:uppercase;align-self:flex-end;margin-bottom:11px;}
 .eld-add-visible{width:100%;margin-top:10px;padding:15px 0;background:var(--moss);border:0;border-radius:8px;color:#fff;font-family:var(--display);font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;cursor:pointer;box-shadow:0 8px 18px rgba(63,80,43,0.18);}
-.eld-note-card{margin-top:10px;background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:11px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;}
+.eld-note-card{display:none;}
 .eld-note-title{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:0.08em;}
 .eld-note-text{font-size:13px;color:var(--ink);margin-top:3px;line-height:1.35;}
 .eld-note-edit{color:var(--moss-dark);font-weight:900;}
@@ -463,7 +474,12 @@ body{background:
 .eh-ex-item{cursor:pointer;}
 .eh-delete-btn{background:transparent;border:none;color:#707070;font-size:18px;cursor:pointer;padding:8px 10px;flex-shrink:0;}
 @media (max-width:390px){
-  #ex-log-detail{--eld-entry-h:210px;--eld-rest-h:72px;}
+  #ex-log-detail{--eld-entry-h:136px;--eld-rest-h:72px;}
+  #eld-header{gap:6px;padding:8px 10px!important;}
+  #eld-title{font-size:15px;}
+  #eld-pb{font-size:9px;}
+  #eld-stats-toggle-btn,.exercise-settings-btn{font-size:11px;padding:7px 7px;}
+  .back-btn{font-size:12px;padding:7px 9px;}
   .eld-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;}
   .eld-metric-card{padding:6px 4px;min-height:52px;}
   .eld-metric-label{font-size:8px;}
@@ -643,7 +659,8 @@ body{background:
     <div class="eld-title-wrap"><div id="eld-title"></div><div id="eld-pb"></div></div>
     <div class="eld-header-actions">
       <button class="exercise-settings-btn" onclick="openExerciseSettings(currentExLogName)" title="Exercise settings">Settings</button>
-      <button id="eld-stats-toggle-btn" onclick="eldToggleStats()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-size:13px;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:800;" title="Detailed stats">Stats</button>
+      <button id="eld-comment-btn" class="exercise-settings-btn" onclick="openSessionExComment()" title="Add session note">Notes</button>
+      <button id="eld-stats-toggle-btn" onclick="eldToggleStats()" title="Detailed stats">Stats</button>
     </div>
   </div>
   <div id="eld-rest-bar" style="display:flex;background:#131313;border-bottom:1px solid var(--border);padding:14px 16px;flex-shrink:0;align-items:center;gap:12px;">
@@ -683,9 +700,6 @@ body{background:
         <div class="eld-strip-lbl">e1RM</div>
         <div class="eld-strip-vs" style="height:10px;"></div>
         <div class="eld-gauge-wrap"><div class="eld-gauge-bar" id="eld-gauge-e1rm" style="width:0%"></div></div>
-      </div>
-      <div class="eld-strip-card" style="display:flex;align-items:center;justify-content:center;">
-        <button id="eld-comment-btn" class="comment-btn" onclick="openSessionExComment()" title="Add session note" style="font-size:20px;">&#128172;</button>
       </div>
     </div>
     <div id="eld-vol-row">
@@ -752,13 +766,6 @@ body{background:
       </div>
     </div>
     <button class="eld-add-visible" onclick="eldCommitSet()">Add Set</button>
-    <div class="eld-note-card" onclick="openSessionExComment()">
-      <div>
-        <div class="eld-note-title">Notes</div>
-        <div class="eld-note-text" id="eld-note-text">Add a note for this exercise.</div>
-      </div>
-      <div class="eld-note-edit">&#9998;</div>
-    </div>
   </div>
   <div id="eld-body">
     <div id="eld-col-history">
@@ -2949,14 +2956,14 @@ function renderEldCompare() {
   var maxWeightText = maxWeight ? fmtKg(maxWeight) + 'kg' : '—';
   var rowCount = Math.max(prevSets.length, todaySets.length, 1);
   var table = '<div class="eld-compare-table">' +
-    '<div class="eld-compare-cell h"></div>' +
-    '<div class="eld-compare-cell h group" style="grid-column:span 2;">Previous</div>' +
+    '<div class="eld-compare-cell h compare-set"></div>' +
+    '<div class="eld-compare-cell h group prev" style="grid-column:span 2;">Previous</div>' +
     '<div class="eld-compare-cell h group target" style="grid-column:span 2;">Target</div>' +
-    '<div class="eld-compare-cell h group" style="grid-column:span 2;">Today</div>' +
-    '<div class="eld-compare-cell h">Set</div>' +
-    '<div class="eld-compare-cell h">kg</div><div class="eld-compare-cell h">reps</div>' +
-    '<div class="eld-compare-cell h">kg</div><div class="eld-compare-cell h">reps</div>' +
-    '<div class="eld-compare-cell h">kg</div><div class="eld-compare-cell h">reps</div>';
+    '<div class="eld-compare-cell h group today" style="grid-column:span 2;">Today</div>' +
+    '<div class="eld-compare-cell h compare-set">Set</div>' +
+    '<div class="eld-compare-cell h prev-col prev-kg">kg</div><div class="eld-compare-cell h prev-col prev-reps">reps</div>' +
+    '<div class="eld-compare-cell h target-col target-kg">kg</div><div class="eld-compare-cell h target-col target-reps">reps</div>' +
+    '<div class="eld-compare-cell h today-col today-kg">kg</div><div class="eld-compare-cell h today-col today-reps">reps</div>';
   for (var i = 0; i < rowCount; i++) {
     var setNum = i + 1;
     var prevSet = findSetByNum(prevSets, setNum);
@@ -2966,13 +2973,13 @@ function renderEldCompare() {
     var isActive = !isWarmupTarget && !!prevSet && targetSet && prevSet === targetSet;
     var editableWeight = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'weight\',\'' + escJS(todaySet.weight || '') + '\')" title="Edit today weight' : '';
     var editableReps = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'reps\',\'' + escJS(todaySet.reps || '') + '\')" title="Edit today reps' : '';
-    table += '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell set">' + setNum + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell">' + escHTML(fmtKg(prevSet && prevSet.weight)) + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell">' + escHTML(prevSet && prevSet.reps ? prevSet.reps : '—') + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target">' + escHTML(target ? target.weight : '—') + (target && target.delta ? '<span class="eld-target-delta">' + escHTML(target.delta) + '</span>' : '') + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target">' + escHTML(target && target.reps ? target.reps : '—') + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell' + editableWeight + '">' + escHTML(fmtKg(todaySet && todaySet.weight)) + '</div>' +
-      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell' + editableReps + '">' + escHTML(todaySet && todaySet.reps ? todaySet.reps : '—') + '</div>';
+    table += '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell set compare-set">' + setNum + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell prev-col prev-kg">' + escHTML(fmtKg(prevSet && prevSet.weight)) + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell prev-col prev-reps">' + escHTML(prevSet && prevSet.reps ? prevSet.reps : '—') + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target target-col target-kg">' + escHTML(target ? target.weight : '—') + (target && target.delta ? '<span class="eld-target-delta">' + escHTML(target.delta) + '</span>' : '') + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell target target-col target-reps">' + escHTML(target && target.reps ? target.reps : '—') + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell today-col today-kg' + editableWeight + '">' + escHTML(fmtKg(todaySet && todaySet.weight)) + '</div>' +
+      '<div class="' + (isActive ? 'eld-compare-row-active ' : '') + 'eld-compare-cell today-col today-reps' + editableReps + '">' + escHTML(todaySet && todaySet.reps ? todaySet.reps : '—') + '</div>';
   }
   table += '</div>';
   var targetNote = prevVolume
