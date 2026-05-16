@@ -351,7 +351,7 @@ body{background:
 .nav-icon{font-size:20px;}
 .nav-label{font-size:11px;font-family:var(--display);font-weight:800;}
 #eld-header,#stats-header,#sd-header,#exd-header{padding:14px 16px;}
-#ex-log-detail{--eld-rest-h:78px;--eld-entry-h:146px;--eld-bottom-gap:10px;--eld-edge:12px;--eld-bottom-stack:calc(var(--eld-rest-h) + var(--eld-entry-h) + var(--eld-bottom-gap) + var(--eld-edge));}
+#ex-log-detail{--eld-entry-h:146px;--eld-edge:12px;--eld-bottom-stack:calc(var(--eld-entry-h) + var(--eld-edge));}
 #eld-header{display:flex!important;flex-wrap:nowrap;align-items:center;gap:8px;padding:10px 12px!important;}
 .eld-title-wrap{flex:1 1 auto;min-width:0;}
 .eld-header-actions{flex:0 0 auto;display:flex;gap:6px;justify-content:flex-end;}
@@ -362,8 +362,22 @@ body{background:
 #eld-stats-toggle-btn,.exercise-settings-btn{background:var(--paper)!important;border:1px solid var(--border)!important;color:var(--moss-dark)!important;border-radius:8px!important;font-family:var(--display)!important;font-weight:850!important;font-size:12px;padding:8px 9px;cursor:pointer;white-space:nowrap;}
 #eld-comment-btn.has-comment{background:rgba(95,127,66,0.14)!important;border-color:rgba(95,127,66,0.4)!important;}
 #eld-rest-bar,#eld-stats-strip,#eld-input-fixed{background:var(--paper)!important;border-color:var(--border)!important;}
-#eld-rest-bar{position:absolute!important;left:16px;right:16px;bottom:var(--eld-edge);z-index:12;height:var(--eld-rest-h);box-sizing:border-box;order:5;border:1px solid var(--border)!important;margin:0!important;border-radius:8px;padding:9px 12px!important;box-shadow:0 12px 34px rgba(42,35,24,0.12);}
-#eld-input-fixed{position:absolute!important;left:0;right:0;bottom:calc(var(--eld-edge) + var(--eld-rest-h) + var(--eld-bottom-gap));z-index:11;height:var(--eld-entry-h);box-sizing:border-box;order:3;border-top:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;padding:10px 16px!important;box-shadow:0 -10px 30px rgba(42,35,24,0.08);}
+#eld-rest-bar{position:absolute!important;left:0;right:0;bottom:0;z-index:30;height:min(52dvh,430px);box-sizing:border-box;display:none!important;order:5;border:1px solid var(--border)!important;border-radius:16px 16px 0 0;padding:14px 16px 18px!important;box-shadow:0 -18px 48px rgba(42,35,24,0.22);background:rgba(255,253,248,0.98)!important;flex-direction:column!important;gap:12px!important;}
+#eld-rest-bar.visible{display:flex!important;}
+#eld-rest-bar::before{content:'';position:fixed;inset:0;z-index:-1;background:rgba(31,27,22,0.22);}
+.eld-timer-pop-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}
+.eld-timer-pop-title{font-family:var(--display);font-size:13px;font-weight:850;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
+.eld-timer-close{background:transparent;border:1px solid var(--border);border-radius:999px;color:var(--ink);font-family:var(--display);font-weight:850;font-size:13px;padding:7px 11px;cursor:pointer;}
+.eld-timer-main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;}
+.eld-rt-ring-wrap{width:min(46dvh,220px)!important;height:min(46dvh,220px)!important;max-width:64vw;max-height:64vw;}
+.eld-rt-ring-wrap svg{width:100%!important;height:100%!important;}
+#eld-rt-display{font-size:clamp(34px,12vw,58px)!important;color:var(--ink)!important;}
+.eld-timer-controls{display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
+.eld-timer-primary{display:flex;gap:8px;align-items:center;}
+.eld-timer-primary .rt-btn{min-height:46px;font-size:18px;}
+.eld-timer-adjust{display:none;gap:6px;}
+.eld-timer-adjust.visible{display:flex!important;}
+#eld-input-fixed{position:absolute!important;left:0;right:0;bottom:var(--eld-edge);z-index:11;height:var(--eld-entry-h);box-sizing:border-box;order:3;border-top:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;padding:10px 16px!important;box-shadow:0 -10px 30px rgba(42,35,24,0.08);}
 #eld-body{background:var(--bg);}
 #eld-col-history,#eld-col-today{padding:14px 10px 26px 16px;}
 #eld-col-history{border-right:1px solid var(--border);}
@@ -449,6 +463,12 @@ body{background:
 .eld-stepper-value{min-height:52px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--mono);font-size:24px;font-weight:900;color:var(--ink);cursor:pointer;}
 .eld-stepper-unit{font-family:var(--display);font-size:11px;color:var(--muted);font-weight:850;text-transform:uppercase;align-self:flex-end;margin-bottom:11px;}
 .eld-add-visible{width:100%;margin-top:10px;padding:15px 0;background:var(--moss);border:0;border-radius:8px;color:#fff;font-family:var(--display);font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;cursor:pointer;box-shadow:0 8px 18px rgba(63,80,43,0.18);}
+.eld-action-row{display:flex;gap:10px;align-items:stretch;margin-top:10px;}
+.eld-action-row .eld-add-visible{margin-top:0;flex:1;width:auto;}
+.eld-timer-button{width:76px;border:1px solid var(--border);border-radius:8px;background:var(--paper);color:var(--moss-dark);font-family:var(--display);font-size:12px;font-weight:850;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;box-shadow:0 8px 18px rgba(42,35,24,0.05);}
+.eld-timer-button .timer-icon{font-size:20px;line-height:1;}
+.eld-timer-button .timer-label{font-family:var(--mono);font-size:11px;margin-top:2px;color:var(--ink);}
+.eld-timer-button.running{background:rgba(95,127,66,0.14);border-color:rgba(95,127,66,0.45);}
 .eld-note-card{display:none;}
 .eld-note-title{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:0.08em;}
 .eld-note-text{font-size:13px;color:var(--ink);margin-top:3px;line-height:1.35;}
@@ -481,7 +501,7 @@ body{background:
 .eh-ex-item{cursor:pointer;}
 .eh-delete-btn{background:transparent;border:none;color:#707070;font-size:18px;cursor:pointer;padding:8px 10px;flex-shrink:0;}
 @media (max-width:390px){
-  #ex-log-detail{--eld-entry-h:136px;--eld-rest-h:72px;}
+  #ex-log-detail{--eld-entry-h:136px;}
   #eld-header{gap:6px;padding:8px 10px!important;}
   #eld-title{font-size:15px;}
   #eld-pb{font-size:9px;}
@@ -670,17 +690,26 @@ body{background:
       <button id="eld-stats-toggle-btn" onclick="eldToggleStats()" title="Detailed stats">Stats</button>
     </div>
   </div>
-  <div id="eld-rest-bar" style="display:flex;background:#131313;border-bottom:1px solid var(--border);padding:14px 16px;flex-shrink:0;align-items:center;gap:12px;">
-    <div class="eld-rt-ring-wrap" style="position:relative;width:60px;height:60px;flex-shrink:0;cursor:pointer;" onclick="openTimerEditModal()">
-      <svg width="60" height="60" viewBox="0 0 60 60" style="transform:rotate(-90deg);width:100%;height:100%;"><circle cx="30" cy="30" r="26" fill="none" stroke="#1e1e1e" stroke-width="4"/><circle id="eld-rt-ring" cx="30" cy="30" r="26" fill="none" stroke="var(--acid)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="0" style="transition:stroke-dashoffset 0.9s linear,stroke 0.3s;"/></svg>
-      <div id="eld-rt-display" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:bold;">0:00</div>
-    </div>
-    <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
-      <div style="display:flex;gap:5px;align-items:center;">
-        <button class="rt-btn" id="eld-rt-play" onclick="rtToggle()" style="background:var(--acid);color:var(--bg);flex:1;">&#9654;</button>
-        <button class="rt-btn" onclick="rtReset()" style="background:transparent;border:1px solid #2e2e2e;color:#707070;">&#8635;</button>
+  <div id="eld-rest-bar" aria-hidden="true">
+    <div class="eld-timer-pop-head">
+      <div>
+        <div class="eld-timer-pop-title">Rest timer</div>
+        <div id="eld-timer-pop-sub" style="font-size:12px;color:var(--muted);margin-top:2px;">Ready when you are</div>
       </div>
-      <div id="eld-rt-adjust" style="gap:4px;">
+      <button class="eld-timer-close" onclick="closeTimerPopover()">Close</button>
+    </div>
+    <div class="eld-timer-main">
+      <div class="eld-rt-ring-wrap" style="position:relative;flex-shrink:0;cursor:pointer;" onclick="openTimerEditModal()">
+        <svg width="220" height="220" viewBox="0 0 60 60" style="transform:rotate(-90deg);"><circle cx="30" cy="30" r="26" fill="none" stroke="#e1dacd" stroke-width="4"/><circle id="eld-rt-ring" cx="30" cy="30" r="26" fill="none" stroke="var(--moss)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="0" style="transition:stroke-dashoffset 0.9s linear,stroke 0.3s;"/></svg>
+        <div id="eld-rt-display" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:bold;">0:00</div>
+      </div>
+    </div>
+    <div class="eld-timer-controls">
+      <div class="eld-timer-primary">
+        <button class="rt-btn" id="eld-rt-play" onclick="rtToggle()" style="background:var(--moss);color:#fff;flex:1;">&#9654;</button>
+        <button class="rt-btn" onclick="rtReset()" style="background:transparent;border:1px solid var(--border);color:var(--ink);">&#8635;</button>
+      </div>
+      <div id="eld-rt-adjust" class="eld-timer-adjust">
         <button class="rt-adj-btn" onclick="rtAdjust(-60)">−60</button>
         <button class="rt-adj-btn" onclick="rtAdjust(-10)">−10</button>
         <button class="rt-adj-btn" onclick="rtAdjust(10)">+10</button>
@@ -772,7 +801,13 @@ body{background:
         <button class="eld-stepper-btn" onclick="eldAdjustDraft('reps',1)">+</button>
       </div>
     </div>
-    <button class="eld-add-visible" onclick="eldCommitSet()">Add Set</button>
+    <div class="eld-action-row">
+      <button class="eld-add-visible" onclick="eldCommitSet()">Add Set</button>
+      <button id="eld-timer-popover-btn" class="eld-timer-button" onclick="openTimerPopover()" title="Rest timer">
+        <span class="timer-icon">&#9711;</span>
+        <span class="timer-label" id="eld-timer-button-label">0:00</span>
+      </button>
+    </div>
   </div>
   <div id="eld-body">
     <div id="eld-col-history">
@@ -3944,6 +3979,27 @@ async function deleteGlobalExercise(name) {
 }
 
 // REST TIMER
+function openTimerPopover() {
+  var pop = document.getElementById('eld-rest-bar');
+  if (!pop) return;
+  pop.classList.add('visible');
+  pop.setAttribute('aria-hidden', 'false');
+  rtUpdateDisplay();
+}
+function closeTimerPopover() {
+  var pop = document.getElementById('eld-rest-bar');
+  if (!pop) return;
+  pop.classList.remove('visible');
+  pop.setAttribute('aria-hidden', 'true');
+}
+function updateTimerButton(timeStr) {
+  var btn = document.getElementById('eld-timer-popover-btn');
+  var label = document.getElementById('eld-timer-button-label');
+  if (label) label.textContent = timeStr;
+  if (btn) btn.classList.toggle('running', !!rtRunning);
+  var sub = document.getElementById('eld-timer-pop-sub');
+  if (sub) sub.textContent = rtRunning ? 'Rest in progress' : 'Ready when you are';
+}
 function rtSetPreset(s) {
   rtPreset = s;
   localStorage.setItem('lift_last_preset', s);
@@ -3955,14 +4011,13 @@ function rtSetPreset(s) {
 }
 function rtQuickStart() {
   document.getElementById('rest-timer').classList.add('visible');
-  var eldBar = document.getElementById('eld-rest-bar');
-  if (eldBar) eldBar.style.display = 'flex';
   // Stop local interval and reset remaining, but only cancel server timer if
   // we're actually restarting (not first start) — avoids instant cancel race
   rtRunning = false;
   clearInterval(rtInterval);
   rtRemaining = rtPreset;
   rtStart();
+  openTimerPopover();
 }
 function rtToggle() { rtRunning ? rtStop() : rtStart(); }
 function rtStart() {
@@ -3980,6 +4035,7 @@ function rtStart() {
   if (logAdj) logAdj.style.display = 'flex';
   var eldPlay = document.getElementById('eld-rt-play');
   if (eldPlay) { eldPlay.innerHTML = '&#9646;&#9646;'; }
+  rtUpdateDisplay();
   scheduleNotification('Rest Complete ⏱', 'Time to lift!', rtRemaining);
   rtInterval = setInterval(function() {
     rtRemaining = Math.round((endTime - Date.now()) / 1000);
@@ -4002,6 +4058,7 @@ function rtStop(cancelServer) {
   if (logAdj) logAdj.style.display = 'none';
   var eldPlay = document.getElementById('eld-rt-play');
   if (eldPlay) { eldPlay.innerHTML = '&#9654;'; }
+  rtUpdateDisplay();
 }
 function rtReset() { rtStop(); rtRemaining = rtPreset; rtUpdateDisplay(); }
 function rtUpdateDisplay() {
@@ -4029,8 +4086,9 @@ function rtUpdateDisplay() {
     eldRing.style.strokeDasharray = eldCirc;
     eldRing.style.strokeDashoffset = eldCirc * ratio;
     eldRing.style.stroke = color;
-    eldDisp.style.color = rtRemaining < 20 ? color : '#f0f0f0';
+    eldDisp.style.color = rtRemaining < 20 ? color : 'var(--ink)';
   }
+  updateTimerButton(timeStr);
 }
 
 // ── STATS ────────────────────────────────────────────────────────────────────
