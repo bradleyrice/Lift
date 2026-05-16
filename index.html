@@ -362,9 +362,15 @@ body{background:
 #eld-stats-toggle-btn,.exercise-settings-btn{background:var(--paper)!important;border:1px solid var(--border)!important;color:var(--moss-dark)!important;border-radius:8px!important;font-family:var(--display)!important;font-weight:850!important;font-size:12px;padding:8px 9px;cursor:pointer;white-space:nowrap;}
 #eld-comment-btn.has-comment{background:rgba(95,127,66,0.14)!important;border-color:rgba(95,127,66,0.4)!important;}
 #eld-rest-bar,#eld-stats-strip,#eld-input-fixed{background:var(--paper)!important;border-color:var(--border)!important;}
-#eld-rest-bar{position:absolute!important;left:0;right:0;bottom:0;z-index:30;height:min(52dvh,430px);box-sizing:border-box;display:none!important;order:5;border:1px solid var(--border)!important;border-radius:16px 16px 0 0;padding:14px 16px 18px!important;box-shadow:0 -18px 48px rgba(42,35,24,0.22);background:rgba(255,253,248,0.98)!important;flex-direction:column!important;gap:12px!important;}
+#eld-rest-bar{position:absolute!important;left:0;right:0;bottom:0;z-index:30;height:min(52dvh,430px);box-sizing:border-box;display:none!important;order:5;border:1px solid var(--border)!important;border-radius:16px 16px 0 0;padding:14px 16px 18px!important;box-shadow:0 -18px 48px rgba(42,35,24,0.22);background:rgba(255,253,248,0.98)!important;flex-direction:column!important;gap:12px!important;transition:background 0.25s,border-color 0.25s,box-shadow 0.25s;}
 #eld-rest-bar.visible{display:flex!important;}
-#eld-rest-bar::before{content:'';position:fixed;inset:0;z-index:-1;background:rgba(31,27,22,0.22);}
+#eld-rest-bar.timer-running{background:#f3f8eb!important;border-color:#9db783!important;}
+#eld-rest-bar.timer-warning{background:#fff6dc!important;border-color:#d7a23c!important;box-shadow:0 -18px 48px rgba(163,105,22,0.22);}
+#eld-rest-bar.timer-danger{background:#fff0e8!important;border-color:#cf654e!important;box-shadow:0 -18px 48px rgba(168,63,42,0.28);}
+#eld-rest-bar.timer-done{background:#ffe7df!important;border-color:#b9382e!important;box-shadow:0 -18px 48px rgba(185,56,46,0.34);}
+@keyframes timerFlash{0%,100%{filter:none;transform:scale(1);}50%{filter:brightness(1.18);transform:scale(1.035);}}
+#eld-rest-bar.timer-danger #eld-rt-display,#eld-rest-bar.timer-danger .eld-rt-ring-wrap{animation:timerFlash 0.8s infinite;}
+#eld-rest-bar.timer-done #eld-rt-display{animation:none;color:#b9382e!important;}
 .eld-timer-pop-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}
 .eld-timer-pop-title{font-family:var(--display);font-size:13px;font-weight:850;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
 .eld-timer-close{background:transparent;border:1px solid var(--border);border-radius:999px;color:var(--ink);font-family:var(--display);font-weight:850;font-size:13px;padding:7px 11px;cursor:pointer;}
@@ -469,6 +475,9 @@ body{background:
 .eld-timer-button .timer-icon{font-size:20px;line-height:1;}
 .eld-timer-button .timer-label{font-family:var(--mono);font-size:11px;margin-top:2px;color:var(--ink);}
 .eld-timer-button.running{background:rgba(95,127,66,0.14);border-color:rgba(95,127,66,0.45);}
+.eld-timer-button.timer-warning{background:#fff4d2;border-color:#d7a23c;}
+.eld-timer-button.timer-danger{background:#ffe6dc;border-color:#cf654e;animation:timerFlash 0.8s infinite;}
+.eld-timer-button.timer-done{background:#ffe1d8;border-color:#b9382e;color:#b9382e;}
 .eld-note-card{display:none;}
 .eld-note-title{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:0.08em;}
 .eld-note-text{font-size:13px;color:var(--ink);margin-top:3px;line-height:1.35;}
@@ -3996,9 +4005,25 @@ function updateTimerButton(timeStr) {
   var btn = document.getElementById('eld-timer-popover-btn');
   var label = document.getElementById('eld-timer-button-label');
   if (label) label.textContent = timeStr;
-  if (btn) btn.classList.toggle('running', !!rtRunning);
+  var pop = document.getElementById('eld-rest-bar');
+  var cls = rtRemaining <= 0 ? 'timer-done' : (rtRunning && rtRemaining <= 10 ? 'timer-danger' : (rtRunning && rtRemaining <= 20 ? 'timer-warning' : (rtRunning ? 'timer-running' : '')));
+  [btn, pop].forEach(function(el) {
+    if (!el) return;
+    el.classList.toggle('running', !!rtRunning);
+    ['timer-running','timer-warning','timer-danger','timer-done'].forEach(function(c) {
+      el.classList.toggle(c, c === cls);
+    });
+  });
   var sub = document.getElementById('eld-timer-pop-sub');
-  if (sub) sub.textContent = rtRunning ? 'Rest in progress' : 'Ready when you are';
+  if (sub) {
+    sub.textContent = cls === 'timer-done'
+      ? 'Rest complete'
+      : cls === 'timer-danger'
+        ? 'Almost there'
+        : cls === 'timer-warning'
+          ? 'Get ready'
+          : rtRunning ? 'Rest in progress' : 'Ready when you are';
+  }
 }
 function rtSetPreset(s) {
   rtPreset = s;
@@ -4064,7 +4089,7 @@ function rtReset() { rtStop(); rtRemaining = rtPreset; rtUpdateDisplay(); }
 function rtUpdateDisplay() {
   var m = Math.floor(rtRemaining/60), s = rtRemaining % 60;
   var timeStr = m + ':' + (s < 10 ? '0' : '') + s;
-  var color = rtRemaining <= 0 ? '#ff4747' : rtRemaining < 20 ? '#ff9900' : '#e8ff47';
+  var color = rtRemaining <= 0 ? '#b9382e' : rtRemaining <= 10 ? '#cf3f2f' : rtRemaining <= 20 ? '#d78a1f' : '#5f7f42';
   // Ratio: 0 = full ring, show proportion remaining. Full when stopped.
   var base = rtRunning ? rtStartPreset : (rtPreset || rtRemaining || 1);
   var ratio = rtRunning ? (1 - Math.max(0, rtRemaining) / base) : 0;
