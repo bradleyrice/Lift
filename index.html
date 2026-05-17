@@ -2395,9 +2395,20 @@ async function seedDefaults() {
 
 async function loadPBs() {
   pbCache = {};
+  var byExerciseDate = {};
   shRows.filter(function(r) { return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; }).forEach(function(r) {
-    var ex = r[5], w = parseFloat(r[7]);
-    if (ex && !isNaN(w) && (!pbCache[ex] || w > pbCache[ex])) pbCache[ex] = w;
+    var ex = r[5], d = r[9];
+    if (!ex || !d) return;
+    var key = ex + '||' + d;
+    if (!byExerciseDate[key]) byExerciseDate[key] = {exercise: ex, sets: []};
+    byExerciseDate[key].sets.push({weight: r[7], reps: r[8]});
+  });
+  Object.keys(byExerciseDate).forEach(function(key) {
+    var entry = byExerciseDate[key];
+    performanceSets(entry.sets).forEach(function(s) {
+      var w = parseFloat(s.weight);
+      if (!isNaN(w) && (!pbCache[entry.exercise] || w > pbCache[entry.exercise])) pbCache[entry.exercise] = w;
+    });
   });
 }
 
@@ -2792,6 +2803,10 @@ function workingSetsOnly(sets, warmups) {
   return (sets || []).filter(function(s, i) { return !(warmups && warmups.has(i)); });
 }
 
+function performanceSets(sets) {
+  return workingSetsOnly(sets || [], detectWarmupSets(sets || []));
+}
+
 function getPrevSessionWeight(exName, setIndex) {
   // Returns weight for the corresponding set number from the previous session
   // Excludes current live session rows by ResultID (not by date — allows same-day earlier sessions)
@@ -2997,10 +3012,17 @@ function targetForPreviousSet(prevSet, settings) {
 }
 
 function exerciseAllSets(exName, todaySets) {
-  var rows = getLocalResults().filter(function(r) {
+  var byDate = {};
+  getLocalResults().filter(function(r) {
     return r[5] === exName && r[0] !== 'ResultID' && r[0] !== '__DELETED__';
-  }).map(function(r) {
-    return {weight:r[7], reps:r[8], date:r[9]};
+  }).forEach(function(r) {
+    var d = r[9]; if (!d) return;
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push({weight:r[7], reps:r[8], date:d});
+  });
+  var rows = [];
+  Object.keys(byDate).forEach(function(d) {
+    rows = rows.concat(performanceSets(byDate[d]));
   });
   (todaySets || []).forEach(function(s) { rows.push({weight:s.weight, reps:s.reps, date:new Date().toLocaleDateString('en-GB')}); });
   return rows;
@@ -3016,13 +3038,14 @@ function renderEldCompare() {
   var prevSets = previous ? previous.sets : [];
   var prevWarmups = detectWarmupSetsFromRaw(prevSets);
   var todayWarmups = detectWarmupSets(todaySets);
-  var prevWorkingSets = workingSetsOnly(prevSets, prevWarmups);
-  var todayWorkingCount = workingSetsOnly(todaySets, todayWarmups).length;
-  var targetSet = prevWorkingSets[todayWorkingCount] || prevWorkingSets[prevWorkingSets.length - 1] || null;
-  var prevVolume = setVolume(prevSets);
-  var todayVolume = setVolume(todaySets);
+  var nextSetNum = todaySets.length + 1;
+  var targetSet = findSetByNum(prevSets, nextSetNum) || null;
+  var prevPerformanceSets = performanceSets(prevSets);
+  var todayPerformanceSets = performanceSets(todaySets);
+  var prevVolume = setVolume(prevPerformanceSets);
+  var todayVolume = setVolume(todayPerformanceSets);
   var remaining = Math.max(0, prevVolume - todayVolume);
-  var allSets = exerciseAllSets(currentExLogName, todaySets);
+  var allSets = exerciseAllSets(currentExLogName, todayPerformanceSets);
   var best = allSets.reduce(function(acc, s) {
     var w = parseFloat(s.weight) || 0;
     var r = parseInt(s.reps) || 0;
@@ -3050,8 +3073,8 @@ function renderEldCompare() {
     var prevSet = findSetByNum(prevSets, setNum);
     var todaySet = todaySets[i] || null;
     var isWarmupTarget = prevWarmups.has(i);
-    var target = isWarmupTarget ? null : targetForPreviousSet(prevSet, settings);
-    var isActive = !isWarmupTarget && !!prevSet && targetSet && prevSet === targetSet;
+    var isActive = !!prevSet && setNum === nextSetNum;
+    var target = isWarmupTarget && !isActive ? null : targetForPreviousSet(prevSet, settings);
     var rowStateClass = (isActive ? 'eld-compare-row-active ' : '') + (todaySet && todayWarmups.has(i) ? 'eld-compare-row-warmup-complete ' : '');
     var editableWeight = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'weight\',\'' + escJS(todaySet.weight || '') + '\')" title="Edit today weight' : '';
     var editableReps = todaySet ? ' editable" onclick="eldInlineEdit(\'' + sid(currentExLogName) + '\',' + i + ',\'reps\',\'' + escJS(todaySet.reps || '') + '\')" title="Edit today reps' : '';
@@ -3188,14 +3211,10 @@ function renderEldSets() {
   if (numEl) numEl.textContent = nextIdx + 1;
   var setnumO = document.getElementById('eld-input-setnum-overlay');
   if (setnumO) setnumO.textContent = nextIdx + 1;
-  // Pre-fill the next working target from exercise settings.
+  // Pre-fill from the previous session's matching set number.
   var histForTarget = getExHistory(currentExLogName);
   var prevSetsForTarget = histForTarget.length ? histForTarget[0].sets : [];
-  var prevWarmupsForTarget = detectWarmupSetsFromRaw(prevSetsForTarget);
-  var todayWarmupsForTarget = detectWarmupSets(sets);
-  var todayWorkingCountForTarget = workingSetsOnly(sets, todayWarmupsForTarget).length;
-  var prevWorkingSetsForTarget = workingSetsOnly(prevSetsForTarget, prevWarmupsForTarget);
-  var prevSetForTarget = prevWorkingSetsForTarget[todayWorkingCountForTarget] || null;
+  var prevSetForTarget = findSetByNum(prevSetsForTarget, nextIdx + 1);
   var settings = getExerciseSettings(currentExLogName);
   var targetForDraft = targetForPreviousSet(prevSetForTarget, settings);
   var prevWeight = targetForDraft && targetForDraft.weight ? parseFloat(targetForDraft.weight) : getPrevSessionWeight(currentExLogName, nextIdx);
@@ -4142,7 +4161,8 @@ function getExerciseSessionData(exName, rows) {
     return p(a).localeCompare(p(b));
   });
   return dates.map(function(d) {
-    var sets = byDate[d];
+    var sets = performanceSets(byDate[d]);
+    if (!sets.length) sets = byDate[d];
     var vol = sets.reduce(function(s,x) { return s + x.weight * x.reps; }, 0);
     var totalReps = sets.reduce(function(s,x) { return s + x.reps; }, 0);
     var maxWt = Math.max.apply(null, sets.map(function(x) { return x.weight; }));
@@ -4161,14 +4181,23 @@ function getWorkoutSessionData(workoutId, rows) {
   }).forEach(function(r) {
     var d = r[9]; if (!d) return;
     if (!byDate[d]) byDate[d] = [];
-    byDate[d].push({weight: parseFloat(r[7]), reps: parseInt(r[8])});
+    byDate[d].push({exercise: r[5], weight: parseFloat(r[7]), reps: parseInt(r[8])});
   });
   var dates = Object.keys(byDate).sort(function(a,b) {
     var p = function(s) { var x=s.split('/'); return x[2]+x[1]+x[0]; };
     return p(a).localeCompare(p(b));
   });
   return dates.map(function(d) {
-    var sets = byDate[d];
+    var byExercise = {};
+    byDate[d].forEach(function(s) {
+      if (!byExercise[s.exercise]) byExercise[s.exercise] = [];
+      byExercise[s.exercise].push(s);
+    });
+    var sets = [];
+    Object.keys(byExercise).forEach(function(ex) {
+      sets = sets.concat(performanceSets(byExercise[ex]));
+    });
+    if (!sets.length) sets = byDate[d];
     var vol = sets.reduce(function(s,x) { return s + x.weight * x.reps; }, 0);
     var totalReps = sets.reduce(function(s,x) { return s + x.reps; }, 0);
     var maxE = Math.max.apply(null, sets.map(function(x) { return e1rm(x.weight, x.reps) || 0; }));
@@ -4412,7 +4441,7 @@ function updateEldStatsStrip(exName) {
   // Current session stats from memory
   var curVol = 0, curReps = 0, curMaxWt = 0, curMaxE1rm = 0;
   if (session && session.sets && session.sets[exName]) {
-    session.sets[exName].forEach(function(s) {
+    performanceSets(session.sets[exName]).forEach(function(s) {
       var w = parseFloat(s.weight), r = parseInt(s.reps);
       if (w && r) {
         curVol += w * r;
