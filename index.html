@@ -1213,6 +1213,14 @@ function escHTML(val) {
 function escJS(val) {
   return String(val == null ? '' : val).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
 }
+function clearEl(el) {
+  if (!el) return;
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+function appendTextBreak(el, text) {
+  el.appendChild(document.createTextNode(text));
+  el.appendChild(document.createElement('br'));
+}
 
 function isValidResultRow(r) {
   // A valid result row must have:
@@ -1269,10 +1277,29 @@ function defaultExercisesList() {
   return Object.keys(exSet);
 }
 
+function normalizeExerciseNameEntry(entry) {
+  if (typeof entry === 'string') return entry.trim();
+  if (entry && typeof entry.name === 'string') return entry.name.trim();
+  return '';
+}
+
+function normalizeExerciseList(rows) {
+  var seen = {};
+  var list = [];
+  if (!Array.isArray(rows)) return list;
+  rows.forEach(function(entry) {
+    var name = normalizeExerciseNameEntry(entry);
+    if (!name || seen[name]) return;
+    seen[name] = true;
+    list.push(name);
+  });
+  return list;
+}
+
 function normalizeLocalWorkouts(rows) {
   if (!Array.isArray(rows)) return [];
   return rows.filter(function(w) { return w && w.id && w.name; }).map(function(w) {
-    return {id:w.id, name:w.name, exercises:Array.isArray(w.exercises) ? w.exercises : []};
+    return {id:w.id, name:w.name, exercises:normalizeExerciseList(w.exercises)};
   });
 }
 
@@ -1347,6 +1374,30 @@ function removeQueuedResultOps(resultId) {
   var q = getSyncQueue();
   var next = q.filter(function(op) { return queuedResultId(op) !== resultId; });
   if (next.length !== q.length) lsSet(LS_SYNC_QUEUE, next);
+}
+function getQueuedResultDeleteIds(queue) {
+  var ids = {};
+  if (typeof _deletedResultIds !== 'undefined' && _deletedResultIds && _deletedResultIds.forEach) {
+    _deletedResultIds.forEach(function(id) { if (id) ids[id] = true; });
+  }
+  (queue || getSyncQueue()).forEach(function(op) {
+    if (op && op.type === 'result-delete' && op.resultId) ids[op.resultId] = true;
+  });
+  return ids;
+}
+function queueResultDelete(resultId) {
+  if (!resultId) return;
+  if (typeof _deletedResultIds !== 'undefined' && _deletedResultIds) _deletedResultIds.add(resultId);
+  var q = getSyncQueue();
+  var next = q.filter(function(op) {
+    return queuedResultId(op) !== resultId || (op && op.type === 'result-delete');
+  });
+  var alreadyQueued = next.some(function(op) {
+    return op && op.type === 'result-delete' && op.resultId === resultId;
+  });
+  if (!alreadyQueued) next.push({type:'result-delete', resultId:resultId});
+  lsSet(LS_SYNC_QUEUE, next);
+  syncLog('queue-result-delete', { resultId: resultId, size: next.length });
 }
 var pendingSetSyncs = [];
 function trackSetSync(promise) {
@@ -1487,6 +1538,22 @@ var rtStartPreset = _savedPreset; // preset at time timer was started — used f
 var pbCache = {};
 var shFilter = 'all', shRows = [], ehRows = [];
 var _deletedResultIds = new Set(); // tracks deleted IDs so background Sheets refresh can't resurrect them
+var initGeneration = 0;
+
+function nextInitGeneration() {
+  initGeneration += 1;
+  return initGeneration;
+}
+
+function isCurrentInitGeneration(generation) {
+  return generation === initGeneration;
+}
+
+function supersedeInitGeneration(generation) {
+  if (initGeneration !== generation) return 0;
+  initGeneration += 1;
+  return initGeneration;
+}
 
 // SCREEN MANAGEMENT
 function showScreen(id) {
@@ -1931,13 +1998,22 @@ function renderAdHocList() {
   if (query) list = list.filter(function(e) { return e.toLowerCase().indexOf(query) >= 0; });
   var wrap = document.getElementById('adhoc-list');
   if (!list.length && !query) { wrap.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:#666;padding:8px 0;">All exercises already added.</div>'; return; }
-  wrap.innerHTML = list.slice(0, 20).map(function(e) {
-    return '<div onclick="confirmAdHocExercise(\'' + escJS(e) + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:#e0e0e0;cursor:pointer;">' + escHTML(e) + '</div>';
-  }).join('');
+  clearEl(wrap);
+  list.slice(0, 20).forEach(function(e) {
+    var row = document.createElement('div');
+    row.style.cssText = 'padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:#e0e0e0;cursor:pointer;';
+    row.textContent = e;
+    row.addEventListener('click', function() { confirmAdHocExercise(e); });
+    wrap.appendChild(row);
+  });
   // Show "create new" option if query doesn't exactly match
   var exactMatch = exSet[query] || list.some(function(e) { return e.toLowerCase() === query; });
   if (query && !exactMatch) {
-    wrap.innerHTML += '<div onclick="confirmAdHocExercise(\'' + escJS(query) + '\')" style="padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:var(--acid);cursor:pointer;">+ Add &quot;' + escHTML(query) + '&quot; as new exercise</div>';
+    var createRow = document.createElement('div');
+    createRow.style.cssText = 'padding:10px 8px;border-bottom:1px solid #1e1e1e;font-family:var(--mono);font-size:13px;color:var(--acid);cursor:pointer;';
+    createRow.textContent = '+ Add "' + query + '" as new exercise';
+    createRow.addEventListener('click', function() { confirmAdHocExercise(query); });
+    wrap.appendChild(createRow);
   }
 }
 
@@ -1991,6 +2067,8 @@ var SHEET_HEADERS = {
   'Results': ['UserID','ResultID','Timestamp','WorkoutID','WorkoutName','ExerciseID','ExerciseName','Set','Weight','Reps','SessionDate']
 };
 var sheetPropertiesCache = null;
+var appendLocks = {};
+var resultSyncLocks = {};
 
 function xhrRequest(method, url, body, isRetry) {
   return new Promise(function(resolve, reject) {
@@ -2212,14 +2290,25 @@ async function safeAppendRows(tab, rows) {
 }
 
 async function appendRows(tab, rows) {
-  syncLog('append-start', { tab: tab, rows: rows.length });
-  var existing = await ensureSheetReady(tab);
-  var nextRow = existing.length + 1;
-  for (var i = 0; i < rows.length; i++) {
-    await writeRow(tab, nextRow + i, rows[i]);
-  }
-  syncLog('append-success', { tab: tab, firstRow: nextRow, rows: rows.length });
-  return nextRow;
+  if (!rows.length) return;
+  var prevLock = appendLocks[tab] || Promise.resolve();
+  var run = prevLock.catch(function() {}).then(async function() {
+    // Serialise read-length + row writes per sheet so quick live set commits
+    // cannot both choose the same "next empty" row.
+    syncLog('append-start', { tab: tab, rows: rows.length });
+    var existing = await ensureSheetReady(tab);
+    var nextRow = existing.length + 1;
+    for (var i = 0; i < rows.length; i++) {
+      await writeRow(tab, nextRow + i, rows[i]);
+    }
+    syncLog('append-success', { tab: tab, firstRow: nextRow, rows: rows.length });
+    return nextRow;
+  });
+  var lock = run.finally(function() {
+    if (appendLocks[tab] === lock) delete appendLocks[tab];
+  });
+  appendLocks[tab] = lock;
+  return run;
 }
 
 function updateSheetRow(tab, rowNum, values) {
@@ -2242,8 +2331,24 @@ async function findResultSheetRow(resultId) {
   return idx > 0 ? idx + 1 : 0;
 }
 
+function withResultSyncLock(resultId, fn) {
+  if (!resultId) return fn();
+  var prevLock = resultSyncLocks[resultId] || Promise.resolve();
+  var run = prevLock.catch(function() {}).then(function() {
+    // Serialise append/update/delete for one ResultID so a quick edit after
+    // adding a set waits for the original append before doing find-or-append.
+    return fn();
+  });
+  var lock = run.finally(function() {
+    if (resultSyncLocks[resultId] === lock) delete resultSyncLocks[resultId];
+  });
+  resultSyncLocks[resultId] = lock;
+  return run;
+}
+
 // INIT
 async function initApp() {
+  var initGen = nextInitGeneration();
   showScreen('loading-screen');
   loadPushServerUrl();
   try {
@@ -2288,40 +2393,54 @@ async function initApp() {
     try {
       await Promise.race([initTimeout, (async function() {
         setLoadingMsg('Loading workouts...');
-        await loadWorkoutsAndExercises();
+        var loadedRoutine = await loadWorkoutsAndExercises();
+        if (!isCurrentInitGeneration(initGen)) return;
         setLoadingMsg('Loading history...');
         var rawResults = await readUserRows('Results');
+        if (!isCurrentInitGeneration(initGen)) return;
         var allSheetsRows = rawResults.map(function(r) { return r.slice(1); });
         // Collect deleted IDs from Sheets (tombstones)
         var deletedIds = new Set(allSheetsRows.filter(function(r) { return r[0] === '__DELETED__'; }).map(function(r) { return r[1]; }));
-        var sheetsRows = allSheetsRows.filter(isValidResultRow);
-        var localRows = getLocalResults().filter(function(r) { return !deletedIds.has(r[0]); });
-        // Persist cleaned local (removes any rows deleted on another device)
-        lsSet(LS_RESULTS, localRows);
+        var queuedDeletes = getQueuedResultDeleteIds();
+        var sheetsRows = allSheetsRows.filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
+        var localRows = getLocalResults().filter(function(r) { return !deletedIds.has(r[0]) && !queuedDeletes[r[0]]; });
         var localIds = new Set(localRows.map(function(r) { return r[0]; }));
         var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
-        shRows = localRows.concat(sheetsOnly);
+        var mergedRows = localRows.concat(sheetsOnly);
+        if (!isCurrentInitGeneration(initGen)) return;
+        // Late Sheets responses are ignored once local fallback or a newer init has committed.
+        commitWorkoutsAndExercises(loadedRoutine);
+        // Persist cleaned local (removes any rows deleted on another device)
+        lsSet(LS_RESULTS, localRows);
+        shRows = mergedRows;
         ehRows = shRows;
         lsSet(LS_RESULTS, shRows);
       })()]);
     } catch(e) {
       if (e.message === 'TIMEOUT') {
         // Network too slow — load from local and continue
+        var fallbackGen = supersedeInitGeneration(initGen);
+        if (!fallbackGen) return;
         setLoadingMsg('Loading local data...');
         await loadFromLocal();
+        if (!isCurrentInitGeneration(fallbackGen)) return;
         showToast('Loaded from local — syncing in background');
         await loadPBs();
+        if (!isCurrentInitGeneration(fallbackGen)) return;
         renderWorkoutPicker();
         renderWorkoutsScreen();
         setTimeout(flushSyncQueue, 1000);
         await requestNotifPermission();
+        if (!isCurrentInitGeneration(fallbackGen)) return;
         initPushSubscription();
         showScreen('app');
         return;
       }
       throw e;
     }
+    if (!isCurrentInitGeneration(initGen)) return;
     await loadPBs();
+    if (!isCurrentInitGeneration(initGen)) return;
     renderWorkoutPicker();
     renderWorkoutsScreen();
     // Flush any queued offline writes
@@ -2338,14 +2457,12 @@ async function initApp() {
 async function loadFromLocal() {
   // Load workouts from local or seed defaults
   var localWorkouts = normalizeLocalWorkouts(lsGet(LS_WORKOUTS));
-  var localExercises = lsGet(LS_EXERCISES);
-  localExercises = Array.isArray(localExercises) ? localExercises : [];
+  var localExercises = normalizeExerciseList(lsGet(LS_EXERCISES));
   if (localWorkouts.length === 0) {
     setLoadingMsg('Setting up your routine...');
     seedLocalDefaults();
     localWorkouts = normalizeLocalWorkouts(lsGet(LS_WORKOUTS));
-    localExercises = lsGet(LS_EXERCISES);
-    localExercises = Array.isArray(localExercises) ? localExercises : [];
+    localExercises = normalizeExerciseList(lsGet(LS_EXERCISES));
   }
   // Some file:// browsers can reject localStorage writes. Keep setup usable with
   // an in-memory default routine instead of crashing on null.map().
@@ -2355,6 +2472,8 @@ async function loadFromLocal() {
   }
   workouts = localWorkouts;
   allExercises = localExercises.length ? localExercises : defaultExercisesList();
+  lsSet(LS_WORKOUTS, workouts);
+  lsSet(LS_EXERCISES, allExercises);
   shRows = getLocalResults();
   ehRows = shRows;
   await loadPBs();
@@ -2378,8 +2497,15 @@ async function loadWorkoutsAndExercises() {
     wRows = await readUserRows('Workouts');
     eRows = await readUserRows('Exercises');
   }
-  workouts = wRows.map(function(r) { return {id:r[1], name:r[2], exercises:(r[3]||'').split('|').filter(Boolean)}; });
-  allExercises = eRows.map(function(r) { return r[2]; }).filter(Boolean);
+  return {
+    workouts: wRows.map(function(r) { return {id:r[1], name:r[2], exercises:(r[3]||'').split('|').filter(Boolean)}; }),
+    exercises: eRows.map(function(r) { return r[2]; }).filter(Boolean)
+  };
+}
+
+function commitWorkoutsAndExercises(data) {
+  workouts = data.workouts;
+  allExercises = normalizeExerciseList(data.exercises);
   lsSet(LS_WORKOUTS, workouts);
   lsSet(LS_EXERCISES, allExercises);
 }
@@ -2438,27 +2564,29 @@ async function syncResultToSheets(row, set) {
     addToSyncQueue({type:'append', row:sheetRow, setId: set._localId});
     return;
   }
-  try {
-    syncLog('set-sync-start', { resultId: set && set._localId });
-    setSyncStatus('syncing');
-    set.sheetRow = await appendRows('Results', [sheetRow]);
-    if (set._deleted) {
-      var appendedRow = await findResultSheetRow(set._localId);
-      await deleteSheetRow('Results', appendedRow || set.sheetRow);
-      set.sheetRow = null;
+  return withResultSyncLock(set && set._localId, async function() {
+    try {
+      syncLog('set-sync-start', { resultId: set && set._localId });
+      setSyncStatus('syncing');
+      set.sheetRow = await appendRows('Results', [sheetRow]);
+      if (set._deleted) {
+        var appendedRow = await findResultSheetRow(set._localId);
+        await deleteSheetRow('Results', appendedRow || set.sheetRow);
+        set.sheetRow = null;
+      }
+      setSyncStatus('saved');
+      syncLog('set-sync-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
+    } catch(e) {
+      setSyncStatus('error', recordSyncError('Add set sync', e));
+      if (set._deleted) {
+        if (set._localId) queueResultDelete(set._localId);
+        else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+        else removeQueuedResultOps(set._localId);
+      } else {
+        addToSyncQueue({type:'append', row:sheetRow, setId:set._localId});
+      }
     }
-    setSyncStatus('saved');
-    syncLog('set-sync-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
-  } catch(e) {
-    setSyncStatus('error', recordSyncError('Add set sync', e));
-    if (set._deleted) {
-      if (set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
-      else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
-      else removeQueuedResultOps(set._localId);
-    } else {
-      addToSyncQueue({type:'append', row:sheetRow, setId:set._localId});
-    }
-  }
+  });
 }
 
 async function updateResultInSheets(row, set) {
@@ -2469,47 +2597,51 @@ async function updateResultInSheets(row, set) {
     addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
     return;
   }
-  try {
-    syncLog('set-update-start', { resultId: set && set._localId });
-    setSyncStatus('syncing');
-    var rowNum = await findResultSheetRow(set._localId);
-    if (rowNum) {
-      await updateSheetRow('Results', rowNum, sheetRow);
-      set.sheetRow = rowNum;
-    } else {
-      // No sheet index yet — just append. ResultID deduplication handles any dupes on read.
-      set.sheetRow = await appendRows('Results', [sheetRow]);
+  return withResultSyncLock(set && set._localId, async function() {
+    try {
+      syncLog('set-update-start', { resultId: set && set._localId });
+      setSyncStatus('syncing');
+      var rowNum = await findResultSheetRow(set._localId);
+      if (rowNum) {
+        await updateSheetRow('Results', rowNum, sheetRow);
+        set.sheetRow = rowNum;
+      } else {
+        // No sheet index yet — just append. ResultID deduplication handles any dupes on read.
+        set.sheetRow = await appendRows('Results', [sheetRow]);
+      }
+      setSyncStatus('saved');
+      syncLog('set-update-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
+    } catch(e) {
+      setSyncStatus('error', recordSyncError('Update set sync', e));
+      addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
     }
-    setSyncStatus('saved');
-    syncLog('set-update-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
-  } catch(e) {
-    setSyncStatus('error', recordSyncError('Update set sync', e));
-    addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
-  }
+  });
 }
 
 async function deleteResultInSheets(set) {
   if (set && set._localId) removeQueuedResultOps(set._localId);
   if (offlineMode || !accessToken) {
     syncLog('set-delete-queued-offline', { resultId: set && set._localId, offlineMode: offlineMode, hasToken: !!accessToken });
-    if (set && set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
+    if (set && set._localId) queueResultDelete(set._localId);
     else if (set && set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
     return;
   }
   if (!set || (!set.sheetRow && !set._localId)) return;
-  try {
-    syncLog('set-delete-start', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
-    setSyncStatus('syncing');
-    var rowNum = await findResultSheetRow(set._localId);
-    if (rowNum) await deleteSheetRow('Results', rowNum);
-    else if (set.sheetRow) await deleteSheetRow('Results', set.sheetRow);
-    setSyncStatus('saved');
-    syncLog('set-delete-success', { resultId: set && set._localId });
-  } catch(e) {
-    setSyncStatus('error', recordSyncError('Delete set sync', e));
-    if (set._localId) addToSyncQueue({type:'result-delete', resultId:set._localId});
-    else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
-  }
+  return withResultSyncLock(set && set._localId, async function() {
+    try {
+      syncLog('set-delete-start', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
+      setSyncStatus('syncing');
+      var rowNum = await findResultSheetRow(set._localId);
+      if (rowNum) await deleteSheetRow('Results', rowNum);
+      else if (set.sheetRow) await deleteSheetRow('Results', set.sheetRow);
+      setSyncStatus('saved');
+      syncLog('set-delete-success', { resultId: set && set._localId });
+    } catch(e) {
+      setSyncStatus('error', recordSyncError('Delete set sync', e));
+      if (set._localId) queueResultDelete(set._localId);
+      else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+    }
+  });
 }
 
 // Flush queued offline writes when back online
@@ -2585,12 +2717,13 @@ async function flushSyncQueue() {
 
 // Merge local data into Sheets (when offline user signs in)
 async function mergeLocalToSheets() {
+  var queuedDeletes = getQueuedResultDeleteIds();
   var localResults = getLocalResults();
   var rawMerge = await readUserRows('Results');
-  var sheetResults = rawMerge.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+  var sheetResults = rawMerge.map(function(r) { return r.slice(1); }).filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
   var sheetIds = new Set(sheetResults.map(function(r) { return r[0]; }));
   var toUpload = localResults.filter(function(r) {
-    return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !sheetIds.has(r[0]);
+    return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !queuedDeletes[r[0]] && !sheetIds.has(r[0]);
   });
   if (toUpload.length > 0) {
     setLoadingMsg('Merging ' + toUpload.length + ' local sets to Sheets...');
@@ -2618,9 +2751,35 @@ function goScreen(name) {
 function renderWorkoutPicker() {
   var list = Array.isArray(workouts) && workouts.length ? workouts : defaultWorkoutsCopy();
   workouts = list;
-  document.getElementById('workout-select').innerHTML = list.map(function(w) {
-    return '<option value="' + w.id + '">' + w.name + '</option>';
-  }).join('');
+  var select = document.getElementById('workout-select');
+  clearEl(select);
+  list.forEach(function(w) {
+    var option = document.createElement('option');
+    option.value = w.id;
+    option.textContent = w.name;
+    select.appendChild(option);
+  });
+}
+
+function renderSessionMeta(workout) {
+  var meta = document.getElementById('session-meta');
+  if (!meta || !workout) return;
+  clearEl(meta);
+  var name = document.createElement('span');
+  name.style.cursor = 'default';
+  name.textContent = workout.name;
+  meta.appendChild(name);
+  if (getWorkoutComment(workout.id)) {
+    meta.appendChild(document.createTextNode(' '));
+    var c = document.createElement('span');
+    c.className = 'comment-indicator';
+    c.title = 'View workout note';
+    c.textContent = '💬';
+    c.addEventListener('click', function() { openWorkoutComment(workouts.indexOf(workout), true); });
+    meta.appendChild(c);
+  }
+  meta.appendChild(document.createElement('br'));
+  meta.appendChild(document.createTextNode(new Date().toLocaleDateString('en-GB')));
 }
 
 function setSessionChrome(active) {
@@ -2657,13 +2816,10 @@ function startSession() {
     clearInterval(sessionTimerInterval);
   setSessionChrome(true);
   updateSessionChrome(workout.name);
+  renderSessionMeta(workout);
   sessionTimerInterval = setInterval(function() {
     updateSessionChrome(workout.name);
-    var wCmt = getWorkoutComment(workout.id);
-    document.getElementById('session-meta').innerHTML =
-      '<span style="cursor:default;">' + workout.name + '</span>' +
-      (wCmt ? ' <span class="comment-indicator" onclick="openWorkoutComment(' + workouts.indexOf(workout) + ',true)" title="View workout note">&#128172;</span>' : '') +
-      '<br>' + new Date().toLocaleDateString('en-GB');
+    renderSessionMeta(workout);
   }, 1000);
   document.getElementById('session-info').classList.add('active');
   document.getElementById('session-actions').classList.add('active');
@@ -2696,13 +2852,10 @@ function resumeSession(wid, date) {
   clearInterval(sessionTimerInterval);
   setSessionChrome(true);
   updateSessionChrome(workout.name);
+  renderSessionMeta(workout);
   sessionTimerInterval = setInterval(function() {
     updateSessionChrome(workout.name);
-    var wCmt2 = getWorkoutComment(workout.id);
-    document.getElementById('session-meta').innerHTML =
-      '<span style="cursor:default;">' + workout.name + '</span>' +
-      (wCmt2 ? ' <span class="comment-indicator" onclick="openWorkoutComment(' + workouts.indexOf(workout) + ',true)" title="View workout note">&#128172;</span>' : '') +
-      '<br>' + new Date().toLocaleDateString('en-GB');
+    renderSessionMeta(workout);
   }, 1000);
 
   document.getElementById('session-info').classList.add('active');
@@ -2741,18 +2894,38 @@ function renderLogExercises() {
     var pb = pbCache[exName] !== undefined ? pbCache[exName] : null;
     var item = document.createElement('div');
     item.className = 'ex-list-item' + (logged.length > 0 ? ' has-sets' : '');
-    var metaStr = logged.length > 0
-      ? logged.length + ' set' + (logged.length !== 1 ? 's' : '') + (pb !== null ? ' · PB ' + pb + 'kg' : '')
-      : (pb !== null ? 'PB ' + pb + 'kg' : 'Not started');
-    var exCmt = getExerciseComment(exName);
-    item.innerHTML = '<div style="flex:1;"><div class="ex-list-name">' + exName +
-      (exCmt ? ' <span class="comment-indicator" onclick="event.stopPropagation();openExerciseComment(\'' + exName.replace(/'/g,"\'\'") + '\',true)" title="View exercise note">&#128172;</span>' : '') +
-      '</div><div class="ex-list-meta">' + metaStr + '</div></div>' +
-      '<span class="ex-list-arrow">&#8250;</span>';
-    item.onclick = function() { openExLogDetail(exName); };
-    wrap.appendChild(item);
-  });
-}
+	    var metaStr = logged.length > 0
+	      ? logged.length + ' set' + (logged.length !== 1 ? 's' : '') + (pb !== null ? ' · PB ' + pb + 'kg' : '')
+	      : (pb !== null ? 'PB ' + pb + 'kg' : 'Not started');
+	    var exCmt = getExerciseComment(exName);
+	    var body = document.createElement('div');
+	    body.style.flex = '1';
+	    var title = document.createElement('div');
+	    title.className = 'ex-list-name';
+	    title.textContent = exName;
+	    if (exCmt) {
+	      title.appendChild(document.createTextNode(' '));
+	      var c = document.createElement('span');
+	      c.className = 'comment-indicator';
+	      c.title = 'View exercise note';
+	      c.textContent = '💬';
+	      c.addEventListener('click', function(ev) { ev.stopPropagation(); openExerciseComment(exName, true); });
+	      title.appendChild(c);
+	    }
+	    var meta = document.createElement('div');
+	    meta.className = 'ex-list-meta';
+	    meta.textContent = metaStr;
+	    body.appendChild(title);
+	    body.appendChild(meta);
+	    var arrow = document.createElement('span');
+	    arrow.className = 'ex-list-arrow';
+	    arrow.innerHTML = '&#8250;';
+	    item.appendChild(body);
+	    item.appendChild(arrow);
+	    item.onclick = function() { openExLogDetail(exName); };
+	    wrap.appendChild(item);
+	  });
+	}
 
 function logSetHTML(exName, i, s) {
   var t = s.timestamp ? new Date(s.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
@@ -3460,10 +3633,16 @@ function loadSessionHistory() {
 }
 function renderSessionFilters() {
   var names = ['All'].concat(workouts.map(function(w) { return w.name.split('\u2014')[0].trim(); }));
-  document.getElementById('sh-filters').innerHTML = names.map(function(n, i) {
+  var filters = document.getElementById('sh-filters');
+  clearEl(filters);
+  names.forEach(function(n, i) {
     var fid = i === 0 ? 'all' : workouts[i-1].id;
-    return '<button class="filter-btn ' + (shFilter === fid ? 'active' : '') + '" onclick="setShFilter(\'' + fid + '\')">' + n + '</button>';
-  }).join('');
+    var btn = document.createElement('button');
+    btn.className = 'filter-btn ' + (shFilter === fid ? 'active' : '');
+    btn.textContent = n;
+    btn.addEventListener('click', function() { setShFilter(fid); });
+    filters.appendChild(btn);
+  });
 }
 function setShFilter(f) { shFilter = f; renderSessionFilters(); renderSessionList(); }
 async function deleteSession(date, wid) {
@@ -3483,10 +3662,17 @@ async function deleteSession(date, wid) {
     var deletedIds = localRows
       .filter(function(r) { return r[9] === date && r[2] === wid; })
       .map(function(r) { return r[0]; });
-    if (deletedIds.length && !offlineMode && accessToken) {
-      deleteSessionFromSheets(deletedIds).catch(function() {
-        setSyncStatus('error');
-      });
+    if (deletedIds.length) {
+      if (offlineMode || !accessToken) {
+        // Local delete wins immediately; durable queued tombstones prevent
+        // old Sheets rows from being merged back before replay.
+        deletedIds.forEach(queueResultDelete);
+      } else {
+        deleteSessionFromSheets(deletedIds).catch(function(e) {
+          deletedIds.forEach(queueResultDelete);
+          setSyncStatus('error', recordSyncError('Session delete sync', e));
+        });
+      }
     }
   } catch(e) {
     setSyncStatus('error');
@@ -3522,21 +3708,70 @@ function renderSessionList() {
   });
   if (!sorted.length) { wrap.innerHTML = '<div class="empty-state">No sessions logged yet.</div>'; return; }
   wrap.innerHTML = '';
-  var today = new Date().toLocaleDateString('en-GB');
-  sorted.slice(0, 30).forEach(function(s) {
-    var card = document.createElement('div'); card.className = 'session-card';
-    var isToday = s.date === today;
-    var wnameSafe = s.wname.replace(/'/g,"\\'");
-    var resumeBtn = isToday ? '<button class="session-resume-btn" onclick="event.stopPropagation();resumeSession(\'' + s.wid + '\',\'' + s.date + '\')">&rsaquo; Resume</button>' : '';
-    var todayLabel = isToday ? ' <span style="font-size:9px;color:var(--acid);letter-spacing:2px;">TODAY</span>' : '';
-    card.innerHTML = '<div class="session-card-header"><div style="flex:1;cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"><div class="session-date">' + s.date + todayLabel + '</div><div class="session-workout">' + s.wname + '</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px;">' + resumeBtn +
-      '<div class="session-meta-r" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + s.setCount + ' sets<br>' + s.exercises.size + ' exercises</div>' +
-      '<button class="session-delete-btn" onclick="event.stopPropagation();deleteSession(\'' + s.date + '\',\'' + s.wid + '\')">&times;</button></div></div>' +
-      '<div class="session-exercises" style="cursor:pointer;" onclick="openSessionDetail(\'' + s.date + '\',\'' + s.wid + '\',\'' + wnameSafe + '\')"> ' + Array.from(s.exercises).map(function(e) { return '<span class="session-ex-tag">' + e + '</span>'; }).join('') + '</div>';
-    wrap.appendChild(card);
-  });
-}
+	  var today = new Date().toLocaleDateString('en-GB');
+	  sorted.slice(0, 30).forEach(function(s) {
+	    var card = document.createElement('div'); card.className = 'session-card';
+	    var isToday = s.date === today;
+	    var openDetail = function() { openSessionDetail(s.date, s.wid, s.wname); };
+	    var header = document.createElement('div');
+	    header.className = 'session-card-header';
+	    var left = document.createElement('div');
+	    left.style.flex = '1';
+	    left.style.cursor = 'pointer';
+	    left.addEventListener('click', openDetail);
+	    var dateEl = document.createElement('div');
+	    dateEl.className = 'session-date';
+	    dateEl.textContent = s.date;
+	    if (isToday) {
+	      dateEl.appendChild(document.createTextNode(' '));
+	      var todayEl = document.createElement('span');
+	      todayEl.style.cssText = 'font-size:9px;color:var(--acid);letter-spacing:2px;';
+	      todayEl.textContent = 'TODAY';
+	      dateEl.appendChild(todayEl);
+	    }
+	    var workoutEl = document.createElement('div');
+	    workoutEl.className = 'session-workout';
+	    workoutEl.textContent = s.wname;
+	    left.appendChild(dateEl);
+	    left.appendChild(workoutEl);
+	    var actions = document.createElement('div');
+	    actions.style.cssText = 'display:flex;align-items:center;gap:8px;';
+	    if (isToday) {
+	      var resumeBtn = document.createElement('button');
+	      resumeBtn.className = 'session-resume-btn';
+	      resumeBtn.innerHTML = '&rsaquo; Resume';
+	      resumeBtn.addEventListener('click', function(ev) { ev.stopPropagation(); resumeSession(s.wid, s.date); });
+	      actions.appendChild(resumeBtn);
+	    }
+	    var meta = document.createElement('div');
+	    meta.className = 'session-meta-r';
+	    meta.style.cursor = 'pointer';
+	    appendTextBreak(meta, s.setCount + ' sets');
+	    meta.appendChild(document.createTextNode(s.exercises.size + ' exercises'));
+	    meta.addEventListener('click', openDetail);
+	    var del = document.createElement('button');
+	    del.className = 'session-delete-btn';
+	    del.innerHTML = '&times;';
+	    del.addEventListener('click', function(ev) { ev.stopPropagation(); deleteSession(s.date, s.wid); });
+	    actions.appendChild(meta);
+	    actions.appendChild(del);
+	    header.appendChild(left);
+	    header.appendChild(actions);
+	    var exWrap = document.createElement('div');
+	    exWrap.className = 'session-exercises';
+	    exWrap.style.cursor = 'pointer';
+	    exWrap.addEventListener('click', openDetail);
+	    Array.from(s.exercises).forEach(function(e) {
+	      var tag = document.createElement('span');
+	      tag.className = 'session-ex-tag';
+	      tag.textContent = e;
+	      exWrap.appendChild(tag);
+	    });
+	    card.appendChild(header);
+	    card.appendChild(exWrap);
+	    wrap.appendChild(card);
+	  });
+	}
 function openSessionDetail(date, wid, wname) {
   var rows = shRows.filter(function(r) { return r[9] === date && r[2] === wid && r[0] !== 'ResultID' && r[0] !== '__DELETED__'; });
   var byEx = {};
@@ -3547,20 +3782,60 @@ function openSessionDetail(date, wid, wname) {
   Object.entries(byEx).forEach(function(entry) {
     var ex = entry[0], sets = entry[1];
     var div = document.createElement('div'); div.className = 'sd-ex';
-    var html = '<div class="sd-ex-head"><div class="sd-ex-name">' + escHTML(ex) + '</div>' +
-      '<button class="sd-add-set-btn" onclick="addMissingHistoricalSet(\'' + escJS(date) + '\',\'' + escJS(wid) + '\',\'' + escJS(wname) + '\',\'' + escJS(ex) + '\')">+ Missing set</button></div>';
+    var head = document.createElement('div');
+    head.className = 'sd-ex-head';
+    var nameEl = document.createElement('div');
+    nameEl.className = 'sd-ex-name';
+    nameEl.textContent = ex;
+    var addBtn = document.createElement('button');
+    addBtn.className = 'sd-add-set-btn';
+    addBtn.textContent = '+ Missing set';
+    addBtn.addEventListener('click', function() { addMissingHistoricalSet(date, wid, wname, ex); });
+    head.appendChild(nameEl);
+    head.appendChild(addBtn);
+    div.appendChild(head);
     sets.forEach(function(s, i) {
       var rest = i > 0 && s.ts && sets[i-1].ts ? restStr(sets[i-1].ts, s.ts) : '';
-      if (rest) html += '<div class="sd-rest">&#8627; rest ' + rest + '</div>';
-      html += '<div class="sd-set-row" id="sdrow-' + s.resultId + '">' +
-        '<span class="sd-set-num">' + s.set + '</span>' +
-        '<input class="sd-edit-input" type="number" inputmode="decimal" value="' + (s.weight||'') + '" placeholder="kg" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'weight\',this.value)">' +
-        '<input class="sd-edit-input" type="number" inputmode="numeric" value="' + (s.reps||'') + '" placeholder="reps" onchange="updateHistoricalSet(\'' + s.resultId + '\',\'reps\',this.value)">' +
-        '<span class="sd-set-time">' + (s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '') + '</span>' +
-        '<button class="sd-delete-set-btn" onclick="deleteHistoricalSet(\'' + s.resultId + '\',\'' + escJS(date) + '\',\'' + escJS(wid) + '\',\'' + escJS(wname) + '\')">&times;</button>' +
-        '</div>';
+      if (rest) {
+        var restEl = document.createElement('div');
+        restEl.className = 'sd-rest';
+        restEl.textContent = '\u21b3 rest ' + rest;
+        div.appendChild(restEl);
+      }
+      var row = document.createElement('div');
+      row.className = 'sd-set-row';
+      row.id = 'sdrow-' + s.resultId;
+      var setNum = document.createElement('span');
+      setNum.className = 'sd-set-num';
+      setNum.textContent = s.set;
+      var weight = document.createElement('input');
+      weight.className = 'sd-edit-input';
+      weight.type = 'number';
+      weight.inputMode = 'decimal';
+      weight.value = s.weight || '';
+      weight.placeholder = 'kg';
+      weight.addEventListener('change', function() { updateHistoricalSet(s.resultId, 'weight', weight.value); });
+      var reps = document.createElement('input');
+      reps.className = 'sd-edit-input';
+      reps.type = 'number';
+      reps.inputMode = 'numeric';
+      reps.value = s.reps || '';
+      reps.placeholder = 'reps';
+      reps.addEventListener('change', function() { updateHistoricalSet(s.resultId, 'reps', reps.value); });
+      var time = document.createElement('span');
+      time.className = 'sd-set-time';
+      time.textContent = s.ts ? new Date(s.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
+      var del = document.createElement('button');
+      del.className = 'sd-delete-set-btn';
+      del.innerHTML = '&times;';
+      del.addEventListener('click', function() { deleteHistoricalSet(s.resultId, date, wid, wname); });
+      row.appendChild(setNum);
+      row.appendChild(weight);
+      row.appendChild(reps);
+      row.appendChild(time);
+      row.appendChild(del);
+      div.appendChild(row);
     });
-    div.innerHTML = html;
     content.appendChild(div);
   });
   document.getElementById('session-detail').classList.add('visible');
@@ -3578,21 +3853,31 @@ async function updateHistoricalSet(resultId, field, value) {
   lsSet(LS_RESULTS, results);
   shRows = results; ehRows = results;
   // Sync to Sheets — find by ResultID
-  setSyncStatus('syncing');
-  try {
-    var email = currentUser ? currentUser.email : 'unknown';
-    var sheetRow = [email].concat(row);
-    var raw = await ensureSheetReady('Results');
-    var existingIdx = raw.findIndex(function(r) { return r[1] === resultId; });
-    if (existingIdx > 0) {
-      await updateSheetRow('Results', existingIdx + 1, sheetRow);
-    } else {
-      await appendRows('Results', [sheetRow]);
-    }
-    setSyncStatus('saved');
-  } catch(e) {
-    setSyncStatus('error', recordSyncError('Historical set sync', e));
+  var email = currentUser ? currentUser.email : 'unknown';
+  var sheetRow = [email].concat(row);
+  if (offlineMode || !accessToken) {
+    // Historical edits are local-first too; queue the full row so replay can
+    // update an existing Sheets row or append it if it was never synced.
+    addToSyncQueue({type:'update', row:sheetRow, localId:resultId});
+    setSyncStatus('error', 'Historical edit queued for sync');
+    return;
   }
+  setSyncStatus('syncing');
+  return withResultSyncLock(resultId, async function() {
+    try {
+      var raw = await ensureSheetReady('Results');
+      var existingIdx = raw.findIndex(function(r) { return r[1] === resultId; });
+      if (existingIdx > 0) {
+        await updateSheetRow('Results', existingIdx + 1, sheetRow);
+      } else {
+        await appendRows('Results', [sheetRow]);
+      }
+      setSyncStatus('saved');
+    } catch(e) {
+      setSyncStatus('error', recordSyncError('Historical set sync', e));
+      addToSyncQueue({type:'update', row:sheetRow, localId:resultId});
+    }
+  });
 }
 
 function historicalTimestamp(dateStr) {
@@ -3605,17 +3890,19 @@ function historicalTimestamp(dateStr) {
 
 async function deleteResultFromSheetsById(resultId) {
   if (offlineMode || !accessToken) {
-    addToSyncQueue({type:'result-delete', resultId:resultId});
+    queueResultDelete(resultId);
     return;
   }
-  try {
-    var rowNum = await findResultSheetRow(resultId);
-    if (rowNum) await deleteSheetRow('Results', rowNum);
-  } catch(e) {
-    setSyncStatus('error', recordSyncError('Delete result sync', e));
-    addToSyncQueue({type:'result-delete', resultId:resultId});
-    throw e;
-  }
+  return withResultSyncLock(resultId, async function() {
+    try {
+      var rowNum = await findResultSheetRow(resultId);
+      if (rowNum) await deleteSheetRow('Results', rowNum);
+    } catch(e) {
+      setSyncStatus('error', recordSyncError('Delete result sync', e));
+      queueResultDelete(resultId);
+      throw e;
+    }
+  });
 }
 
 async function deleteHistoricalSet(resultId, date, wid, wname) {
@@ -3680,12 +3967,24 @@ function renderExerciseHistory() {
     var sc = new Set(exRows.map(function(r) { return r[9]; })).size;
     var item = document.createElement('div'); item.className = 'eh-ex-item';
     item.onclick = function() { openExDetail(ex); };
-    item.innerHTML = '<div style="flex:1;">' +
-      '<div class="eh-ex-name">' + escHTML(ex) + '</div>' +
-      '<div class="eh-ex-meta">' + (pb !== null ? 'PB ' + pb + 'kg' : 'No data') + ' · ' + sc + ' session' + (sc !== 1 ? 's' : '') + '</div></div>' +
-      '<button class="eh-delete-btn" onclick="event.stopPropagation();deleteGlobalExercise(\'' + escJS(ex) + '\')">&#215;</button>';
     item.style.display = 'flex';
     item.style.alignItems = 'center';
+    var body = document.createElement('div');
+    body.style.flex = '1';
+    var name = document.createElement('div');
+    name.className = 'eh-ex-name';
+    name.textContent = ex;
+    var meta = document.createElement('div');
+    meta.className = 'eh-ex-meta';
+    meta.textContent = (pb !== null ? 'PB ' + pb + 'kg' : 'No data') + ' \u00b7 ' + sc + ' session' + (sc !== 1 ? 's' : '');
+    var del = document.createElement('button');
+    del.className = 'eh-delete-btn';
+    del.innerHTML = '&times;';
+    del.addEventListener('click', function(ev) { ev.stopPropagation(); deleteGlobalExercise(ex); });
+    body.appendChild(name);
+    body.appendChild(meta);
+    item.appendChild(body);
+    item.appendChild(del);
     wrap.appendChild(item);
   });
 }
@@ -3726,18 +4025,27 @@ function openExDetail(exName) {
 function closeExDetail() { document.getElementById('ex-detail').classList.remove('visible'); }
 
 async function editExerciseName() {
-  var nameEl = document.getElementById('exd-name');
-  var oldName = nameEl.textContent;
-  var newName = prompt('Rename exercise:', oldName);
-  if (!newName || newName.trim() === oldName) return;
-  newName = newName.trim();
+	  var nameEl = document.getElementById('exd-name');
+	  var oldName = nameEl.textContent;
+	  var newName = prompt('Rename exercise:', oldName);
+	  if (!newName || newName.trim() === oldName) return;
+	  newName = newName.trim();
+	  allExercises = normalizeExerciseList(allExercises.length ? allExercises : lsGet(LS_EXERCISES));
+	  workouts = normalizeLocalWorkouts(workouts.length ? workouts : lsGet(LS_WORKOUTS));
+	  var nameExists = allExercises.some(function(e) { return e === newName && e !== oldName; }) ||
+	    workouts.some(function(w) { return w.exercises.some(function(e) { return e === newName && e !== oldName; }); }) ||
+	    getLocalResults().some(function(r) { return r[5] === newName && r[5] !== oldName; });
+	  if (nameExists) { showToast('Exercise already exists'); return; }
 
-  // Update localStorage results — all rows referencing old name
-  var results = getLocalResults();
-  results.forEach(function(r) {
-    if (r[5] === oldName) { r[5] = newName; }  // ExerciseName col
-  });
-  lsSet(LS_RESULTS, results);
+	  // Update localStorage results — all rows referencing old name
+	  var results = getLocalResults();
+	  results.forEach(function(r) {
+	    if (r[5] === oldName) {
+	      r[4] = sid(newName); // ExerciseID col
+	      r[5] = newName;      // ExerciseName col
+	    }
+	  });
+	  lsSet(LS_RESULTS, results);
   var exerciseSettings = getAllExerciseSettings();
   if (exerciseSettings[oldName]) {
     exerciseSettings[newName] = exerciseSettings[oldName];
@@ -3745,19 +4053,19 @@ async function editExerciseName() {
     lsSet(LS_EX_SETTINGS, exerciseSettings);
   }
 
-  // Update exercises list in localStorage
-  var exList = lsGet(LS_EXERCISES) || [];
-  exList.forEach(function(e) { if (e.name === oldName) e.name = newName; });
-  lsSet(LS_EXERCISES, exList);
-  exercises = exList;
+	  // Update exercises list in localStorage
+	  var exList = normalizeExerciseList(lsGet(LS_EXERCISES));
+	  if (exList.indexOf(oldName) < 0) exList.push(oldName);
+	  allExercises = normalizeExerciseList(exList.map(function(e) { return e === oldName ? newName : e; }));
+	  lsSet(LS_EXERCISES, allExercises);
 
-  // Update workout exercise lists
-  var wkList = lsGet(LS_WORKOUTS) || [];
-  wkList.forEach(function(w) {
-    w.exercises = w.exercises.map(function(e) { return e === oldName ? newName : e; });
-  });
-  lsSet(LS_WORKOUTS, wkList);
-  workouts = wkList;
+	  // Update workout exercise lists
+	  var wkList = normalizeLocalWorkouts(lsGet(LS_WORKOUTS));
+	  wkList.forEach(function(w) {
+	    w.exercises = normalizeExerciseList(w.exercises.map(function(e) { return e === oldName ? newName : e; }));
+	  });
+	  lsSet(LS_WORKOUTS, wkList);
+	  workouts = wkList;
 
   // Update Sheets Exercises tab
   if (!offlineMode && accessToken) {
@@ -3843,6 +4151,7 @@ function toggleWorkoutExpand(wi) {
   document.getElementById('wexp-' + wi).classList.toggle('open');
 }
 async function addExToWorkout(wi) {
+  allExercises = normalizeExerciseList(allExercises);
   var sel = document.getElementById('ex-sel-' + wi);
   var exName = sel.value;
   if (exName === '__new__') {
@@ -3956,6 +4265,7 @@ async function deleteWorkout(wi) {
 }
 
 async function addGlobalExercise() {
+  allExercises = normalizeExerciseList(allExercises);
   var name = prompt('New exercise name:');
   if (!name || !name.trim()) return;
   name = name.trim();
@@ -3979,6 +4289,7 @@ async function addGlobalExercise() {
 
 async function deleteGlobalExercise(name) {
   if (!confirm('Delete exercise "' + name + '"? It will be removed from all workouts. Results are kept.')) return;
+  allExercises = normalizeExerciseList(allExercises);
   allExercises = allExercises.filter(function(e) { return e !== name; });
   workouts.forEach(function(w) { w.exercises = w.exercises.filter(function(e) { return e !== name; }); });
   lsSet(LS_EXERCISES, allExercises);
@@ -4563,7 +4874,8 @@ async function retryFailedSyncs() {
     setSyncStatus('saved');
     showToast('\u2714 All synced successfully');
     var rawFlush = await readUserRows('Results');
-    var validFlush = rawFlush.map(function(r) { return r.slice(1); }).filter(isValidResultRow);
+    var queuedDeletes = getQueuedResultDeleteIds();
+    var validFlush = rawFlush.map(function(r) { return r.slice(1); }).filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
     var localFlush = getLocalResults();
     var localFlushIds = new Set(localFlush.map(function(r) { return r[0]; }));
     var sheetsFlushOnly = validFlush.filter(function(r) { return !localFlushIds.has(r[0]); });
@@ -4574,7 +4886,7 @@ async function retryFailedSyncs() {
 }
 function showToast(msg) {
   var t = document.getElementById('toast');
-  t.innerHTML = msg; t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
