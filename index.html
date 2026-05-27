@@ -74,6 +74,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .ex-list-item.has-sets::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acid);}
 .ex-list-name{font-family:var(--display);font-size:18px;font-weight:700;}
 .ex-list-meta{font-size:12px;color:#b0b0b0;text-align:right;line-height:1.6;}
+.session-exercise-remove-btn{background:transparent;border:none;color:#999;font-size:18px;cursor:pointer;padding:8px 10px;line-height:1;flex-shrink:0;}
+.session-exercise-remove-btn:active{color:#ff4747;}
 .ex-list-arrow{color:#b0b0b0;font-size:14px;margin-left:10px;}
 #ex-log-detail{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;background:var(--bg);z-index:150;display:none;flex-direction:column;overflow:hidden;}
 #ex-log-detail.visible{display:flex;}
@@ -341,7 +343,7 @@ body{background:
 .session-date{font-family:var(--mono);font-size:12px;color:var(--moss-dark);letter-spacing:0;font-weight:800;}
 .session-exercises{padding:12px 16px 16px;}
 .session-resume-btn{border-radius:999px;background:transparent;border-color:var(--moss);color:var(--moss-dark);letter-spacing:0;text-transform:none;font-family:var(--display);font-weight:800;}
-.session-delete-btn,.remove-btn,.remove-ex-btn,.reorder-btn{color:var(--muted)!important;}
+.session-delete-btn,.remove-btn,.remove-ex-btn,.session-exercise-remove-btn,.reorder-btn{color:var(--muted)!important;}
 .workout-body{border-top:1px solid var(--border);background:var(--paper-soft);padding:11px 14px;}
 .workout-ex-row{border-bottom:1px solid var(--border);padding:10px 0;}
 .add-workout-btn,.add-set-btn{background:rgba(95,127,66,0.06);border:1px dashed rgba(95,127,66,0.42);border-radius:8px;color:var(--moss-dark);font-family:var(--display);letter-spacing:0;text-transform:none;font-weight:800;}
@@ -1554,6 +1556,20 @@ function sessionAdHocExerciseNames(sess) {
   return names;
 }
 
+function sessionRemovedExerciseNames(sess) {
+  if (!sess || !Array.isArray(sess.removedExercises)) return [];
+  var names = [];
+  sess.removedExercises.forEach(function(ex) {
+    if (ex && names.indexOf(ex) < 0) names.push(ex);
+  });
+  return names;
+}
+
+function workoutHasExercise(workoutId, exName) {
+  var workout = workouts.find(function(w) { return w.id === workoutId; });
+  return !!(workout && workout.exercises.indexOf(exName) >= 0);
+}
+
 function persistActiveSession() {
   if (!session) { lsSet(LS_ACTIVE_SESSION, null); return; }
   lsSet(LS_ACTIVE_SESSION, {
@@ -1561,7 +1577,8 @@ function persistActiveSession() {
     workoutName: session.workoutName,
     startTime: session.startTime ? new Date(session.startTime).toISOString() : new Date().toISOString(),
     date: currentSessionDate(session),
-    adHocExercises: sessionAdHocExerciseNames(session)
+    adHocExercises: sessionAdHocExerciseNames(session),
+    removedExercises: sessionRemovedExerciseNames(session)
   });
 }
 
@@ -2034,7 +2051,10 @@ function renderAdHocList() {
   workouts.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
   ehRows.forEach(function(r) { if (r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__') exSet[r[5]] = true; });
   // Exclude already-in-session exercises
-  if (session) Object.keys(session.sets).forEach(function(e) { delete exSet[e]; });
+  if (session) {
+    Object.keys(session.sets).forEach(function(e) { delete exSet[e]; });
+    (session.adHocExercises || []).forEach(function(e) { delete exSet[e]; });
+  }
   var list = Object.keys(exSet).sort(function(a,b) { return a.localeCompare(b); });
   if (query) list = list.filter(function(e) { return e.toLowerCase().indexOf(query) >= 0; });
   var wrap = document.getElementById('adhoc-list');
@@ -2081,9 +2101,14 @@ function confirmAdHocExercise(exName) {
     }
   }
   // Add to session (not to workout template)
+  if (session.removedExercises) {
+    session.removedExercises = session.removedExercises.filter(function(e) { return e !== exName; });
+  }
   if (!session.sets[exName]) session.sets[exName] = [];
-  if (!session.adHocExercises) session.adHocExercises = [];
-  if (session.adHocExercises.indexOf(exName) < 0) session.adHocExercises.push(exName);
+  if (!workoutHasExercise(session.workoutId, exName)) {
+    if (!session.adHocExercises) session.adHocExercises = [];
+    if (session.adHocExercises.indexOf(exName) < 0) session.adHocExercises.push(exName);
+  }
   persistActiveSession();
   closeAdHocModal();
   renderLogExercises();
@@ -2854,7 +2879,7 @@ function startSession() {
   var wid = document.getElementById('workout-select').value;
   var workout = workouts.find(function(w) { return w.id === wid; });
   if (!workout) return;
-  session = {workoutId:workout.id, workoutName:workout.name, startTime:new Date(), sets:{}};
+  session = {workoutId:workout.id, workoutName:workout.name, startTime:new Date(), sets:{}, adHocExercises:[], removedExercises:[]};
   workout.exercises.forEach(function(ex) { session.sets[ex] = []; });
   persistActiveSession();
   clearInterval(sessionTimerInterval);
@@ -2883,6 +2908,7 @@ function resumeSession(wid, date) {
   var persisted = getPersistedActiveSession(wid, date);
   var sets = {};
   var adHocExercises = persisted && Array.isArray(persisted.adHocExercises) ? persisted.adHocExercises.slice() : [];
+  var removedExercises = persisted && Array.isArray(persisted.removedExercises) ? persisted.removedExercises.slice() : [];
   workout.exercises.forEach(function(ex) { sets[ex] = []; });
   var sorted = rows.slice().sort(function(a,b) { return parseInt(a[6]||0) - parseInt(b[6]||0); });
   sorted.forEach(function(r) {
@@ -2891,11 +2917,12 @@ function resumeSession(wid, date) {
     sets[ex].push({weight:r[7], reps:r[8], timestamp:r[1], _localId:r[0], sheetRow:null});
   });
   adHocExercises.forEach(function(ex) { if (!sets[ex]) sets[ex] = []; });
+  removedExercises.forEach(function(ex) { if (workout.exercises.indexOf(ex) >= 0 && (!sets[ex] || !sets[ex].length)) delete sets[ex]; });
 
   // Use earliest timestamp as start time
   var ts = rows.map(function(r){return r[1];}).filter(Boolean).sort();
   var startTime = persisted && persisted.startTime ? new Date(persisted.startTime) : (ts.length ? new Date(ts[0]) : new Date());
-  session = {workoutId:workout.id, workoutName:workout.name, startTime:startTime, sets:sets, adHocExercises:adHocExercises};
+  session = {workoutId:workout.id, workoutName:workout.name, startTime:startTime, sets:sets, adHocExercises:adHocExercises, removedExercises:removedExercises};
   persistActiveSession();
 
   clearInterval(sessionTimerInterval);
@@ -2939,7 +2966,8 @@ function renderLogExercises() {
   if (!session) { wrap.innerHTML = '<div class="empty-state">Select a workout above and tap Start to begin logging.</div>'; return; }
   var workout = workouts.find(function(w) { return w.id === session.workoutId; });
   if (!workout) return;
-  var allSessionExercises = workout.exercises.slice();
+  var removedExercises = sessionRemovedExerciseNames(session);
+  var allSessionExercises = workout.exercises.filter(function(e) { return removedExercises.indexOf(e) < 0; });
   if (session.adHocExercises) {
     session.adHocExercises.forEach(function(e) {
       if (allSessionExercises.indexOf(e) < 0) allSessionExercises.push(e);
@@ -2978,7 +3006,17 @@ function renderLogExercises() {
 	    var arrow = document.createElement('span');
 	    arrow.className = 'ex-list-arrow';
 	    arrow.innerHTML = '&#8250;';
+	    var removeBtn = document.createElement('button');
+	    removeBtn.className = 'session-exercise-remove-btn';
+	    removeBtn.type = 'button';
+	    removeBtn.title = 'Remove from this session';
+	    removeBtn.innerHTML = '&#215;';
+	    removeBtn.addEventListener('click', function(ev) {
+	      ev.stopPropagation();
+	      removeExerciseFromSession(exName);
+	    });
 	    item.appendChild(body);
+	    item.appendChild(removeBtn);
 	    item.appendChild(arrow);
 	    item.onclick = function() { openExLogDetail(exName); };
 	    wrap.appendChild(item);
@@ -3615,9 +3653,44 @@ async function removeLogSet(exId, setIdx) {
   var set = sets[setIdx];
   set._deleted = true;
   if (set._localId) deleteResultLocally(set._localId);
-  trackSetSync(deleteResultInSheets(set));
+  var deleteSync = deleteResultInSheets(set);
+  if (deleteSync) trackSetSync(deleteSync);
   sets.splice(setIdx, 1); if (currentExLogName) { renderEldSets(); } else { renderLogExercises(); }
   persistActiveSession();
+}
+
+function removeExerciseFromSession(exName) {
+  if (!session || !exName) return;
+  var sets = session.sets[exName] || [];
+  var loggedSets = sets.filter(function(s) { return s && (s.weight || s.reps || s._localId); });
+  var msg = loggedSets.length
+    ? 'Remove "' + exName + '" from this session and delete its logged sets?'
+    : 'Remove "' + exName + '" from this session?';
+  if (!confirm(msg)) return;
+
+  sets.forEach(function(set) {
+    if (!set) return;
+    set._deleted = true;
+    if (set._localId) deleteResultLocally(set._localId);
+    var deleteSync = deleteResultInSheets(set);
+    if (deleteSync) trackSetSync(deleteSync);
+  });
+  delete session.sets[exName];
+
+  if (session.adHocExercises) {
+    session.adHocExercises = session.adHocExercises.filter(function(e) { return e !== exName; });
+  }
+  if (workoutHasExercise(session.workoutId, exName)) {
+    if (!session.removedExercises) session.removedExercises = [];
+    if (session.removedExercises.indexOf(exName) < 0) session.removedExercises.push(exName);
+  } else if (session.removedExercises) {
+    session.removedExercises = session.removedExercises.filter(function(e) { return e !== exName; });
+  }
+
+  if (currentExLogName === exName) closeExLogDetail();
+  persistActiveSession();
+  renderLogExercises();
+  showToast(exName + ' removed from session');
 }
 
 async function cancelSession() {
