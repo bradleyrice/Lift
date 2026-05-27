@@ -935,6 +935,7 @@ var LS_SYNC_LOG = 'lift_sync_log';
 var LS_AUTH_STATE = 'lift_auth_state';
 var LS_AUTH_GRANTED = 'lift_auth_granted';
 var LS_VERSION = 'lift_version';
+var LS_ACTIVE_SESSION = 'lift_active_session';
 var CURRENT_VERSION = '8';
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
@@ -1533,6 +1534,46 @@ var allExercises = [];
 var session = null;
 var sessionTimerInterval = null;
 var _savedPreset = parseInt(localStorage.getItem('lift_last_preset')) || 90;
+
+function currentSessionDate(sess) {
+  var source = sess && sess.startTime ? new Date(sess.startTime) : new Date();
+  return source.toLocaleDateString('en-GB');
+}
+
+function sessionAdHocExerciseNames(sess) {
+  if (!sess) return [];
+  var workout = workouts.find(function(w) { return w.id === sess.workoutId; });
+  var templateExercises = {};
+  if (workout) workout.exercises.forEach(function(ex) { templateExercises[ex] = true; });
+  var names = [];
+  function addName(ex) {
+    if (ex && !templateExercises[ex] && names.indexOf(ex) < 0) names.push(ex);
+  }
+  (sess.adHocExercises || []).forEach(addName);
+  Object.keys(sess.sets || {}).forEach(addName);
+  return names;
+}
+
+function persistActiveSession() {
+  if (!session) { lsSet(LS_ACTIVE_SESSION, null); return; }
+  lsSet(LS_ACTIVE_SESSION, {
+    workoutId: session.workoutId,
+    workoutName: session.workoutName,
+    startTime: session.startTime ? new Date(session.startTime).toISOString() : new Date().toISOString(),
+    date: currentSessionDate(session),
+    adHocExercises: sessionAdHocExerciseNames(session)
+  });
+}
+
+function getPersistedActiveSession(wid, date) {
+  var saved = lsGet(LS_ACTIVE_SESSION);
+  if (!saved || saved.workoutId !== wid || saved.date !== date) return null;
+  return saved;
+}
+
+function clearPersistedActiveSession() {
+  lsSet(LS_ACTIVE_SESSION, null);
+}
 var rtPreset = _savedPreset, rtRemaining = _savedPreset, rtRunning = false, rtInterval = null;
 var rtStartPreset = _savedPreset; // preset at time timer was started — used for ring display
 var pbCache = {};
@@ -2043,6 +2084,7 @@ function confirmAdHocExercise(exName) {
   if (!session.sets[exName]) session.sets[exName] = [];
   if (!session.adHocExercises) session.adHocExercises = [];
   if (session.adHocExercises.indexOf(exName) < 0) session.adHocExercises.push(exName);
+  persistActiveSession();
   closeAdHocModal();
   renderLogExercises();
   showToast(exName + ' added');
@@ -2052,6 +2094,7 @@ function signOut() {
   if (accessToken) { try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
   accessToken = null; session = null; offlineMode = false;
   clearInterval(sessionTimerInterval);
+  clearPersistedActiveSession();
   setSessionChrome(false);
   lsSet(LS_MODE, null);
   lsSet(LS_AUTH_GRANTED, null);
@@ -2813,7 +2856,8 @@ function startSession() {
   if (!workout) return;
   session = {workoutId:workout.id, workoutName:workout.name, startTime:new Date(), sets:{}};
   workout.exercises.forEach(function(ex) { session.sets[ex] = []; });
-    clearInterval(sessionTimerInterval);
+  persistActiveSession();
+  clearInterval(sessionTimerInterval);
   setSessionChrome(true);
   updateSessionChrome(workout.name);
   renderSessionMeta(workout);
@@ -2836,18 +2880,23 @@ function resumeSession(wid, date) {
 
   // Rebuild sets from stored rows
   var rows = getLocalResults().filter(function(r) { return r[2] === wid && r[9] === date; });
+  var persisted = getPersistedActiveSession(wid, date);
   var sets = {};
+  var adHocExercises = persisted && Array.isArray(persisted.adHocExercises) ? persisted.adHocExercises.slice() : [];
   workout.exercises.forEach(function(ex) { sets[ex] = []; });
   var sorted = rows.slice().sort(function(a,b) { return parseInt(a[6]||0) - parseInt(b[6]||0); });
   sorted.forEach(function(r) {
     var ex = r[5]; if (!sets[ex]) sets[ex] = [];
+    if (workout.exercises.indexOf(ex) < 0 && adHocExercises.indexOf(ex) < 0) adHocExercises.push(ex);
     sets[ex].push({weight:r[7], reps:r[8], timestamp:r[1], _localId:r[0], sheetRow:null});
   });
+  adHocExercises.forEach(function(ex) { if (!sets[ex]) sets[ex] = []; });
 
   // Use earliest timestamp as start time
   var ts = rows.map(function(r){return r[1];}).filter(Boolean).sort();
-  var startTime = ts.length ? new Date(ts[0]) : new Date();
-  session = {workoutId:workout.id, workoutName:workout.name, startTime:startTime, sets:sets};
+  var startTime = persisted && persisted.startTime ? new Date(persisted.startTime) : (ts.length ? new Date(ts[0]) : new Date());
+  session = {workoutId:workout.id, workoutName:workout.name, startTime:startTime, sets:sets, adHocExercises:adHocExercises};
+  persistActiveSession();
 
   clearInterval(sessionTimerInterval);
   setSessionChrome(true);
@@ -2871,6 +2920,15 @@ function resumeSession(wid, date) {
 function sid(n) { return n.replace(/[^a-zA-Z0-9]/g,'_'); }
 function nameFromSid(id) {
   if (!session) return id;
+  var sessionNames = Object.keys(session.sets || {});
+  for (var i = 0; i < sessionNames.length; i++) {
+    if (sid(sessionNames[i]) === id) return sessionNames[i];
+  }
+  if (session.adHocExercises) {
+    for (var j = 0; j < session.adHocExercises.length; j++) {
+      if (sid(session.adHocExercises[j]) === id) return session.adHocExercises[j];
+    }
+  }
   var w = workouts.find(function(w) { return w.id === session.workoutId; });
   return (w ? w.exercises : []).find(function(e) { return sid(e) === id; }) || id;
 }
@@ -3473,6 +3531,7 @@ function eldCommitSet() {
   var sets = session.sets[exName] || [];
   var newSet = {weight: weight, reps: reps, timestamp: new Date().toISOString(), sheetRow: null};
   sets.push(newSet); session.sets[exName] = sets;
+  persistActiveSession();
   renderEldSets();
   rtQuickStart();
   // Close numpad and restore stats after commit
@@ -3494,6 +3553,7 @@ async function addLogSet(exId) {
   var lastWeight = sets.length > 0 ? sets[sets.length-1].weight : '';
   var newSet = {weight:lastWeight, reps:'', timestamp:new Date().toISOString(), sheetRow:null};
   sets.push(newSet); session.sets[exName] = sets;
+  persistActiveSession();
   var newIdx = sets.length - 1;
   var list = document.getElementById('setlist-' + exId);
   if (list) list.insertAdjacentHTML('beforeend', logSetHTML(exName, newIdx, newSet));
@@ -3538,6 +3598,7 @@ async function updateLogSet(exId, setIdx, field, value) {
   if (!set._localId) set._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   var exIdReal2 = sid(exName);
   var row = [set._localId, set.timestamp, session.workoutId, session.workoutName, exIdReal2, exName, setIdx+1, set.weight||'', set.reps||'', today];
+  persistActiveSession();
   saveResultLocally(row);
   trackSetSync(updateResultInSheets(row, set));
   var timeEl = document.querySelector('#setrow-' + exId + '-' + setIdx + ' .set-time');
@@ -3556,6 +3617,7 @@ async function removeLogSet(exId, setIdx) {
   if (set._localId) deleteResultLocally(set._localId);
   trackSetSync(deleteResultInSheets(set));
   sets.splice(setIdx, 1); if (currentExLogName) { renderEldSets(); } else { renderLogExercises(); }
+  persistActiveSession();
 }
 
 async function cancelSession() {
@@ -3593,6 +3655,7 @@ async function cancelSession() {
   }
   clearInterval(sessionTimerInterval);
   session = null;
+  clearPersistedActiveSession();
   setSessionChrome(false);
   document.getElementById('session-info').classList.remove('active');
   document.getElementById('session-actions').classList.remove('active');
@@ -3611,6 +3674,7 @@ async function finishSession() {
   await waitForSetSyncs();
   await flushSyncQueue();
   session = null;
+  clearPersistedActiveSession();
   setSessionChrome(false);
   document.getElementById('session-info').classList.remove('active');
   document.getElementById('session-actions').classList.remove('active');
