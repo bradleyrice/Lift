@@ -19,7 +19,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 #auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 24px;text-align:center;}
 .logo{font-family:var(--display);font-size:64px;font-weight:900;color:var(--acid);letter-spacing:4px;}
 .logo-sub{font-size:10px;color:#999;letter-spacing:4px;text-transform:uppercase;margin-top:4px;margin-bottom:56px;}
-#signin-btn{background:var(--acid);color:var(--bg);border:none;border-radius:6px;padding:16px 36px;font-family:var(--display);font-size:20px;font-weight:900;letter-spacing:3px;text-transform:uppercase;cursor:pointer;}
 #loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;}
 #loading-msg{font-size:14px;color:#b0b0b0;letter-spacing:2px;text-align:center;padding:0 32px;line-height:1.8;}
 #error-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;gap:16px;}
@@ -69,11 +68,13 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);height:
 .remove-btn{background:transparent;border:none;color:#999;font-size:16px;cursor:pointer;padding:0;line-height:1;}
 .remove-btn:active{color:#ff4747;}
 .add-set-btn{background:transparent;border:1px dashed #404040;border-radius:4px;color:#aaa;padding:9px 0;width:100%;font-size:12px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-top:4px;font-family:var(--mono);}
-.ex-list-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:13px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;position:relative;overflow:hidden;}
+.ex-list-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:13px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;position:relative;overflow:hidden;}
 .ex-list-item:active{background:#161616;}
 .ex-list-item.has-sets::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acid);}
 .ex-list-name{font-family:var(--display);font-size:18px;font-weight:700;}
 .ex-list-meta{font-size:12px;color:#b0b0b0;text-align:right;line-height:1.6;}
+.session-exercise-main{flex:1;min-width:0;}
+.session-exercise-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
 .session-exercise-remove-btn{background:rgba(255,71,71,0.08);border:1px solid rgba(255,71,71,0.28);border-radius:999px;color:#b0443f;font-family:var(--display);font-size:13px;font-weight:800;cursor:pointer;padding:7px 10px;line-height:1;flex-shrink:0;}
 .session-exercise-remove-btn:active{background:#ff4747;color:#fff;}
 .ex-list-arrow{color:#b0b0b0;font-size:14px;margin-left:10px;}
@@ -305,7 +306,7 @@ body{background:
 #auth-screen,#loading-screen,#error-screen,#app,#ex-log-detail,#session-detail,#ex-detail,#stats-screen{background:var(--bg)!important;color:var(--text);}
 .logo{color:var(--ink);letter-spacing:0;font-size:58px;}
 .logo-sub,.screen-sub,#sync-label,.nav-label{letter-spacing:0;text-transform:none;}
-#signin-btn,#retry-btn,#start-session-btn,#finish-btn,.workout-add-btn,.comment-save-btn,#adhoc-add-btn,.eld-commit-btn{background:var(--moss)!important;color:#fff!important;border:0!important;border-radius:8px!important;font-family:var(--display)!important;letter-spacing:0!important;text-transform:none!important;font-weight:800!important;box-shadow:0 8px 18px rgba(63,80,43,0.18);}
+#retry-btn,#start-session-btn,#finish-btn,.workout-add-btn,.comment-save-btn,#adhoc-add-btn,.eld-commit-btn{background:var(--moss)!important;color:#fff!important;border:0!important;border-radius:8px!important;font-family:var(--display)!important;letter-spacing:0!important;text-transform:none!important;font-weight:800!important;box-shadow:0 8px 18px rgba(63,80,43,0.18);}
 .screen{padding-bottom:calc(var(--nav-h) + 22px);}
 .screen-header,#eld-header,#stats-header,#sd-header,#exd-header{background:rgba(236,233,223,0.94)!important;border-bottom:1px solid var(--border)!important;backdrop-filter:blur(16px);box-shadow:0 1px 0 rgba(255,255,255,0.45) inset;}
 .screen-header{padding:22px 18px 16px;}
@@ -334,6 +335,7 @@ body{background:
 .ex-list-item.has-sets::before{width:4px;background:var(--moss);}
 .ex-list-name,.session-workout,.eh-ex-name,.workout-item-name,.sd-ex-name{font-family:var(--display);font-size:18px;font-weight:800;letter-spacing:0;line-height:1.18;color:var(--ink);}
 .ex-list-meta,.session-meta-r,.eh-ex-meta,.workout-item-meta,.empty-state{font-family:var(--display);font-size:13px;color:var(--muted);letter-spacing:0;line-height:1.45;}
+.session-exercise-actions .ex-list-meta{white-space:nowrap;}
 .ex-list-arrow{color:var(--muted);font-size:22px;}
 .pb-badge,.session-ex-tag{border-radius:999px;border:1px solid rgba(95,127,66,0.22);background:rgba(95,127,66,0.1);color:var(--moss-dark);font-family:var(--display);font-size:12px;letter-spacing:0;padding:5px 9px;}
 .filter-btn{font-family:var(--display);font-size:13px;letter-spacing:0;text-transform:none;padding:9px 13px;border-radius:999px;background:var(--paper);border-color:var(--border);color:var(--muted);}
@@ -536,8 +538,7 @@ body{background:
 <div id="auth-screen">
   <div class="logo">LIFT</div>
   <div class="logo-sub">Workout Tracker</div>
-  <button id="signin-btn" onclick="signIn()">Sign in with Google</button>
-  <div style="margin:8px 0;font-family:var(--mono);font-size:11px;color:#707070;letter-spacing:2px;">OR</div>
+  <div style="margin:8px 0;font-family:var(--mono);font-size:11px;color:#707070;letter-spacing:2px;">CONNECTING VIA TAILSCALE</div>
   <button onclick="useOffline()" style="background:transparent;border:1px solid #383838;color:#b0b0b0;font-family:var(--mono);font-size:12px;letter-spacing:2px;padding:12px 24px;border-radius:6px;cursor:pointer;">Use Offline</button>
   <div style="margin-top:16px;font-family:var(--mono);font-size:10px;color:#707070;letter-spacing:1px;max-width:280px;text-align:center;line-height:1.6;">
     ⚠️ Offline mode stores data on this device only. Data may be lost if you clear Safari storage or reinstall the app.
@@ -569,7 +570,7 @@ body{background:
             <div id="sync-row"><span id="sync-dot"></span><span id="sync-label">synced</span></div>
           </div>
           <div style="display:flex;gap:6px;margin-top:4px;">
-            <button onclick="forceSyncToSheets()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Force sync</button>
+            <button onclick="forceSyncToRemote()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Force sync</button>
             <button id="signout-btn-app" onclick="signOut()" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid #2e2e2e;border-radius:3px;color:#999;padding:5px 9px;cursor:pointer;">Sign out</button>
           </div>
         </div>
@@ -911,9 +912,6 @@ body{background:
 <div id="toast"></div>
 <script>
 // CONFIG
-var CLIENT_ID = '459205389789-8s4a9lrbpk7d9e7cbivg4sfsi56k0e2r.apps.googleusercontent.com';
-var SHEET_ID  = '1-KElLUfG8oQgRq4ObNQSaiGReKb57BJ1f8VQK6SgnqI';
-var SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email';
 var DEFAULT_WORKOUTS = [
   {id:'w1',name:'Day 1 \u2014 Chest, Shoulders & Biceps',exercises:['Iso Lateral Bench Press','Incline Iso Lateral Bench Press','Pectoral Machine','Iso Lateral Machine Shoulder Press','Machine Side Lateral Raise','Machine Bicep Curl','Barbell Curl']},
   {id:'w2',name:'Day 2 \u2014 Quads, Calves & Adductors',exercises:['Sissy Squat','Leg Extension','Straight Leg Kick','Seated Straight Leg Calf Raise','Seated Calf Raise','Hip Adductor']},
@@ -921,6 +919,7 @@ var DEFAULT_WORKOUTS = [
   {id:'w4',name:'Day 4 \u2014 Hamstrings, Glutes & Abductors',exercises:['Standing Hip Extension Squat Machine','Seated Leg Curl','Iso Lateral Kneeling Leg Curl','Back Extension','Hip Abductor','Hip Adductor']}
 ];
 var PROD_APP_URL = 'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift/';
+var API_BASE_URL = getDefaultApiBaseUrl();
 
 // LOCAL STORAGE LAYER
 var LS_WORKOUTS = 'lift_workouts';
@@ -930,15 +929,54 @@ var LS_PUSH_SERVER = 'lift_push_server';
 var LS_COMMENTS = 'lift_comments';
 var LS_EX_SETTINGS = 'lift_exercise_settings';
 var LS_SYNC_QUEUE = 'lift_sync_queue';
-var LS_MODE = 'lift_mode'; // 'google' or 'offline'
+var LS_MODE = 'lift_mode'; // 'api' or 'offline'
 var LS_LAST_SYNC = 'lift_last_sync';
 var LS_LAST_SYNC_ERROR = 'lift_last_sync_error';
 var LS_SYNC_LOG = 'lift_sync_log';
-var LS_AUTH_STATE = 'lift_auth_state';
-var LS_AUTH_GRANTED = 'lift_auth_granted';
 var LS_VERSION = 'lift_version';
 var LS_ACTIVE_SESSION = 'lift_active_session';
 var CURRENT_VERSION = '8';
+var memoryStorage = {};
+
+function storageGet(key) {
+  try {
+    if (window.localStorage) return window.localStorage.getItem(key);
+  } catch(e) {}
+  return Object.prototype.hasOwnProperty.call(memoryStorage, key) ? memoryStorage[key] : null;
+}
+
+function storageSet(key, value) {
+  try {
+    if (window.localStorage) {
+      window.localStorage.setItem(key, value);
+      return;
+    }
+  } catch(e) {}
+  memoryStorage[key] = String(value);
+}
+
+function storageRemove(key) {
+  try {
+    if (window.localStorage) {
+      window.localStorage.removeItem(key);
+      return;
+    }
+  } catch(e) {}
+  delete memoryStorage[key];
+}
+
+function storageKeys() {
+  var keys = [];
+  try {
+    if (window.localStorage) {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        keys.push(window.localStorage.key(i));
+      }
+      return keys;
+    }
+  } catch(e) {}
+  return Object.keys(memoryStorage);
+}
 
 // ── PUSH SERVER ──────────────────────────────────────────────────────────────
 var DEFAULT_PUSH_SERVER = 'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift-push';
@@ -973,7 +1011,7 @@ function loadPushServerUrl() {
     PUSH_SERVER = saved;
   } else {
     PUSH_SERVER = getDefaultPushServerUrl();
-    if (saved) localStorage.removeItem(LS_PUSH_SERVER);
+    if (saved) storageRemove(LS_PUSH_SERVER);
   }
   var input = document.getElementById('push-server-input');
   if (input) input.value = PUSH_SERVER;
@@ -1120,49 +1158,51 @@ async function serverCancelNotification() {
 // which can hide unsynced local sessions when moving between hosting origins.
 (function() {
   try {
-    if (localStorage.getItem(LS_VERSION) !== CURRENT_VERSION) {
-      localStorage.setItem(LS_VERSION, CURRENT_VERSION);
+    if (storageGet(LS_VERSION) !== CURRENT_VERSION) {
+      storageSet(LS_VERSION, CURRENT_VERSION);
     }
   } catch(e) {}
 })();
 
-function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+function lsGet(key) { try { var v = storageGet(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
 function backupResultsSnapshot(reason, nextRaw) {
   try {
-    var raw = localStorage.getItem(LS_RESULTS);
+    var raw = storageGet(LS_RESULTS);
     if (!raw || raw === '[]' || raw === nextRaw) return;
     var rows = JSON.parse(raw);
     if (!Array.isArray(rows) || rows.length === 0) return;
     var key = 'lift_results_backup_' + Date.now();
-    localStorage.setItem(key, JSON.stringify({
+    storageSet(key, JSON.stringify({
       reason: reason || 'before-write',
       at: new Date().toISOString(),
       url: location.href,
       rows: rows
     }));
     var backups = [];
-    for (var i = 0; i < localStorage.length; i++) {
-      var k = localStorage.key(i);
+    var keys = storageKeys();
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
       if (k && k.indexOf('lift_results_backup_') === 0) backups.push(k);
     }
     backups.sort();
-    while (backups.length > 20) localStorage.removeItem(backups.shift());
+    while (backups.length > 20) storageRemove(backups.shift());
   } catch(e) {}
 }
 function lsSet(key, val) {
   try {
     var raw = JSON.stringify(val);
     if (key === LS_RESULTS) backupResultsSnapshot('before-results-write', raw);
-    localStorage.setItem(key, raw);
+    storageSet(key, raw);
   } catch(e) { console.warn('localStorage write failed', e); }
 }
 function collectLocalDataBackup() {
   var keys = {};
   try {
-    for (var i = 0; i < localStorage.length; i++) {
-      var k = localStorage.key(i);
+    var storedKeys = storageKeys();
+    for (var i = 0; i < storedKeys.length; i++) {
+      var k = storedKeys[i];
       if (!k || k.indexOf('lift_') !== 0) continue;
-      keys[k] = localStorage.getItem(k);
+      keys[k] = storageGet(k);
     }
   } catch(e) {
     keys.__error = e && e.message ? e.message : String(e);
@@ -1426,116 +1466,15 @@ function useOffline() {
 
 // STATE
 var accessToken = null;
-var tokenClient = null;
 var tokenExpiry = 0;
 var currentUser = null; // { email, name }
 var LS_USER = 'lift_user';
 
-function getAuthPrompt(forceConsent) {
-  if (forceConsent) return 'consent';
-  return lsGet(LS_AUTH_GRANTED) ? '' : 'consent';
-}
-
-function ensureFreshToken(promptMode) {
-  return new Promise(function(resolve, reject) {
-    if (accessToken && Date.now() < tokenExpiry - 60000) { syncLog('token-fresh'); resolve(); return; }
-    if (!tokenClient) { syncLog('token-refresh-missing-client', { level: 'error' }); reject(new Error('No token client')); return; }
-    syncLog('token-refresh-start', { prompt: promptMode || '' });
-    tokenClient.callback = function(resp) {
-      if (resp && resp.access_token) {
-        accessToken = resp.access_token;
-        tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
-        syncLog('token-refresh-success', { expiresIn: resp.expires_in || 3600 });
-        resolve();
-      } else {
-        syncLog('token-refresh-empty', { level: 'error', response: syncErrMsg(resp) });
-        reject(new Error('Token refresh failed: ' + syncErrMsg(resp)));
-      }
-    };
-    tokenClient.error_callback = function(err) {
-      syncLog('token-refresh-error', { level: 'error', message: syncErrMsg(err && (err.message || err.type || err.error || JSON.stringify(err))) });
-      reject(new Error('Token refresh failed: ' + syncErrMsg(err && (err.message || err.type || err.error || JSON.stringify(err)))));
-    };
-    tokenClient.requestAccessToken({prompt: promptMode || ''});
-  });
-}
-
-function beginRedirectAuth(reason, forceConsent) {
-  var state = 'lift_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-  var isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-  var redirectUri = isLocal ? PROD_APP_URL : (window.location.origin + window.location.pathname);
-  var promptMode = getAuthPrompt(forceConsent);
-  lsSet(LS_AUTH_STATE, state);
-  syncLog('redirect-auth-start', { reason: reason || 'manual', redirectUri: redirectUri, local: isLocal, prompt: promptMode });
-  var params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    redirect_uri: redirectUri,
-    response_type: 'token',
-    scope: SCOPES,
-    include_granted_scopes: 'true',
-    state: state
-  });
-  if (promptMode) params.set('prompt', promptMode);
-  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-}
-
-function finishRedirectSignIn() {
-  showScreen('loading-screen');
-  setLoadingMsg('Completing sign in...');
-  setTimeout(async function() {
-    try {
-      var uResp = await xhrRequest('GET', 'https://www.googleapis.com/oauth2/v2/userinfo', null);
-      currentUser = { email: uResp.email, name: uResp.name || uResp.email };
-      lsSet(LS_USER, currentUser);
-      syncLog('redirect-user-info-success', { email: currentUser.email });
-    } catch(e) {
-      recordSyncError('Redirect user info sync', e);
-      currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
-    }
-    lsSet(LS_MODE, 'google');
-    if (getSyncQueue().length > 0) {
-      setLoadingMsg('Syncing queued changes to Sheets...');
-      try { await flushSyncQueue(); } catch(e2) { setSyncStatus('error', recordSyncError('Redirect queue sync', e2)); }
-    }
-    try { await mergeLocalToSheets(); } catch(e3) { setSyncStatus('error', recordSyncError('Redirect merge', e3)); }
-    initApp();
-  }, 0);
-}
-
-function handleRedirectAuthResult() {
-  if (!window.location.hash || window.location.hash.indexOf('access_token') < 0 && window.location.hash.indexOf('error') < 0) return false;
-  clearSyncLog();
-  var hash = window.location.hash.slice(1);
-  var params = new URLSearchParams(hash);
-  history.replaceState(null, document.title, window.location.pathname + window.location.search);
-  var err = params.get('error');
-  if (err) {
-    var errText = err + (params.get('error_description') ? ': ' + params.get('error_description') : '');
-    setSyncStatus('error', recordSyncError('Redirect sign-in', errText));
-    showError('Google sign-in failed: ' + errText);
-    return true;
-  }
-  var expectedState = lsGet(LS_AUTH_STATE);
-  var returnedState = params.get('state');
-  if (expectedState && returnedState && expectedState !== returnedState) {
-    setSyncStatus('error', recordSyncError('Redirect sign-in', 'State mismatch'));
-    showError('Google sign-in failed: state mismatch');
-    return true;
-  }
-  accessToken = params.get('access_token');
-  tokenExpiry = Date.now() + ((parseInt(params.get('expires_in'), 10) || 3600) * 1000);
-  offlineMode = false;
-  lsSet(LS_AUTH_STATE, null);
-  lsSet(LS_AUTH_GRANTED, true);
-  syncLog('redirect-token-success', { expiresIn: parseInt(params.get('expires_in'), 10) || 3600 });
-  finishRedirectSignIn();
-  return true;
-}
 var workouts = [];
 var allExercises = [];
 var session = null;
 var sessionTimerInterval = null;
-var _savedPreset = parseInt(localStorage.getItem('lift_last_preset')) || 90;
+var _savedPreset = parseInt(lsGet('lift_last_preset')) || 90;
 
 function currentSessionDate(sess) {
   var source = sess && sess.startTime ? new Date(sess.startTime) : new Date();
@@ -1595,7 +1534,7 @@ var rtPreset = _savedPreset, rtRemaining = _savedPreset, rtRunning = false, rtIn
 var rtStartPreset = _savedPreset; // preset at time timer was started — used for ring display
 var pbCache = {};
 var shFilter = 'all', shRows = [], ehRows = [];
-var _deletedResultIds = new Set(); // tracks deleted IDs so background Sheets refresh can't resurrect them
+var _deletedResultIds = new Set(); // tracks deleted IDs so background remote refresh can't resurrect them
 var initGeneration = 0;
 
 function nextInitGeneration() {
@@ -1625,82 +1564,7 @@ function setLoadingMsg(m) { document.getElementById('loading-msg').textContent =
 function showError(msg) { document.getElementById('error-msg').textContent = msg; showScreen('error-screen'); }
 function retryInit() { showScreen('loading-screen'); offlineMode = (lsGet(LS_MODE) === 'offline'); initApp(); }
 
-// AUTH
-function signIn() {
-  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-    alert('Google library not loaded yet. Please wait a moment and try again.');
-    return;
-  }
-  clearSyncLog();
-  syncLog('sign-in-start');
-  showScreen('loading-screen');
-  setLoadingMsg('Signing in...');
-  try {
-    var promptMode = getAuthPrompt(false);
-    var retriedConsent = promptMode === 'consent';
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPES,
-      include_granted_scopes: true,
-      error_callback: function(err) {
-        var errText = syncErrMsg(err && (err.message || err.type || err.error || JSON.stringify(err)));
-        var msg = recordSyncError('Google sign-in', errText);
-        setSyncStatus('error', msg);
-        if (!retriedConsent && /consent|interaction|required|login/i.test(errText)) {
-          retriedConsent = true;
-          syncLog('sign-in-consent-fallback', { reason: errText });
-          tokenClient.requestAccessToken({ prompt: 'consent' });
-          return;
-        }
-        if (errText.toLowerCase().indexOf('popup') >= 0) {
-          beginRedirectAuth('popup-blocked', retriedConsent);
-          return;
-        }
-        showError('Google sign-in failed: ' + msg);
-      },
-      callback: async function(resp) {
-        if (resp && resp.access_token && resp.access_token.length > 10) {
-          syncLog('sign-in-token-success', { expiresIn: resp.expires_in || 3600 });
-          accessToken = resp.access_token;
-          tokenExpiry = Date.now() + ((resp.expires_in || 3600) * 1000);
-          lsSet(LS_AUTH_GRANTED, true);
-          offlineMode = false;
-          // Fetch user email
-          try {
-            var uResp = await xhrRequest('GET', 'https://www.googleapis.com/oauth2/v2/userinfo', null);
-            currentUser = { email: uResp.email, name: uResp.name || uResp.email };
-            lsSet(LS_USER, currentUser);
-            syncLog('user-info-success', { email: currentUser.email });
-          } catch(e) {
-            recordSyncError('User info sync', e);
-            currentUser = lsGet(LS_USER) || { email: 'unknown', name: 'User' };
-          }
-          // Always reconcile queued/missing local rows on sign-in.
-          lsSet(LS_MODE, 'google');
-          syncLog('sign-in-reconcile-start', { queue: getSyncQueue().length });
-          if (getSyncQueue().length > 0) {
-            showScreen('loading-screen');
-            setLoadingMsg('Syncing queued changes to Sheets...');
-            try { await flushSyncQueue(); } catch(e) { setSyncStatus('error', recordSyncError('Sign-in queue sync', e)); }
-          }
-          try { await mergeLocalToSheets(); } catch(e) { setSyncStatus('error', recordSyncError('Sign-in merge', e)); }
-          syncLog('sign-in-reconcile-complete');
-          initApp();
-        } else {
-          syncLog('sign-in-empty-response', { level: 'error', response: syncErrMsg(resp) });
-          showError('Sign in failed. Please try again.');
-        }
-      }
-    });
-    syncLog('sign-in-token-request', { prompt: promptMode });
-    tokenClient.requestAccessToken({ prompt: promptMode });
-  } catch(e) {
-    recordSyncError('Sign in error', e);
-    showError('Sign in error: ' + e.message);
-  }
-}
-
-async function forceSyncToSheets() {
+async function forceSyncToRemote() {
   if (offlineMode || !accessToken) { showToast('Not signed in'); return; }
   setSyncStatus('syncing');
   showToast('Syncing all local data...');
@@ -1709,26 +1573,26 @@ async function forceSyncToSheets() {
     if (getSyncQueue().length) await flushSyncQueue();
     var localRows = getLocalResults();
     var email = currentUser ? currentUser.email : 'unknown';
-    // Read sheet once to build ResultID -> rowNumber map
-    var raw = await ensureSheetReady('Results');
-    var sheetIdMap = {};
-    raw.forEach(function(r, i) { if (i > 0 && r[1]) sheetIdMap[r[1]] = i + 1; });
-    var toUpdate = []; // {rowNum, values} — rows that already exist in sheet
+    // Read remote once to build ResultID -> rowNumber map
+    var raw = await ensureRemoteReady('Results');
+    var remoteIdMap = {};
+    raw.forEach(function(r, i) { if (i > 0 && r[1]) remoteIdMap[r[1]] = i + 1; });
+    var toUpdate = []; // {rowNum, values} — rows that already exist in remote
     var toAppendRows = []; // rows to safely append via API
     localRows.forEach(function(row) {
       if (!row[0] || row[0] === '__DELETED__') return;
-      var sheetRow = [email].concat(row);
-      var existingRowNum = sheetIdMap[row[0]];
+      var remoteRow = [email].concat(row);
+      var existingRowNum = remoteIdMap[row[0]];
       if (existingRowNum) {
-        toUpdate.push({ rowNum: existingRowNum, values: sheetRow });
+        toUpdate.push({ rowNum: existingRowNum, values: remoteRow });
       } else {
-        toAppendRows.push(sheetRow);
+        toAppendRows.push(remoteRow);
       }
     });
     for (var i = 0; i < toUpdate.length; i++) {
-      await updateSheetRow('Results', toUpdate[i].rowNum, toUpdate[i].values);
+      await updateRemoteRow('Results', toUpdate[i].rowNum, toUpdate[i].values);
     }
-    if (toAppendRows.length) await appendRows('Results', toAppendRows);
+    if (toAppendRows.length) await appendRemoteRows('Results', toAppendRows);
     if (getSyncQueue().length) throw new Error(getSyncQueue().length + ' queued write(s) still failing');
     setSyncStatus('saved');
     syncLog('force-sync-success', { updated: toUpdate.length, appended: toAppendRows.length });
@@ -1963,7 +1827,7 @@ function timerEditKey(key) {
       rtPreset = secs;
       rtStartPreset = secs;
       rtRemaining = secs;
-      localStorage.setItem('lift_last_preset', secs);
+      lsSet('lift_last_preset', secs);
       rtUpdateDisplay();
     }
     document.getElementById('timer-edit-modal').style.display = 'none';
@@ -2091,13 +1955,13 @@ function confirmAdHocExercise(exName) {
   workouts.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
   ehRows.forEach(function(r) { if (r[5] && r[0] !== 'ResultID' && r[0] !== '__DELETED__') exSet[r[5]] = true; });
   if (!exSet[exName]) {
-    // New exercise — add to allExercises and Exercises sheet
+    // New exercise — add to allExercises and Exercises remote
     allExercises.push(exName);
     lsSet(LS_EXERCISES, allExercises);
     if (!offlineMode && accessToken && currentUser) {
       var email = currentUser.email;
       var newId = exName.replace(/\s+/g, '_');
-      appendRows('Exercises', [[email, newId, exName]]).catch(function() {});
+      appendRemoteRows('Exercises', [[email, newId, exName]]).catch(function() {});
     }
   }
   // Add to session (not to workout template)
@@ -2116,127 +1980,124 @@ function confirmAdHocExercise(exName) {
 }
 
 function signOut() {
-  if (accessToken) { try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
   accessToken = null; session = null; offlineMode = false;
+  currentUser = null;
   clearInterval(sessionTimerInterval);
   clearPersistedActiveSession();
   setSessionChrome(false);
   lsSet(LS_MODE, null);
-  lsSet(LS_AUTH_GRANTED, null);
-  showScreen('auth-screen');
+  initApp();
 }
 
-// SHEETS API — GET and PUT only (no POST, avoids CORS preflight)
-var BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID;
+// REMOTE API
 var enc = encodeURIComponent;
-var SHEET_HEADERS = {
+var REMOTE_HEADERS = {
   'Workouts': ['UserID','WorkoutID','Name','ExerciseOrder'],
   'Exercises': ['UserID','ExerciseID','Name'],
   'Results': ['UserID','ResultID','Timestamp','WorkoutID','WorkoutName','ExerciseID','ExerciseName','Set','Weight','Reps','SessionDate']
 };
-var sheetPropertiesCache = null;
+var remotePropertiesCache = null;
 var appendLocks = {};
 var resultSyncLocks = {};
 
-function xhrRequest(method, url, body, isRetry) {
-  return new Promise(function(resolve, reject) {
-    var xhr = new XMLHttpRequest();
-    var requestId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-    var urlLabel = url.replace(BASE_URL, 'Sheets');
-    var bodyInfo = body && body.values ? { rows: body.values.length, cols: body.values[0] ? body.values[0].length : 0 } :
-      body && body.data ? { batchRows: body.data.length } : null;
-    syncLog('xhr-start', { id: requestId, method: method, url: urlLabel, retry: !!isRetry, body: bodyInfo });
-    xhr.open(method, url, true);
-    xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.timeout = 15000;
-    xhr.onload = function() {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        syncLog('xhr-success', { id: requestId, status: xhr.status, method: method, url: urlLabel });
-        try { resolve(JSON.parse(xhr.responseText)); } catch(e) { resolve({}); }
-      } else if ((xhr.status === 401 || xhr.status === 403) && !isRetry) {
-        syncLog('xhr-auth-retry', { id: requestId, status: xhr.status, method: method, url: urlLabel, response: xhr.responseText.substring(0, 300) });
-        ensureFreshToken('').then(function() {
-          return xhrRequest(method, url, body, true);
-        }).then(resolve).catch(reject);
-      } else if (xhr.status === 429 && !isRetry) {
-        syncLog('xhr-rate-retry', { id: requestId, status: xhr.status, method: method, url: urlLabel });
-        // Rate limited — wait 2s and retry once
-        setTimeout(function() {
-          xhrRequest(method, url, body, true).then(resolve).catch(reject);
-        }, 2000);
-      } else {
-        syncLog('xhr-fail', { level: 'error', id: requestId, status: xhr.status, method: method, url: urlLabel, response: xhr.responseText.substring(0, 500) });
-        reject(new Error('HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,150)));
-      }
-    };
-    xhr.onerror = function() {
-      syncLog('xhr-network-error', { level: 'error', id: requestId, method: method, url: urlLabel });
-      reject(new Error('Network error: ' + method + ' ' + url.split('/').pop()));
-    };
-    xhr.ontimeout = function() {
-      syncLog('xhr-timeout', { level: 'error', id: requestId, method: method, url: urlLabel });
-      reject(new Error('Timeout: ' + method + ' ' + urlLabel));
-    };
-    xhr.send(body ? JSON.stringify(body) : null);
-  });
+function getDefaultApiBaseUrl() {
+  if (location.protocol === 'https:' && location.hostname === 'ubuntu-4gb-nbg1-3.tail6bd62e.ts.net') {
+    return location.origin + '/lift-api';
+  }
+  if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+    return 'http://127.0.0.1:8765';
+  }
+  return '';
 }
 
-function getSheetNames() {
-  return xhrRequest('GET', BASE_URL + '?fields=sheets.properties.title', null).then(function(meta) {
-    return meta.sheets.map(function(s) { return s.properties.title; });
-  });
+function useApiStore() {
+  var forced = '';
+  try { forced = storageGet('lift_remote_store') || ''; } catch(e) {}
+  if (forced === 'api') return true;
+  return !!getApiBaseUrl();
 }
 
-async function getSheetPropertiesMap(force) {
-  if (sheetPropertiesCache && !force) return sheetPropertiesCache;
-  var meta = await xhrRequest('GET', BASE_URL + '?fields=sheets.properties(sheetId,title,gridProperties(rowCount,columnCount))', null);
-  var map = {};
-  (meta.sheets || []).forEach(function(s) {
-    if (s.properties && s.properties.title) map[s.properties.title] = s.properties;
+async function apiRequest(method, path, body, isRetry) {
+  var apiBase = getApiBaseUrl();
+  if (!apiBase) throw new Error('API store is not configured');
+  var requestId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  syncLog('api-start', { id: requestId, method: method, path: path, retry: !!isRetry });
+  var resp = await fetch(apiBase + path, {
+    method: method,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: body ? JSON.stringify(body) : null
   });
-  sheetPropertiesCache = map;
-  return map;
+  var text = await resp.text();
+  var data = {};
+  if (text) {
+    try { data = JSON.parse(text); }
+    catch(e) { data = { error: text }; }
+  }
+  if (!resp.ok) {
+    syncLog('api-fail', { level: 'error', id: requestId, status: resp.status, path: path, response: text.substring(0, 300) });
+    throw new Error('API HTTP ' + resp.status + ' ' + (data.error || text).substring(0, 150));
+  }
+  syncLog('api-success', { id: requestId, status: resp.status, path: path });
+  return data;
 }
 
-async function ensureSheetRows(tab, minRows) {
-  if (!minRows || minRows < 1) return;
-  var map = await getSheetPropertiesMap(false);
-  var props = map[tab];
-  if (!props || !props.sheetId) return;
-  var currentRows = props.gridProperties && props.gridProperties.rowCount ? props.gridProperties.rowCount : 0;
-  if (currentRows >= minRows) return;
-  var targetRows = Math.max(minRows + 500, currentRows + 500, 1000);
-  syncLog('sheet-grow-start', { tab: tab, from: currentRows, to: targetRows });
-  await xhrRequest('POST', BASE_URL + ':batchUpdate', {
-    requests: [{
-      updateSheetProperties: {
-        properties: { sheetId: props.sheetId, gridProperties: { rowCount: targetRows } },
-        fields: 'gridProperties.rowCount'
-      }
-    }]
-  });
-  props.gridProperties = props.gridProperties || {};
-  props.gridProperties.rowCount = targetRows;
-  syncLog('sheet-grow-success', { tab: tab, rows: targetRows });
+function apiTabPath(tab) {
+  return '/tables/' + enc(tab);
 }
 
-function readSheet(tab) {
-  return xhrRequest('GET', BASE_URL + '/values/' + enc(tab) + '!A:Z', null).then(function(r) {
-    return r.values || [];
+function getApiBaseUrl() {
+  try {
+    var override = (storageGet('lift_api_base_url') || '').trim().replace(/\/+$/, '');
+    if (override) return override;
+  } catch(e) {}
+  return API_BASE_URL;
+}
+
+async function loadRemoteIdentity() {
+  if (currentUser && currentUser.email) return currentUser;
+  var data = await apiRequest('GET', '/identity', null);
+  if (!data.user || !data.user.email) throw new Error('No user identity from API');
+  currentUser = { email: data.user.email, name: data.user.name || data.user.email };
+  accessToken = 'tailscale';
+  tokenExpiry = Date.now() + 365 * 24 * 60 * 60 * 1000;
+  lsSet(LS_USER, currentUser);
+  lsSet(LS_MODE, 'api');
+  syncLog('identity-loaded', { email: currentUser.email, source: data.user.source || 'api' });
+  return currentUser;
+}
+
+function getRemoteNames() {
+  return Promise.resolve(Object.keys(REMOTE_HEADERS));
+}
+
+async function getRemotePropertiesMap(force) {
+  var apiMap = {};
+  Object.keys(REMOTE_HEADERS).forEach(function(tab) {
+    apiMap[tab] = { remoteId: tab, title: tab, gridProperties: { rowCount: 100000, columnCount: REMOTE_HEADERS[tab].length } };
   });
+  return apiMap;
+}
+
+async function ensureRemoteRows(tab, minRows) {
+  return;
+}
+
+function readRemote(tab) {
+  return apiRequest('GET', apiTabPath(tab), null).then(function(r) { return r.values || []; });
 }
 
 // Read rows for current user only (col 0 = UserID)
 async function readUserRows(tab) {
-  var rows = await ensureSheetReady(tab);
+  var rows = await ensureRemoteReady(tab);
   if (!rows.length) return [];
   var header = rows[0];
   var hasUserCol = header[0] === 'UserID';
-  // If no UserID column, sheet hasn't been manually migrated yet
+  // If no UserID column, remote hasn't been manually migrated yet
   if (!hasUserCol) {
-    showError('Please add a UserID column to your "' + tab + '" sheet in Google Sheets. See setup instructions.');
-    throw new Error('Sheet not migrated: ' + tab);
+    showError('Remote data for "' + tab + '" is missing the UserID column.');
+    throw new Error('Remote not migrated: ' + tab);
   }
   var email = currentUser ? currentUser.email : null;
   return rows.filter(function(r) {
@@ -2246,7 +2107,7 @@ async function readUserRows(tab) {
 
 var LS_MIGRATED = 'lift_migrated_v2';
 
-async function migrateSheetAddUser(tab, rows) {
+async function migrateRemoteAddUser(tab, rows) {
   if (!currentUser) return;
   // Only migrate once per tab
   var migratedTabs = lsGet(LS_MIGRATED) || {};
@@ -2277,8 +2138,8 @@ async function migrateSheetAddUser(tab, rows) {
   // Write rows with delay to avoid rate limit
   for (var i = 0; i < dataRows.length; i++) {
     var origRow = dataRows[i];
-    var sheetRowNum = rows.indexOf(origRow) + 1;
-    await writeRow(tab, sheetRowNum, [email].concat(origRow));
+    var remoteRowNum = rows.indexOf(origRow) + 1;
+    await writeRow(tab, remoteRowNum, [email].concat(origRow));
     if (i % 5 === 4) await new Promise(function(r) { setTimeout(r, 1000); }); // pause every 5 writes
   }
 
@@ -2288,33 +2149,26 @@ async function migrateSheetAddUser(tab, rows) {
 }
 
 async function writeRow(tab, rowNum, values) {
-  await ensureSheetRows(tab, rowNum);
-  var cols = String.fromCharCode(64 + Math.min(values.length, 26));
-  var url = BASE_URL + '/values/' + enc(tab) + '!A' + rowNum + ':' + cols + rowNum + '?valueInputOption=RAW';
-  return xhrRequest('PUT', url, {values: [values]});
+  return apiRequest('PUT', apiTabPath(tab) + '/rows/' + rowNum, { values: [values] });
 }
 
 async function writeTable(tab, rows) {
   if (!rows.length) return Promise.resolve();
-  await ensureSheetRows(tab, rows.length);
-  var maxCols = rows.reduce(function(max, r) { return Math.max(max, r.length); }, 1);
-  var cols = String.fromCharCode(64 + Math.min(maxCols, 26));
-  var url = BASE_URL + '/values/' + enc(tab) + '!A1:' + cols + rows.length + '?valueInputOption=RAW';
-  return xhrRequest('PUT', url, {values: rows});
+  return apiRequest('PUT', apiTabPath(tab), { values: rows });
 }
 
-async function ensureSheetReady(tab) {
-  syncLog('sheet-ready-start', { tab: tab });
-  var rows = await readSheet(tab);
-  var header = SHEET_HEADERS[tab];
+async function ensureRemoteReady(tab) {
+  syncLog('remote-ready-start', { tab: tab });
+  var rows = await readRemote(tab);
+  var header = REMOTE_HEADERS[tab];
   if (!header) return rows;
   if (!rows.length) {
     await writeRow(tab, 1, header);
-    syncLog('sheet-ready-created', { tab: tab });
+    syncLog('remote-ready-created', { tab: tab });
     return [header];
   }
   if (rows[0] && rows[0][0] === 'UserID') {
-    syncLog('sheet-ready-ok', { tab: tab, rows: rows.length });
+    syncLog('remote-ready-ok', { tab: tab, rows: rows.length });
     return rows;
   }
 
@@ -2330,15 +2184,13 @@ async function ensureSheetReady(tab) {
   var nextRows = [header].concat(migratedRows);
   setLoadingMsg('Preparing ' + tab + ' for sync...');
   await writeTable(tab, nextRows);
-  syncLog('sheet-ready-migrated', { tab: tab, rows: nextRows.length });
+  syncLog('remote-ready-migrated', { tab: tab, rows: nextRows.length });
   return nextRows;
 }
 
-async function batchWriteRows(tab, rowDataArray) {
+async function batchWriteRemoteRows(tab, rowDataArray) {
   // rowDataArray: [{rowNum, values}, ...] — writes all in a single API call
   if (!rowDataArray.length) return;
-  var maxRow = rowDataArray.reduce(function(max, item) { return Math.max(max, item.rowNum || 0); }, 0);
-  await ensureSheetRows(tab, maxRow);
   var data = rowDataArray.map(function(item) {
     var cols = String.fromCharCode(64 + Math.min(item.values.length, 26));
     return {
@@ -2346,31 +2198,26 @@ async function batchWriteRows(tab, rowDataArray) {
       values: [item.values]
     };
   });
-  var url = BASE_URL + '/values:batchUpdate';
-  return xhrRequest('POST', url, { valueInputOption: 'RAW', data: data });
+  return apiRequest('POST', '/batchUpdate', { data: data });
 }
 
-async function safeAppendRows(tab, rows) {
+async function safeAppendRemoteRows(tab, rows) {
   // Keep writes on the same row PUT path as live logging; this avoids
   // append-specific failures while still calculating the first empty row.
   if (!rows.length) return;
-  return appendRows(tab, rows);
+  return appendRemoteRows(tab, rows);
 }
 
-async function appendRows(tab, rows) {
+async function appendRemoteRows(tab, rows) {
   if (!rows.length) return;
   var prevLock = appendLocks[tab] || Promise.resolve();
   var run = prevLock.catch(function() {}).then(async function() {
-    // Serialise read-length + row writes per sheet so quick live set commits
+    // Serialise read-length + row writes per remote so quick live set commits
     // cannot both choose the same "next empty" row.
     syncLog('append-start', { tab: tab, rows: rows.length });
-    var existing = await ensureSheetReady(tab);
-    var nextRow = existing.length + 1;
-    for (var i = 0; i < rows.length; i++) {
-      await writeRow(tab, nextRow + i, rows[i]);
-    }
-    syncLog('append-success', { tab: tab, firstRow: nextRow, rows: rows.length });
-    return nextRow;
+    var appended = await apiRequest('POST', apiTabPath(tab) + '/append', { values: rows });
+    syncLog('append-success', { tab: tab, firstRow: appended.firstRow, rows: rows.length });
+    return appended.firstRow;
   });
   var lock = run.finally(function() {
     if (appendLocks[tab] === lock) delete appendLocks[tab];
@@ -2379,21 +2226,21 @@ async function appendRows(tab, rows) {
   return run;
 }
 
-function updateSheetRow(tab, rowNum, values) {
+function updateRemoteRow(tab, rowNum, values) {
   syncLog('row-update', { tab: tab, rowNum: rowNum, cols: values ? values.length : 0 });
   return writeRow(tab, rowNum, values);
 }
 
-async function deleteSheetRow(tab, rowNum) {
+async function deleteRemoteRow(tab, rowNum) {
   syncLog('row-delete', { tab: tab, rowNum: rowNum });
   var blanks = ['__DELETED__','','','','','','','','','',''];
   await writeRow(tab, rowNum, blanks);
 }
 
-async function findResultSheetRow(resultId) {
+async function findResultRemoteRow(resultId) {
   if (!resultId) return 0;
   syncLog('find-result-row-start', { resultId: resultId });
-  var raw = await ensureSheetReady('Results');
+  var raw = await ensureRemoteReady('Results');
   var idx = raw.findIndex(function(r) { return r[1] === resultId; });
   syncLog('find-result-row-complete', { resultId: resultId, rowNum: idx > 0 ? idx + 1 : 0 });
   return idx > 0 ? idx + 1 : 0;
@@ -2426,35 +2273,15 @@ async function initApp() {
       showScreen('app');
       return;
     }
-    setLoadingMsg('Connecting...');
-    if (!accessToken || accessToken.length < 10) {
-      // Try silent token refresh before giving up
-      if (tokenClient) {
-        try {
-          await ensureFreshToken();
-        } catch(e) {
-          // Silent refresh failed — load from local and continue
-          setLoadingMsg('Loading local data...');
-          await loadFromLocal();
-          showToast('Working offline');
-          await loadPBs();
-          renderWorkoutPicker();
-          renderWorkoutsScreen();
-          showScreen('app');
-          return;
-        }
-      } else {
-        // No token client — load local and show app without signing out
-        setLoadingMsg('Loading local data...');
-        await loadFromLocal();
-        await loadPBs();
-        renderWorkoutPicker();
-        renderWorkoutsScreen();
-        showScreen('app');
-        return;
-      }
+    if (!useApiStore()) {
+      setLoadingMsg('Loading local data...');
+      await loadFromLocal();
+      showScreen('app');
+      return;
     }
-    // Wrap all Sheets calls in a timeout — fall back to local data if network is slow/absent
+    setLoadingMsg('Connecting...');
+    await loadRemoteIdentity();
+    // Wrap all remote calls in a timeout — fall back to local data if network is slow/absent
     var initTimeout = new Promise(function(_, reject) {
       setTimeout(function() { reject(new Error('TIMEOUT')); }, 15000);
     });
@@ -2466,17 +2293,17 @@ async function initApp() {
         setLoadingMsg('Loading history...');
         var rawResults = await readUserRows('Results');
         if (!isCurrentInitGeneration(initGen)) return;
-        var allSheetsRows = rawResults.map(function(r) { return r.slice(1); });
-        // Collect deleted IDs from Sheets (tombstones)
-        var deletedIds = new Set(allSheetsRows.filter(function(r) { return r[0] === '__DELETED__'; }).map(function(r) { return r[1]; }));
+        var allRemoteRows = rawResults.map(function(r) { return r.slice(1); });
+        // Collect deleted IDs from remote (tombstones)
+        var deletedIds = new Set(allRemoteRows.filter(function(r) { return r[0] === '__DELETED__'; }).map(function(r) { return r[1]; }));
         var queuedDeletes = getQueuedResultDeleteIds();
-        var sheetsRows = allSheetsRows.filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
+        var remoteRows = allRemoteRows.filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
         var localRows = getLocalResults().filter(function(r) { return !deletedIds.has(r[0]) && !queuedDeletes[r[0]]; });
         var localIds = new Set(localRows.map(function(r) { return r[0]; }));
-        var sheetsOnly = sheetsRows.filter(function(r) { return !localIds.has(r[0]); });
-        var mergedRows = localRows.concat(sheetsOnly);
+        var remoteOnly = remoteRows.filter(function(r) { return !localIds.has(r[0]); });
+        var mergedRows = localRows.concat(remoteOnly);
         if (!isCurrentInitGeneration(initGen)) return;
-        // Late Sheets responses are ignored once local fallback or a newer init has committed.
+        // Late remote responses are ignored once local fallback or a newer init has committed.
         commitWorkoutsAndExercises(loadedRoutine);
         // Persist cleaned local (removes any rows deleted on another device)
         lsSet(LS_RESULTS, localRows);
@@ -2561,7 +2388,10 @@ async function loadWorkoutsAndExercises() {
   // wRows cols: [UserID, WorkoutID, Name, ExerciseOrder]
   if (wRows.length === 0) {
     setLoadingMsg('Setting up your routine...');
-    await seedDefaults();
+    var localWorkouts = normalizeLocalWorkouts(lsGet(LS_WORKOUTS));
+    var localExercises = normalizeExerciseList(lsGet(LS_EXERCISES));
+    if (localWorkouts.length) await seedRemoteRoutine(localWorkouts, localExercises);
+    else await seedDefaults();
     wRows = await readUserRows('Workouts');
     eRows = await readUserRows('Exercises');
   }
@@ -2579,12 +2409,17 @@ function commitWorkoutsAndExercises(data) {
 }
 
 async function seedDefaults() {
+  await seedRemoteRoutine(defaultWorkoutsCopy(), defaultExercisesList());
+}
+
+async function seedRemoteRoutine(seedWorkouts, seedExercises) {
   var email = currentUser ? currentUser.email : 'unknown';
   var exSet = {};
-  DEFAULT_WORKOUTS.forEach(function(w) { w.exercises.forEach(function(e) { exSet[e] = true; }); });
+  (seedExercises || []).forEach(function(e) { if (e) exSet[e] = true; });
+  (seedWorkouts || []).forEach(function(w) { (w.exercises || []).forEach(function(e) { if (e) exSet[e] = true; }); });
   var exRows = Object.keys(exSet).map(function(e, i) { return [email, 'ex' + (i+1), e]; });
-  await appendRows('Exercises', exRows);
-  await appendRows('Workouts', DEFAULT_WORKOUTS.map(function(w) { return [email, w.id, w.name, w.exercises.join('|')]; }));
+  await appendRemoteRows('Exercises', exRows);
+  await appendRemoteRows('Workouts', seedWorkouts.map(function(w) { return [email, w.id, w.name, w.exercises.join('|')]; }));
 }
 
 async function loadPBs() {
@@ -2624,90 +2459,90 @@ function deleteResultLocally(resultId) {
   shRows = results; ehRows = results;
 }
 
-async function syncResultToSheets(row, set) {
+async function syncResultToRemote(row, set) {
   var email = currentUser ? currentUser.email : 'unknown';
-  var sheetRow = [email].concat(row);
+  var remoteRow = [email].concat(row);
   if (offlineMode || !accessToken) {
     syncLog('set-sync-queued-offline', { resultId: set && set._localId, offlineMode: offlineMode, hasToken: !!accessToken });
-    addToSyncQueue({type:'append', row:sheetRow, setId: set._localId});
+    addToSyncQueue({type:'append', row:remoteRow, setId: set._localId});
     return;
   }
   return withResultSyncLock(set && set._localId, async function() {
     try {
       syncLog('set-sync-start', { resultId: set && set._localId });
       setSyncStatus('syncing');
-      set.sheetRow = await appendRows('Results', [sheetRow]);
+      set.remoteRow = await appendRemoteRows('Results', [remoteRow]);
       if (set._deleted) {
-        var appendedRow = await findResultSheetRow(set._localId);
-        await deleteSheetRow('Results', appendedRow || set.sheetRow);
-        set.sheetRow = null;
+        var appendedRow = await findResultRemoteRow(set._localId);
+        await deleteRemoteRow('Results', appendedRow || set.remoteRow);
+        set.remoteRow = null;
       }
       setSyncStatus('saved');
-      syncLog('set-sync-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
+      syncLog('set-sync-success', { resultId: set && set._localId, remoteRow: set && set.remoteRow });
     } catch(e) {
       setSyncStatus('error', recordSyncError('Add set sync', e));
       if (set._deleted) {
         if (set._localId) queueResultDelete(set._localId);
-        else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+        else if (set.remoteRow) addToSyncQueue({type:'delete', remoteRow:set.remoteRow});
         else removeQueuedResultOps(set._localId);
       } else {
-        addToSyncQueue({type:'append', row:sheetRow, setId:set._localId});
+        addToSyncQueue({type:'append', row:remoteRow, setId:set._localId});
       }
     }
   });
 }
 
-async function updateResultInSheets(row, set) {
+async function updateResultInRemote(row, set) {
   var email = currentUser ? currentUser.email : 'unknown';
-  var sheetRow = [email].concat(row);
+  var remoteRow = [email].concat(row);
   if (offlineMode || !accessToken) {
     syncLog('set-update-queued-offline', { resultId: set && set._localId, offlineMode: offlineMode, hasToken: !!accessToken });
-    addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
+    addToSyncQueue({type:'update', row:remoteRow, localId:set._localId});
     return;
   }
   return withResultSyncLock(set && set._localId, async function() {
     try {
       syncLog('set-update-start', { resultId: set && set._localId });
       setSyncStatus('syncing');
-      var rowNum = await findResultSheetRow(set._localId);
+      var rowNum = await findResultRemoteRow(set._localId);
       if (rowNum) {
-        await updateSheetRow('Results', rowNum, sheetRow);
-        set.sheetRow = rowNum;
+        await updateRemoteRow('Results', rowNum, remoteRow);
+        set.remoteRow = rowNum;
       } else {
-        // No sheet index yet — just append. ResultID deduplication handles any dupes on read.
-        set.sheetRow = await appendRows('Results', [sheetRow]);
+        // No remote index yet — just append. ResultID deduplication handles any dupes on read.
+        set.remoteRow = await appendRemoteRows('Results', [remoteRow]);
       }
       setSyncStatus('saved');
-      syncLog('set-update-success', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
+      syncLog('set-update-success', { resultId: set && set._localId, remoteRow: set && set.remoteRow });
     } catch(e) {
       setSyncStatus('error', recordSyncError('Update set sync', e));
-      addToSyncQueue({type:'update', row:sheetRow, localId:set._localId});
+      addToSyncQueue({type:'update', row:remoteRow, localId:set._localId});
     }
   });
 }
 
-async function deleteResultInSheets(set) {
+async function deleteResultInRemote(set) {
   if (set && set._localId) removeQueuedResultOps(set._localId);
   if (offlineMode || !accessToken) {
     syncLog('set-delete-queued-offline', { resultId: set && set._localId, offlineMode: offlineMode, hasToken: !!accessToken });
     if (set && set._localId) queueResultDelete(set._localId);
-    else if (set && set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+    else if (set && set.remoteRow) addToSyncQueue({type:'delete', remoteRow:set.remoteRow});
     return;
   }
-  if (!set || (!set.sheetRow && !set._localId)) return;
+  if (!set || (!set.remoteRow && !set._localId)) return;
   return withResultSyncLock(set && set._localId, async function() {
     try {
-      syncLog('set-delete-start', { resultId: set && set._localId, sheetRow: set && set.sheetRow });
+      syncLog('set-delete-start', { resultId: set && set._localId, remoteRow: set && set.remoteRow });
       setSyncStatus('syncing');
-      var rowNum = await findResultSheetRow(set._localId);
-      if (rowNum) await deleteSheetRow('Results', rowNum);
-      else if (set.sheetRow) await deleteSheetRow('Results', set.sheetRow);
+      var rowNum = await findResultRemoteRow(set._localId);
+      if (rowNum) await deleteRemoteRow('Results', rowNum);
+      else if (set.remoteRow) await deleteRemoteRow('Results', set.remoteRow);
       setSyncStatus('saved');
       syncLog('set-delete-success', { resultId: set && set._localId });
     } catch(e) {
       setSyncStatus('error', recordSyncError('Delete set sync', e));
       if (set._localId) queueResultDelete(set._localId);
-      else if (set.sheetRow) addToSyncQueue({type:'delete', sheetRow:set.sheetRow});
+      else if (set.remoteRow) addToSyncQueue({type:'delete', remoteRow:set.remoteRow});
     }
   });
 }
@@ -2729,42 +2564,42 @@ async function flushSyncQueue() {
       if (op.type === 'append') {
         var appendRow = withCurrentUserOnQueuedRow(op.row, email);
         var appendId = appendRow && appendRow[1];
-        var appendRaw = await ensureSheetReady('Results');
+        var appendRaw = await ensureRemoteReady('Results');
         var appendExistingIdx = appendRaw.findIndex(function(r) { return r[1] === appendId; });
-        if (appendExistingIdx > 0) await updateSheetRow('Results', appendExistingIdx + 1, appendRow);
-        else await appendRows('Results', [appendRow]);
+        if (appendExistingIdx > 0) await updateRemoteRow('Results', appendExistingIdx + 1, appendRow);
+        else await appendRemoteRows('Results', [appendRow]);
       } else if (op.type === 'update') {
         // Try to find existing row by ResultID (op.row[1] after UserID prepend)
         var localId = op.localId || (op.row && op.row[1]);
         var updateRow = withCurrentUserOnQueuedRow(op.row, email);
         localId = op.localId || (updateRow && updateRow[1]);
-        var raw = await ensureSheetReady('Results');
+        var raw = await ensureRemoteReady('Results');
         var existingIdx = raw.findIndex(function(r) { return r[1] === localId; });
-        if (existingIdx > 0) await updateSheetRow('Results', existingIdx + 1, updateRow);
-        else await appendRows('Results', [updateRow]);
-      } else if (op.type === 'delete' && op.sheetRow) {
-        await deleteSheetRow('Results', op.sheetRow);
+        if (existingIdx > 0) await updateRemoteRow('Results', existingIdx + 1, updateRow);
+        else await appendRemoteRows('Results', [updateRow]);
+      } else if (op.type === 'delete' && op.remoteRow) {
+        await deleteRemoteRow('Results', op.remoteRow);
       } else if (op.type === 'result-delete' && op.resultId) {
-        var rawDelete = await ensureSheetReady('Results');
+        var rawDelete = await ensureRemoteReady('Results');
         var deleteIdx = rawDelete.findIndex(function(r) { return r[1] === op.resultId; });
-        if (deleteIdx > 0) await deleteSheetRow('Results', deleteIdx + 1);
+        if (deleteIdx > 0) await deleteRemoteRow('Results', deleteIdx + 1);
       } else if (op.type === 'workout-save') {
-        // Update or append workout row in Sheets
-        var wRows = await ensureSheetReady('Workouts');
+        // Update or append workout row in remote
+        var wRows = await ensureRemoteReady('Workouts');
         var rowIdx = wRows.findIndex(function(r) { return r[1] === op.workout.id; });
         var wRow = [email, op.workout.id, op.workout.name, op.workout.exercises.join('|')];
-        if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx + 1, wRow);
-        else await appendRows('Workouts', [wRow]);
+        if (rowIdx > 0) await updateRemoteRow('Workouts', rowIdx + 1, wRow);
+        else await appendRemoteRows('Workouts', [wRow]);
       } else if (op.type === 'workout-delete') {
-        var wRows2 = await ensureSheetReady('Workouts');
+        var wRows2 = await ensureRemoteReady('Workouts');
         var delIdx = wRows2.findIndex(function(r) { return r[1] === op.workoutId; });
-        if (delIdx > 0) await deleteSheetRow('Workouts', delIdx + 1);
+        if (delIdx > 0) await deleteRemoteRow('Workouts', delIdx + 1);
       } else if (op.type === 'exercise-add') {
-        await appendRows('Exercises', [[email, 'ex'+Date.now(), op.name]]);
+        await appendRemoteRows('Exercises', [[email, 'ex'+Date.now(), op.name]]);
       } else if (op.type === 'exercise-delete') {
-        var eRows = await ensureSheetReady('Exercises');
+        var eRows = await ensureRemoteReady('Exercises');
         var eIdx = eRows.findIndex(function(r) { return r[2] === op.name && r[0] === email; });
-        if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
+        if (eIdx > 0) await deleteRemoteRow('Exercises', eIdx + 1);
       }
       syncLog('queue-op-success', { index: i, type: op && op.type, resultId: queuedResultId(op) });
     } catch(e) {
@@ -2783,21 +2618,21 @@ async function flushSyncQueue() {
   }
 }
 
-// Merge local data into Sheets (when offline user signs in)
-async function mergeLocalToSheets() {
+// Merge local data into remote (when offline user signs in)
+async function mergeLocalToRemote() {
   var queuedDeletes = getQueuedResultDeleteIds();
   var localResults = getLocalResults();
   var rawMerge = await readUserRows('Results');
-  var sheetResults = rawMerge.map(function(r) { return r.slice(1); }).filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
-  var sheetIds = new Set(sheetResults.map(function(r) { return r[0]; }));
+  var remoteResults = rawMerge.map(function(r) { return r.slice(1); }).filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
+  var remoteIds = new Set(remoteResults.map(function(r) { return r[0]; }));
   var toUpload = localResults.filter(function(r) {
-    return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !queuedDeletes[r[0]] && !sheetIds.has(r[0]);
+    return r[0] && r[0] !== 'ResultID' && r[0] !== '__DELETED__' && !queuedDeletes[r[0]] && !remoteIds.has(r[0]);
   });
   if (toUpload.length > 0) {
-    setLoadingMsg('Merging ' + toUpload.length + ' local sets to Sheets...');
+    setLoadingMsg('Merging ' + toUpload.length + ' local sets to remote...');
     var mergeEmail = currentUser ? currentUser.email : 'unknown';
     for (var i = 0; i < toUpload.length; i++) {
-      await appendRows('Results', [[mergeEmail].concat(toUpload[i])]);
+      await appendRemoteRows('Results', [[mergeEmail].concat(toUpload[i])]);
       removeQueuedResultOps(toUpload[i][0]);
     }
   }
@@ -2914,7 +2749,7 @@ function resumeSession(wid, date) {
   sorted.forEach(function(r) {
     var ex = r[5]; if (!sets[ex]) sets[ex] = [];
     if (workout.exercises.indexOf(ex) < 0 && adHocExercises.indexOf(ex) < 0) adHocExercises.push(ex);
-    sets[ex].push({weight:r[7], reps:r[8], timestamp:r[1], _localId:r[0], sheetRow:null});
+    sets[ex].push({weight:r[7], reps:r[8], timestamp:r[1], _localId:r[0], remoteRow:null});
   });
   adHocExercises.forEach(function(ex) { if (!sets[ex]) sets[ex] = []; });
   removedExercises.forEach(function(ex) { if (workout.exercises.indexOf(ex) >= 0 && (!sets[ex] || !sets[ex].length)) delete sets[ex]; });
@@ -2985,7 +2820,7 @@ function renderLogExercises() {
 	      : (pb !== null ? 'PB ' + pb + 'kg' : 'Not started');
 	    var exCmt = getExerciseComment(exName);
 	    var body = document.createElement('div');
-	    body.style.flex = '1';
+	    body.className = 'session-exercise-main';
 	    var title = document.createElement('div');
 	    title.className = 'ex-list-name';
 	    title.textContent = exName;
@@ -3002,7 +2837,8 @@ function renderLogExercises() {
 	    meta.className = 'ex-list-meta';
 	    meta.textContent = metaStr;
 	    body.appendChild(title);
-	    body.appendChild(meta);
+	    var actions = document.createElement('div');
+	    actions.className = 'session-exercise-actions';
 	    var arrow = document.createElement('span');
 	    arrow.className = 'ex-list-arrow';
 	    arrow.innerHTML = '&#8250;';
@@ -3015,9 +2851,11 @@ function renderLogExercises() {
 	      ev.stopPropagation();
 	      removeExerciseFromSession(exName);
 	    });
+	    actions.appendChild(meta);
+	    actions.appendChild(removeBtn);
+	    actions.appendChild(arrow);
 	    item.appendChild(body);
-	    item.appendChild(removeBtn);
-	    item.appendChild(arrow);
+	    item.appendChild(actions);
 	    item.onclick = function() { openExLogDetail(exName); };
 	    wrap.appendChild(item);
 	  });
@@ -3567,7 +3405,7 @@ function eldCommitSet() {
     return;
   }
   var sets = session.sets[exName] || [];
-  var newSet = {weight: weight, reps: reps, timestamp: new Date().toISOString(), sheetRow: null};
+  var newSet = {weight: weight, reps: reps, timestamp: new Date().toISOString(), remoteRow: null};
   sets.push(newSet); session.sets[exName] = sets;
   persistActiveSession();
   renderEldSets();
@@ -3579,7 +3417,7 @@ function eldCommitSet() {
   newSet._localId = 'r' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   var syncRow = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, sid(exName), exName, sets.length, weight, reps, today];
   saveResultLocally(syncRow);
-  trackSetSync(syncResultToSheets(syncRow, newSet));
+  trackSetSync(syncResultToRemote(syncRow, newSet));
 }
 
 function addLogSetFromDetail() { eldCommitSet(); }
@@ -3589,7 +3427,7 @@ async function addLogSet(exId) {
   var exName = nameFromSid(exId);
   var sets = session.sets[exName] || [];
   var lastWeight = sets.length > 0 ? sets[sets.length-1].weight : '';
-  var newSet = {weight:lastWeight, reps:'', timestamp:new Date().toISOString(), sheetRow:null};
+  var newSet = {weight:lastWeight, reps:'', timestamp:new Date().toISOString(), remoteRow:null};
   sets.push(newSet); session.sets[exName] = sets;
   persistActiveSession();
   var newIdx = sets.length - 1;
@@ -3600,7 +3438,7 @@ async function addLogSet(exId) {
   var exIdReal = sid(exName);
   var row = [newSet._localId, newSet.timestamp, session.workoutId, session.workoutName, exIdReal, exName, newIdx+1, lastWeight, '', today];
   saveResultLocally(row);
-  trackSetSync(syncResultToSheets(row, newSet));
+  trackSetSync(syncResultToRemote(row, newSet));
   rtQuickStart();
 }
 
@@ -3638,7 +3476,7 @@ async function updateLogSet(exId, setIdx, field, value) {
   var row = [set._localId, set.timestamp, session.workoutId, session.workoutName, exIdReal2, exName, setIdx+1, set.weight||'', set.reps||'', today];
   persistActiveSession();
   saveResultLocally(row);
-  trackSetSync(updateResultInSheets(row, set));
+  trackSetSync(updateResultInRemote(row, set));
   var timeEl = document.querySelector('#setrow-' + exId + '-' + setIdx + ' .set-time');
   if (timeEl && set.timestamp) { timeEl.textContent = new Date(set.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); timeEl.classList.add('logged'); }
   if (field === 'weight') { var w = parseFloat(value); if (!isNaN(w) && (!pbCache[exName] || w > pbCache[exName])) { pbCache[exName] = w; } }
@@ -3653,7 +3491,7 @@ async function removeLogSet(exId, setIdx) {
   var set = sets[setIdx];
   set._deleted = true;
   if (set._localId) deleteResultLocally(set._localId);
-  var deleteSync = deleteResultInSheets(set);
+  var deleteSync = deleteResultInRemote(set);
   if (deleteSync) trackSetSync(deleteSync);
   sets.splice(setIdx, 1); if (currentExLogName) { renderEldSets(); } else { renderLogExercises(); }
   persistActiveSession();
@@ -3672,7 +3510,7 @@ function removeExerciseFromSession(exName) {
     if (!set) return;
     set._deleted = true;
     if (set._localId) deleteResultLocally(set._localId);
-    var deleteSync = deleteResultInSheets(set);
+    var deleteSync = deleteResultInRemote(set);
     if (deleteSync) trackSetSync(deleteSync);
   });
   delete session.sets[exName];
@@ -3698,12 +3536,12 @@ async function cancelSession() {
   if (session) {
     // Collect all localIds for this session
     var localIds = [];
-    var sheetRows = [];
+    var remoteRows = [];
     Object.values(session.sets).forEach(function(sets) {
       sets.forEach(function(s) {
         s._deleted = true;
         if (s._localId) localIds.push(s._localId);
-        if (s.sheetRow) sheetRows.push(s.sheetRow);
+        if (s.remoteRow) remoteRows.push(s.remoteRow);
       });
     });
     // Remove from localStorage immediately and track in memory
@@ -3714,14 +3552,14 @@ async function cancelSession() {
       localIds.forEach(removeQueuedResultOps);
       lsSet(LS_RESULTS, existing.filter(function(r) { return !idSet.has(r[0]); }));
     }
-    // Delete from Sheets in background
+    // Delete from remote in background
     setSyncStatus('syncing');
     try {
       for (var idIdx = 0; idIdx < localIds.length; idIdx++) {
-        await deleteResultFromSheetsById(localIds[idIdx]);
+        await deleteResultFromRemoteById(localIds[idIdx]);
       }
-      for (var i = 0; i < sheetRows.length && !localIds.length; i++) {
-        await deleteSheetRow('Results', sheetRows[i]);
+      for (var i = 0; i < remoteRows.length && !localIds.length; i++) {
+        await deleteRemoteRow('Results', remoteRows[i]);
       }
       setSyncStatus('saved');
     } catch(e) { setSyncStatus('error', recordSyncError('Cancel session sync', e)); }
@@ -3766,7 +3604,7 @@ function loadSessionHistory() {
   shRows = getLocalResults();
   ehRows = shRows;
   renderSessionFilters(); renderSessionList();
-  // Local is source of truth — no background Sheets refresh needed here
+  // Local is source of truth — no background remote refresh needed here
 }
 function renderSessionFilters() {
   var names = ['All'].concat(workouts.map(function(w) { return w.name.split('\u2014')[0].trim(); }));
@@ -3794,18 +3632,18 @@ async function deleteSession(date, wid) {
     renderSessionFilters(); renderSessionList();
     showToast('Session deleted');
     setSyncStatus('saved');
-    // Delete from Sheets in background — find rows by ResultID not index
-    // (index-based row numbers break if sheet has gaps)
+    // Delete from remote in background — find rows by ResultID not index
+    // (index-based row numbers break if remote has gaps)
     var deletedIds = localRows
       .filter(function(r) { return r[9] === date && r[2] === wid; })
       .map(function(r) { return r[0]; });
     if (deletedIds.length) {
       if (offlineMode || !accessToken) {
         // Local delete wins immediately; durable queued tombstones prevent
-        // old Sheets rows from being merged back before replay.
+        // old remote rows from being merged back before replay.
         deletedIds.forEach(queueResultDelete);
       } else {
-        deleteSessionFromSheets(deletedIds).catch(function(e) {
+        deleteSessionFromRemote(deletedIds).catch(function(e) {
           deletedIds.forEach(queueResultDelete);
           setSyncStatus('error', recordSyncError('Session delete sync', e));
         });
@@ -3817,14 +3655,14 @@ async function deleteSession(date, wid) {
   }
 }
 
-async function deleteSessionFromSheets(resultIds) {
-  // Read current sheet to find row numbers by ResultID
-  var raw = await ensureSheetReady('Results');
+async function deleteSessionFromRemote(resultIds) {
+  // Read current remote to find row numbers by ResultID
+  var raw = await ensureRemoteReady('Results');
   // raw[0] is header, raw[1+] are data rows with UserID in col 0
   for (var i = 1; i < raw.length; i++) {
     var rowId = raw[i][1]; // col 1 = ResultID (after UserID in col 0)
     if (resultIds.indexOf(rowId) >= 0) {
-      await deleteSheetRow('Results', i + 1); // +1 for 1-indexed
+      await deleteRemoteRow('Results', i + 1); // +1 for 1-indexed
     }
   }
 }
@@ -3989,30 +3827,30 @@ async function updateHistoricalSet(resultId, field, value) {
   results[idx] = row;
   lsSet(LS_RESULTS, results);
   shRows = results; ehRows = results;
-  // Sync to Sheets — find by ResultID
+  // Sync to remote — find by ResultID
   var email = currentUser ? currentUser.email : 'unknown';
-  var sheetRow = [email].concat(row);
+  var remoteRow = [email].concat(row);
   if (offlineMode || !accessToken) {
     // Historical edits are local-first too; queue the full row so replay can
-    // update an existing Sheets row or append it if it was never synced.
-    addToSyncQueue({type:'update', row:sheetRow, localId:resultId});
+    // update an existing remote row or append it if it was never synced.
+    addToSyncQueue({type:'update', row:remoteRow, localId:resultId});
     setSyncStatus('error', 'Historical edit queued for sync');
     return;
   }
   setSyncStatus('syncing');
   return withResultSyncLock(resultId, async function() {
     try {
-      var raw = await ensureSheetReady('Results');
+      var raw = await ensureRemoteReady('Results');
       var existingIdx = raw.findIndex(function(r) { return r[1] === resultId; });
       if (existingIdx > 0) {
-        await updateSheetRow('Results', existingIdx + 1, sheetRow);
+        await updateRemoteRow('Results', existingIdx + 1, remoteRow);
       } else {
-        await appendRows('Results', [sheetRow]);
+        await appendRemoteRows('Results', [remoteRow]);
       }
       setSyncStatus('saved');
     } catch(e) {
       setSyncStatus('error', recordSyncError('Historical set sync', e));
-      addToSyncQueue({type:'update', row:sheetRow, localId:resultId});
+      addToSyncQueue({type:'update', row:remoteRow, localId:resultId});
     }
   });
 }
@@ -4025,15 +3863,15 @@ function historicalTimestamp(dateStr) {
   return new Date(y, m, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
 }
 
-async function deleteResultFromSheetsById(resultId) {
+async function deleteResultFromRemoteById(resultId) {
   if (offlineMode || !accessToken) {
     queueResultDelete(resultId);
     return;
   }
   return withResultSyncLock(resultId, async function() {
     try {
-      var rowNum = await findResultSheetRow(resultId);
-      if (rowNum) await deleteSheetRow('Results', rowNum);
+      var rowNum = await findResultRemoteRow(resultId);
+      if (rowNum) await deleteRemoteRow('Results', rowNum);
     } catch(e) {
       setSyncStatus('error', recordSyncError('Delete result sync', e));
       queueResultDelete(resultId);
@@ -4051,7 +3889,7 @@ async function deleteHistoricalSet(resultId, date, wid, wname) {
   openSessionDetail(date, wid, wname);
   setSyncStatus('syncing');
   try {
-    await deleteResultFromSheetsById(resultId);
+    await deleteResultFromRemoteById(resultId);
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
@@ -4071,7 +3909,7 @@ async function addMissingHistoricalSet(date, wid, wname, exName) {
   openSessionDetail(date, wid, wname);
   setSyncStatus('syncing');
   try {
-    await syncResultToSheets(row, {_localId:rowId});
+    await syncResultToRemote(row, {_localId:rowId});
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
@@ -4204,10 +4042,10 @@ async function editExerciseName() {
 	  lsSet(LS_WORKOUTS, wkList);
 	  workouts = wkList;
 
-  // Update Sheets Exercises tab
+  // Update remote Exercises tab
   if (!offlineMode && accessToken) {
     try {
-      var rawEx = await ensureSheetReady('Exercises');
+      var rawEx = await ensureRemoteReady('Exercises');
       var email = currentUser ? currentUser.email : '';
       var updates = [];
       rawEx.forEach(function(r, i) {
@@ -4215,10 +4053,10 @@ async function editExerciseName() {
           updates.push({ rowNum: i + 1, values: [email, r[1], newName] });
         }
       });
-      if (updates.length) await batchWriteRows('Exercises', updates);
+      if (updates.length) await batchWriteRemoteRows('Exercises', updates);
 
-      // Update Sheets Results tab — all rows with old exercise name
-      var rawRes = await ensureSheetReady('Results');
+      // Update remote Results tab — all rows with old exercise name
+      var rawRes = await ensureRemoteReady('Results');
       var resUpdates = [];
       rawRes.forEach(function(r, i) {
         if (r[0] === email && r[6] === oldName) {
@@ -4228,9 +4066,9 @@ async function editExerciseName() {
           resUpdates.push({ rowNum: i + 1, values: updated });
         }
       });
-      if (resUpdates.length) await batchWriteRows('Results', resUpdates);
+      if (resUpdates.length) await batchWriteRemoteRows('Results', resUpdates);
     } catch(e) {
-      showToast('Renamed locally — Sheets sync failed');
+      showToast('Renamed locally — remote sync failed');
     }
   }
 
@@ -4300,14 +4138,14 @@ async function addExToWorkout(wi) {
       allExercises.push(exName); lsSet(LS_EXERCISES, allExercises);
       if (!offlineMode && accessToken) {
         var email = currentUser ? currentUser.email : 'unknown';
-        await appendRows('Exercises', [[email, 'ex'+Date.now(), exName]]);
+        await appendRemoteRows('Exercises', [[email, 'ex'+Date.now(), exName]]);
       }
       setSyncStatus('saved');
     }
   }
   if (workouts[wi].exercises.indexOf(exName) >= 0) { showToast('Already in workout'); return; }
   workouts[wi].exercises.push(exName);
-  await saveWorkoutToSheet(wi);
+  await saveWorkoutToRemote(wi);
   renderWorkoutsScreen(); renderWorkoutPicker();
   setTimeout(function() {
     var b = document.getElementById('wbody-' + wi);
@@ -4322,7 +4160,7 @@ async function moveEx(wi, ei, dir) {
   var newIdx = ei + dir;
   if (newIdx < 0 || newIdx >= exs.length) return;
   var tmp = exs[ei]; exs[ei] = exs[newIdx]; exs[newIdx] = tmp;
-  await saveWorkoutToSheet(wi);
+  await saveWorkoutToRemote(wi);
   renderWorkoutsScreen();
   // Re-expand the workout that was being edited
   setTimeout(function() {
@@ -4334,7 +4172,7 @@ async function moveEx(wi, ei, dir) {
 async function removeExFromWorkout(wi, ei) {
   if (!confirm('Remove "' + workouts[wi].exercises[ei] + '" from this workout?')) return;
   workouts[wi].exercises.splice(ei, 1);
-  await saveWorkoutToSheet(wi);
+  await saveWorkoutToRemote(wi);
   renderWorkoutsScreen(); renderWorkoutPicker();
   setTimeout(function() {
     var b = document.getElementById('wbody-' + wi);
@@ -4343,7 +4181,7 @@ async function removeExFromWorkout(wi, ei) {
     if (e) e.classList.add('open');
   }, 10);
 }
-async function saveWorkoutToSheet(wi) {
+async function saveWorkoutToRemote(wi) {
   lsSet(LS_WORKOUTS, workouts);
   var w = workouts[wi];
   if (offlineMode || !accessToken) {
@@ -4353,11 +4191,11 @@ async function saveWorkoutToSheet(wi) {
   setSyncStatus('syncing');
   try {
     var email = currentUser ? currentUser.email : 'unknown';
-    var rows = await ensureSheetReady('Workouts');
+    var rows = await ensureRemoteReady('Workouts');
     var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
     var wRow = [email, w.id, w.name, w.exercises.join('|')];
-    if (rowIdx > 0) await updateSheetRow('Workouts', rowIdx+1, wRow);
-    else await appendRows('Workouts', [wRow]);
+    if (rowIdx > 0) await updateRemoteRow('Workouts', rowIdx+1, wRow);
+    else await appendRemoteRows('Workouts', [wRow]);
     setSyncStatus('saved');
   } catch(e) {
     setSyncStatus('error');
@@ -4376,7 +4214,7 @@ async function addWorkout() {
     addToSyncQueue({type:'workout-save', workout:{id:id, name:name.trim(), exercises:[]}});
   } else {
     setSyncStatus('syncing');
-    try { await appendRows('Workouts', [[email, id, name.trim(), '']]); setSyncStatus('saved'); }
+    try { await appendRemoteRows('Workouts', [[email, id, name.trim(), '']]); setSyncStatus('saved'); }
     catch(e) { setSyncStatus('error'); addToSyncQueue({type:'workout-save', workout:{id:id, name:name.trim(), exercises:[]}}); }
   }
   renderWorkoutsScreen(); renderWorkoutPicker();
@@ -4392,9 +4230,9 @@ async function deleteWorkout(wi) {
   } else {
     setSyncStatus('syncing');
     try {
-      var rows = await ensureSheetReady('Workouts');
+      var rows = await ensureRemoteReady('Workouts');
       var rowIdx = rows.findIndex(function(r) { return r[1] === w.id; });
-      if (rowIdx > 0) await deleteSheetRow('Workouts', rowIdx + 1);
+      if (rowIdx > 0) await deleteRemoteRow('Workouts', rowIdx + 1);
       setSyncStatus('saved');
     } catch(e) { setSyncStatus('error'); addToSyncQueue({type:'workout-delete', workoutId:w.id}); }
   }
@@ -4415,7 +4253,7 @@ async function addGlobalExercise() {
     var email = currentUser ? currentUser.email : 'unknown';
     setSyncStatus('syncing');
     try {
-      await appendRows('Exercises', [[email, 'ex'+Date.now(), name]]);
+      await appendRemoteRows('Exercises', [[email, 'ex'+Date.now(), name]]);
       setSyncStatus('saved');
     } catch(e) { setSyncStatus('error'); addToSyncQueue({type:'exercise-add', name:name}); }
   }
@@ -4438,10 +4276,10 @@ async function deleteGlobalExercise(name) {
     setSyncStatus('syncing');
     try {
       var email = currentUser ? currentUser.email : 'unknown';
-      var eRows = await ensureSheetReady('Exercises');
+      var eRows = await ensureRemoteReady('Exercises');
       var eIdx = eRows.findIndex(function(r) { return r[2] === name && r[0] === email; });
-      if (eIdx > 0) await deleteSheetRow('Exercises', eIdx + 1);
-      for (var i = 0; i < workouts.length; i++) { await saveWorkoutToSheet(i); }
+      if (eIdx > 0) await deleteRemoteRow('Exercises', eIdx + 1);
+      for (var i = 0; i < workouts.length; i++) { await saveWorkoutToRemote(i); }
       setSyncStatus('saved');
     } catch(e) {
       setSyncStatus('error');
@@ -4494,7 +4332,7 @@ function updateTimerButton(timeStr) {
 }
 function rtSetPreset(s) {
   rtPreset = s;
-  localStorage.setItem('lift_last_preset', s);
+  lsSet('lift_last_preset', s);
   // Only reset remaining if timer is not currently running
   if (!rtRunning) { rtRemaining = s; rtStartPreset = s; rtUpdateDisplay(); }
   document.querySelectorAll('.rt-preset').forEach(function(b) {
@@ -4979,7 +4817,7 @@ function setSyncStatus(state, errMsg) {
   if (state === 'saved' || state === 'synced') { syncErrorToastShown = false; clearSyncError(); }
   if (state === 'error' && !syncErrorToastShown) {
     syncErrorToastShown = true;
-    showToast('\u26a0\ufe0f Sync failed' + (storedErr ? ': ' + storedErr : ' — data not saved to Sheets'));
+    showToast('\u26a0\ufe0f Sync failed' + (storedErr ? ': ' + storedErr : ' — data not saved to remote'));
   }
   lbl.onclick = state === 'error' || queued ? function() { retryFailedSyncs(); } : null;
   lbl.style.cursor = state === 'error' || queued ? 'pointer' : 'default';
@@ -5015,8 +4853,8 @@ async function retryFailedSyncs() {
     var validFlush = rawFlush.map(function(r) { return r.slice(1); }).filter(isValidResultRow).filter(function(r) { return !queuedDeletes[r[0]]; });
     var localFlush = getLocalResults();
     var localFlushIds = new Set(localFlush.map(function(r) { return r[0]; }));
-    var sheetsFlushOnly = validFlush.filter(function(r) { return !localFlushIds.has(r[0]); });
-    shRows = localFlush.concat(sheetsFlushOnly);
+    var remoteFlushOnly = validFlush.filter(function(r) { return !localFlushIds.has(r[0]); });
+    shRows = localFlush.concat(remoteFlushOnly);
     ehRows = shRows;
     lsSet(LS_RESULTS, shRows);
   }
@@ -5027,9 +4865,6 @@ function showToast(msg) {
   setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
-// Wait for GSI then enable sign-in
-document.getElementById('signin-btn').disabled = true;
-document.getElementById('signin-btn').style.opacity = '0.5';
 // PWA: register service worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW reg failed:', e); });
@@ -5137,23 +4972,10 @@ document.addEventListener('visibilitychange', function() {
   });
 })();
 
-(function bootAuth() {
-  if (handleRedirectAuthResult()) return;
+(function bootApp() {
+  offlineMode = (lsGet(LS_MODE) === 'offline');
+  initApp();
 })();
-
-(function waitGSI(n) {
-  if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-    document.getElementById('signin-btn').disabled = false;
-    document.getElementById('signin-btn').style.opacity = '1';
-  } else if (n < 100) {
-    setTimeout(function() { waitGSI(n+1); }, 100);
-  } else {
-    document.getElementById('signin-btn').textContent = 'Reload & try again';
-    document.getElementById('signin-btn').disabled = false;
-    document.getElementById('signin-btn').style.opacity = '1';
-  }
-})(0);
 </script>
-<script src="https://accounts.google.com/gsi/client"></script>
 </body>
 </html>
