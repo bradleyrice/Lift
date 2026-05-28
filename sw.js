@@ -1,4 +1,4 @@
-var APP_SHELL_CACHE = 'lift-shell-v6';
+var APP_SHELL_CACHE = 'lift-shell-v8';
 var APP_SHELL_ASSETS = [
   './',
   './index.html',
