@@ -1,24 +1,56 @@
-var CACHE = 'lift-v4';
+var CACHE = 'lift-dev-v5';
+var APP_SHELL = [
+  './',
+  'index.html',
+  '../manifest.json',
+  '../icon-192.png',
+  '../icon-512.png'
+];
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
   e.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+    caches.open(CACHE).then(function(cache) {
+      return cache.addAll(APP_SHELL);
     })
   );
 });
 
 self.addEventListener('activate', function(e) {
-  e.waitUntil(clients.claim());
+  e.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(keys.map(function(k) {
+        if (k !== CACHE && (/^lift-dev-v/.test(k) || k === 'lift-v4')) return caches.delete(k);
+      }));
+    }).then(function() {
+      return clients.claim();
+    })
+  );
 });
 
 self.addEventListener('fetch', function(e) {
   if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request).catch(function() {
-      return caches.match(e.request);
+      return caches.match(e.request).then(function(match) {
+        return match || caches.match('./') || caches.match('index.html');
+      });
     }));
     return;
+  }
+
+  if (e.request.method !== 'GET') return;
+
+  var url = new URL(e.request.url);
+  if (url.origin === location.origin) {
+    e.respondWith(
+      caches.match(e.request).then(function(match) {
+        return match || fetch(e.request).then(function(resp) {
+          var copy = resp.clone();
+          caches.open(CACHE).then(function(cache) { cache.put(e.request, copy); });
+          return resp;
+        });
+      })
+    );
   }
 });
 
