@@ -9,6 +9,8 @@ The VPS was hardened after a broader security audit:
 - `lift-push` changed from a public `*:3000` listener to `127.0.0.1:3000`. This removes an unnecessary public attack surface.
 - Tailscale Serve remains the supported access path for the push endpoint.
 - `lift-api` listens locally on `127.0.0.1:8765`.
+- The authoritative LIFT API client base is `https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443/lift-api`.
+- The default-origin path `/lift-api` is not currently the LIFT API route: it resolves to Radicale and returns `401` with a Basic-auth challenge. Do not use it until the proxy route is deliberately corrected.
 - Both services run as dedicated non-root users: `liftpush:liftpush` and `liftapi:liftapi`.
 - Secrets and service environment moved out of systemd unit text into root-owned environment files.
 - systemd sandboxing limits filesystem writes and capabilities.
@@ -57,6 +59,27 @@ ReadWritePaths=/var/lib/lift
 Under `ProtectSystem=strict`, new application writes fail unless their directory is explicitly writable. If the application later needs a cache, log, or upload directory, create a dedicated directory owned by the service user and add only that directory to `ReadWritePaths=`. Do not solve this by reverting to root or disabling `ProtectSystem`.
 
 This repository has no systemd unit templates; the list above documents the required live design. If unit templates are added later, keep them synchronized with this section and review them before installation.
+
+## Client API configuration
+
+The production client maps the known Tailscale hostname to the explicit `:8443/lift-api` API base. The existing `lift_api_base_url` localStorage value takes precedence and can be used for another approved deployment or temporary diagnosis:
+
+```js
+localStorage.setItem(
+  'lift_api_base_url',
+  'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443/lift-api'
+);
+location.reload();
+```
+
+Reset it with:
+
+```js
+localStorage.removeItem('lift_api_base_url');
+location.reload();
+```
+
+Because the API is on port `8443`, it is a different browser origin from the app’s default HTTPS origin. The static site CSP in `netlify.toml` explicitly allows connections to `https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443`; keep this allowlist narrow.
 
 ## Access and administration
 

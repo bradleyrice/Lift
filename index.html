@@ -919,6 +919,11 @@ var DEFAULT_WORKOUTS = [
   {id:'w4',name:'Day 4 \u2014 Hamstrings, Glutes & Abductors',exercises:['Standing Hip Extension Squat Machine','Seated Leg Curl','Iso Lateral Kneeling Leg Curl','Back Extension','Hip Abductor','Hip Adductor']}
 ];
 var PROD_APP_URL = 'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift/';
+// Deployment-specific API routes. Keep the user-configurable localStorage
+// override in getApiBaseUrl() below for other tailnet or local deployments.
+var LIFT_DEPLOYMENT_API_BASES = {
+  'ubuntu-4gb-nbg1-3.tail6bd62e.ts.net': 'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443/lift-api'
+};
 var API_BASE_URL = getDefaultApiBaseUrl();
 
 // LOCAL STORAGE LAYER
@@ -2001,8 +2006,8 @@ var appendLocks = {};
 var resultSyncLocks = {};
 
 function getDefaultApiBaseUrl() {
-  if (location.protocol === 'https:' && location.hostname === 'ubuntu-4gb-nbg1-3.tail6bd62e.ts.net') {
-    return location.origin + '/lift-api';
+  if (location.protocol === 'https:' && LIFT_DEPLOYMENT_API_BASES[location.hostname]) {
+    return LIFT_DEPLOYMENT_API_BASES[location.hostname];
   }
   if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
     return 'http://127.0.0.1:8765';
@@ -2048,6 +2053,7 @@ function apiTabPath(tab) {
 }
 
 function getApiBaseUrl() {
+  // Set lift_api_base_url in localStorage to override deployment defaults.
   try {
     var override = (storageGet('lift_api_base_url') || '').trim().replace(/\/+$/, '');
     if (override) return override;

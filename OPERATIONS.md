@@ -37,13 +37,35 @@ Check Tailscale routes:
 ```bash
 curl -k -fsS https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift-push/health
 curl -k -fsS https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443/lift-api/health
+curl -k -i --connect-timeout 10 https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift-api/health
 ```
 
 The push check should return `{"ok":true,"users":0}`. The API check should return `{"ok":true}`.
 
-The observed response from `https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift-api/health` is `401`; use the explicit `:8443` route above for API health. The `401` is treated as expected route/auth behavior from the default Tailscale Serve path, not as the API’s local health result. If the `:8443` check also fails, investigate the configured Tailscale route and authentication separately.
+The authoritative client API base is `https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443/lift-api`. It should return `{"ok":true}` for health.
 
-Client integration note: the current production client code derives its default API base from the Tailscale origin as `/lift-api`, so it may encounter that default-route `401`. This documentation records the verified service route but does not change the client. Before relying on API-backed production workflows, test the client’s configured API base and, in a separately approved application change, align it with the working `:8443` route or the intended authenticated proxy route.
+The default-origin URL `https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net/lift-api/health` currently returns `401` with `WWW-Authenticate: Basic realm="Radicale - Password Required"` and a WSGI server response. This is a proxy misroute to Radicale, not expected LIFT API authentication behavior. Do not use that route as the client API base until the proxy is deliberately corrected.
+
+The client has a deployment mapping for the known Tailscale hostname, and `lift_api_base_url` in localStorage takes precedence. To override it in a browser console:
+
+```js
+localStorage.setItem(
+  'lift_api_base_url',
+  'https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443/lift-api'
+);
+location.reload();
+```
+
+To reset the override:
+
+```js
+localStorage.removeItem('lift_api_base_url');
+location.reload();
+```
+
+The API’s explicit `:8443` origin is permitted in `netlify.toml` via a narrow `connect-src` entry. If the API host or port changes, update that CSP entry in the same approved application change.
+
+Before relying on API-backed production workflows, test the configured API base with a read-only identity/table request in addition to the health endpoint. The client sends API requests without credentials, so confirm the API’s intended Tailscale/authentication behavior before changing the deployment route.
 
 Confirm that public port 3000 is not exposed:
 

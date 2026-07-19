@@ -1,5 +1,5 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.gstatic.com https://fonts.googleapis.com; connect-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-src 'self';"
+    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.gstatic.com https://fonts.googleapis.com; connect-src 'self' https://ubuntu-4gb-nbg1-3.tail6bd62e.ts.net:8443; script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-src 'self';"
     Access-Control-Allow-Origin = "*"
